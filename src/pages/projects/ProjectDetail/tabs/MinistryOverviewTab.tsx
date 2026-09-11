@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Landmark, AlertTriangle, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Landmark, AlertTriangle, ShieldAlert, ArrowRight, Flag, Camera } from 'lucide-react';
 import type { Project } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
-import { Card, CardContent, CardHeader, CardTitle, StatusBadge, SeverityBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
+import { Card, CardContent, CardHeader, CardTitle, StatusBadge, SeverityBadge, ProgressBar, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { KpiCard } from '../../../../components/common/KpiCard';
+import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { DEFECT_STATUS_LABELS } from '../../../../lib/constants';
-import { formatCurrency, formatDate, cn } from '../../../../lib/utils';
+import { seededImageUrl, formatCurrency, formatDate, cn } from '../../../../lib/utils';
+import { isMilestoneDelivered } from '../../../../lib/milestones';
 import { GovernanceTab } from './GovernanceTab';
 import { EvidenceCard } from './DefectsTab';
 
@@ -38,9 +40,17 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
   const qualityFailures = useStore((s) => s.qualityFailures).filter((f) => f.projectId === project.id);
   const safetyRecords = useStore((s) => s.safetyRecords).filter((r) => r.projectId === project.id);
   const handoverSteps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id);
+  const milestones = useStore((s) => s.milestones).filter((m) => m.projectId === project.id).sort((a, b) => a.order - b.order);
+  const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id);
   const [governanceOpen, setGovernanceOpen] = useState(false);
   const [defectId, setDefectId] = useState<string | null>(null);
+  const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const activeDefect = defects.find((d) => d.id === defectId);
+  const activeMilestone = milestones.find((m) => m.id === milestoneId);
+  // Milestone names (Foundation, Structure, Roofing, MEP, Finishing, Medical Infrastructure) map
+  // 1:1 onto SitePhoto.stage, so geo-tagged evidence can be shown per milestone without a
+  // separate linking table.
+  const activeMilestonePhotos = activeMilestone ? photos.filter((p) => p.stage === activeMilestone.name) : [];
 
   const ee = users.find((u) => u.id === project.executiveEngineerId);
   const contractor = contractors.find((c) => c.id === project.contractorId);
@@ -119,6 +129,42 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
         </CardContent>
       </Card>
 
+      {/* Milestones — description, % completion and geo-tagged photo evidence, read-only */}
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Flag size={15} /> Milestones — Description, Completion & Geo-Tagged Evidence</CardTitle></CardHeader>
+        <CardContent className="p-4">
+          <div className="space-y-2.5">
+            {milestones.map((m) => {
+              const pctComplete = isMilestoneDelivered(m.status) ? 100 : m.status === 'VERIFIED' || m.status === 'SUBMITTED_FOR_VERIFICATION' || m.status === 'INSPECTION_PENDING' ? 60 : m.status === 'IN_PROGRESS' ? 30 : 0;
+              const milestonePhotoCount = photos.filter((p) => p.stage === m.name).length;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setMilestoneId(m.id)}
+                  className="flex w-full items-start justify-between gap-3 rounded-md border border-slate-200 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs font-semibold text-slate-800">{m.name}</p>
+                      <StatusBadge status={m.status} />
+                      <span className="text-[10.5px] text-slate-400">Weightage {m.weightagePct}%</span>
+                      {milestonePhotoCount > 0 && <span className="flex items-center gap-1 text-[10.5px] text-slate-400"><Camera size={11} /> {milestonePhotoCount} geo-tagged photo{milestonePhotoCount === 1 ? '' : 's'}</span>}
+                    </div>
+                    <p className="mt-1 line-clamp-1 text-[11.5px] text-slate-500">{m.description}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <ProgressBar value={pctComplete} className="h-1.5 w-32" colorClass={pctComplete === 100 ? 'bg-emerald-500' : 'bg-blue-500'} />
+                      <span className="text-[10.5px] font-medium text-slate-500">{pctComplete}% complete</span>
+                    </div>
+                  </div>
+                  <ArrowRight size={13} className="mt-0.5 shrink-0 text-slate-300" />
+                </button>
+              );
+            })}
+            {milestones.length === 0 && <p className="text-xs text-slate-400">No milestones recorded for this project.</p>}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Executive risk section */}
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle size={15} /> Executive Risk Summary</CardTitle></CardHeader>
@@ -179,6 +225,34 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
         <DialogContent title="Governance Details (Read Only)" description={project.name} size="xl">
           <GovernanceTab project={project} />
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!milestoneId} onOpenChange={(v) => !v && setMilestoneId(null)}>
+        {activeMilestone && (
+          <DialogContent title={activeMilestone.name} description={`${project.name} — Read Only`} size="lg">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <StatusBadge status={activeMilestone.status} />
+              <span className="text-xs text-slate-500">Weightage {activeMilestone.weightagePct}% of contract value</span>
+            </div>
+            <p className="text-xs leading-relaxed text-slate-600">{activeMilestone.description}</p>
+            <div className="mt-3 grid grid-cols-2 gap-3 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
+              <DField label="Planned Finish" value={formatDate(activeMilestone.plannedDate)} />
+              <DField label="Actual Finish" value={activeMilestone.actualDate ? formatDate(activeMilestone.actualDate) : '—'} />
+              <DField label="Planned Value" value={formatCurrency(activeMilestone.plannedValue)} />
+              <DField label="Certified Value" value={activeMilestone.certifiedValue ? formatCurrency(activeMilestone.certifiedValue) : '—'} />
+            </div>
+            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} /> Geo-Tagged Progress Photos ({activeMilestonePhotos.length})</p>
+            {activeMilestonePhotos.length === 0 ? (
+              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">No geo-tagged photo evidence submitted for this milestone yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {activeMilestonePhotos.map((p) => (
+                  <GeoPhoto key={p.id} src={seededImageUrl(p.seed, 320, 220, p.stage)} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        )}
       </Dialog>
 
       <Dialog open={!!defectId} onOpenChange={(v) => !v && setDefectId(null)}>

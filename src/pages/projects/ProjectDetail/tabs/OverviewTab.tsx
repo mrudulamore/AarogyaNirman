@@ -5,11 +5,15 @@ import { PROJECT_STAGES } from '../../../../lib/constants';
 import { formatCurrencyFull, cn } from '../../../../lib/utils';
 import { useStore } from '../../../../store/useStore';
 import { isMilestoneDelivered } from '../../../../lib/milestones';
+import { ContractorSummaryCard } from '../../../../components/common/ContractorSummaryCard';
 
 export function OverviewTab({ project }: { project: Project }) {
   const stageIndex = PROJECT_STAGES.indexOf(project.stage);
   const milestones = useStore((s) => s.milestones).filter((m) => m.projectId === project.id);
   const completedMilestones = milestones.filter((m) => isMilestoneDelivered(m.status)).length;
+  const contractors = useStore((s) => s.contractors);
+  const defects = useStore((s) => s.defects);
+  const contractor = contractors.find((c) => c.id === project.contractorId);
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -59,6 +63,17 @@ export function OverviewTab({ project }: { project: Project }) {
           </div>
         </CardContent>
       </Card>
+
+      {contractor && (
+        <div className="lg:col-span-3">
+          <ContractorSummaryCard
+            contractor={contractor}
+            projectId={project.id}
+            openDefects={defects.filter((d) => d.contractorId === contractor.id && d.status !== 'CLOSED').length}
+            totalDefects={defects.filter((d) => d.projectId === project.id && d.contractorId === contractor.id).length}
+          />
+        </div>
+      )}
     </div>
   );
 }

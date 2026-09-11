@@ -5,12 +5,14 @@ import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Badge, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
 import { ROLE_LABELS } from '../../../../lib/constants';
 import { Avatar } from '../../../../components/ui/forms';
+import { ContractorSummaryCard } from '../../../../components/common/ContractorSummaryCard';
 
 export function TeamTab({ project }: { project: Project }) {
   const navigate = useNavigate();
   const users = useStore((s) => s.users);
   const contractors = useStore((s) => s.contractors);
   const contractorPocs = useStore((s) => s.contractorPocs);
+  const defects = useStore((s) => s.defects);
 
   const ownerDirector = users.find((u) => u.id === project.ownerDirectorId);
   const projectManager = users.find((u) => u.id === project.projectManagerId);
@@ -65,7 +67,7 @@ export function TeamTab({ project }: { project: Project }) {
                   <span>{contractor.email}</span>
                   <span>{contractor.phone}</span>
                 </div>
-                <button onClick={() => navigate(`/contractors/${contractor.id}`)} className="mt-2 text-[11px] font-medium text-navy-700 underline">View Contractor Profile →</button>
+                <button onClick={() => navigate(`/contractors/${contractor.id}?from=${project.id}`)} className="mt-2 text-[11px] font-medium text-navy-700 underline">View Contractor Profile →</button>
               </div>
             </CardContent>
           </Card>
@@ -84,6 +86,15 @@ export function TeamTab({ project }: { project: Project }) {
           </CardContent>
         </Card>
       </div>
+
+      {contractor && (
+        <ContractorSummaryCard
+          contractor={contractor}
+          projectId={project.id}
+          openDefects={defects.filter((d) => d.contractorId === contractor.id && d.status !== 'CLOSED').length}
+          totalDefects={defects.filter((d) => d.projectId === project.id && d.contractorId === contractor.id).length}
+        />
+      )}
 
       {contractor && (
         <Card>

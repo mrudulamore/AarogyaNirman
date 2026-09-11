@@ -6,6 +6,7 @@ import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, EmptyState, Textarea } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent, DialogFooter, ConfirmDialog } from '../../../../components/ui/overlays';
+import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { seededImageUrl, formatDate, formatDateTime } from '../../../../lib/utils';
 import { simulateCapture, isWithinGeofence } from '../../../../lib/geo';
 
@@ -143,7 +144,15 @@ export function PhotosTab({ project }: { project: Project }) {
         {viewerPhoto && (
           <DialogContent title={`${viewerPhoto.stage} — ${viewerPhoto.type}`} description={formatDateTime(viewerPhoto.date)} size="xl">
             <div className="relative">
-              <img src={seededImageUrl(viewerPhoto.seed, 1000, 620, viewerPhoto.stage)} className="max-h-[55vh] w-full rounded-md object-cover" />
+              <GeoPhoto
+                src={seededImageUrl(viewerPhoto.seed, 1000, 620, viewerPhoto.stage)}
+                lat={viewerPhoto.lat}
+                lng={viewerPhoto.lng}
+                timestamp={viewerPhoto.capturedAt}
+                location={viewerPhoto.location}
+                className="max-h-[55vh] w-full"
+                imgClassName="max-h-[55vh]"
+              />
               {viewerIndex > 0 && <button onClick={() => setViewerId(filtered[viewerIndex - 1].id)} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronLeft size={16} /></button>}
               {viewerIndex < filtered.length - 1 && <button onClick={() => setViewerId(filtered[viewerIndex + 1].id)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronRight size={16} /></button>}
             </div>

@@ -4,7 +4,9 @@ import type { Project, SitePhoto } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardHeader, CardTitle, StatusBadge, Table, THead, TBody, Tr, Th, Td, EmptyState } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { formatDateTime } from '../../../../lib/utils';
+import { Dialog, DialogContent } from '../../../../components/ui/overlays';
+import { GeoPhoto } from '../../../../components/common/GeoPhoto';
+import { seededImageUrl, formatDateTime } from '../../../../lib/utils';
 import { distanceMeters, isWithinGeofence, GEOFENCE_RADIUS_M } from '../../../../lib/geo';
 
 type FenceFilter = 'ALL' | 'WITHIN' | 'OUTSIDE' | 'MANUAL';
@@ -12,7 +14,9 @@ type FenceFilter = 'ALL' | 'WITHIN' | 'OUTSIDE' | 'MANUAL';
 export function FieldEvidenceTab({ project }: { project: Project }) {
   const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id);
   const [filter, setFilter] = useState<FenceFilter>('ALL');
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const site = { lat: project.siteLat, lng: project.siteLng };
+  const viewerPhoto = photos.find((p) => p.id === viewerId);
 
   const rows = useMemo(() => photos.map((p) => ({
     photo: p,
@@ -61,10 +65,15 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
       <Card>
         {filtered.length === 0 ? <EmptyState icon={<MapPin size={32} />} title="No field evidence matches this filter" /> : (
           <Table>
-            <THead><Tr><Th>Captured</Th><Th>Stage</Th><Th>Uploaded By</Th><Th>Source</Th><Th>Accuracy</Th><Th>Distance from Site</Th><Th>Geo-Fence</Th></Tr></THead>
+            <THead><Tr><Th>Evidence</Th><Th>Captured</Th><Th>Stage</Th><Th>Uploaded By</Th><Th>Source</Th><Th>Accuracy</Th><Th>Distance from Site</Th><Th>Geo-Fence</Th></Tr></THead>
             <TBody>
               {filtered.map(({ photo, distanceM, within }) => (
-                <Tr key={photo.id}>
+                <Tr key={photo.id} onClick={() => setViewerId(photo.id)}>
+                  <Td>
+                    <button className="group block overflow-hidden rounded-md border border-slate-200" title="Click to view photo evidence">
+                      <img src={seededImageUrl(photo.seed, 120, 80, photo.stage)} className="h-12 w-16 object-cover transition-transform group-hover:scale-105" />
+                    </button>
+                  </Td>
                   <Td>{formatDateTime(photo.capturedAt)}</Td>
                   <Td className="font-medium text-slate-800">{photo.stage}</Td>
                   <Td>{photo.uploadedBy}</Td>
@@ -91,6 +100,39 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
           </Table>
         )}
       </Card>
+
+      <Dialog open={!!viewerId} onOpenChange={(v) => !v && setViewerId(null)}>
+        {viewerPhoto && (
+          <DialogContent title={`${viewerPhoto.stage} — Field Evidence`} description={formatDateTime(viewerPhoto.capturedAt)} size="lg">
+            <GeoPhoto
+              src={seededImageUrl(viewerPhoto.seed, 1000, 620, viewerPhoto.stage)}
+              lat={viewerPhoto.lat}
+              lng={viewerPhoto.lng}
+              timestamp={viewerPhoto.capturedAt}
+              location={viewerPhoto.location}
+              className="h-72 w-full"
+            />
+            <div className="mt-3 grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
+              <div><p className="text-slate-400">Uploaded By</p><p className="font-medium text-slate-700">{viewerPhoto.uploadedBy}</p></div>
+              <div><p className="text-slate-400">Uploaded At</p><p className="font-medium text-slate-700">{formatDateTime(viewerPhoto.uploadedAt)}</p></div>
+              <div>
+                <p className="text-slate-400">Location Source</p>
+                <p className="font-medium text-slate-700">{viewerPhoto.locationSource === 'CAPTURED' ? `Device GPS (±${viewerPhoto.gpsAccuracyM}m)` : 'Manually entered'}</p>
+              </div>
+              <div>
+                <p className="text-slate-400">Geo-Fence</p>
+                {isWithinGeofence(viewerPhoto, site) ? (
+                  <StatusBadge status="APPROVED" label="Within Geo-Fence" />
+                ) : (
+                  <StatusBadge status="REJECTED" label="Outside Geo-Fence" />
+                )}
+              </div>
+              <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">Description</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
+              {viewerPhoto.remarks && <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">Remarks</p><p className="font-medium text-slate-700">{viewerPhoto.remarks}</p></div>}
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }

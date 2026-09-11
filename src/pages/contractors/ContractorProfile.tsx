@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Building2, Clock, ShieldAlert, ShieldCheck, TrendingDown, Wallet, AlertTriangle } from 'lucide-react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Building2, Clock, ShieldAlert, ShieldCheck, TrendingDown, Wallet, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
@@ -10,6 +10,7 @@ import { formatCurrency, formatDate } from '../../lib/utils';
 export function ContractorProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const contractors = useStore((s) => s.contractors);
   const projects = useStore((s) => s.projects);
   const defects = useStore((s) => s.defects);
@@ -18,6 +19,12 @@ export function ContractorProfile() {
 
   const contractor = contractors.find((c) => c.id === id);
   const companyPocs = contractorPocs.filter((poc) => poc.contractorId === id);
+
+  // When arrived at via a project's Team/Overview tab (?from=<projectId>), remember it so the
+  // breadcrumb and back-link return to that project instead of dropping the user at the generic
+  // contractors list — this was the "redirection back" bug reported from the Ministry dashboard.
+  const fromProjectId = searchParams.get('from');
+  const fromProject = fromProjectId ? projects.find((p) => p.id === fromProjectId) : undefined;
 
   const stats = useMemo(() => {
     if (!contractor) return null;
@@ -41,14 +48,32 @@ export function ContractorProfile() {
   }, [contractor, projects, defects, bills]);
 
   if (!contractor || !stats) {
-    return <div className="py-20 text-center text-sm text-slate-500">Contractor not found. <button className="text-navy-700 underline" onClick={() => navigate('/contractors')}>Back to contractors</button></div>;
+    return (
+      <div className="py-20 text-center text-sm text-slate-500">
+        Contractor not found.{' '}
+        <button className="text-navy-700 underline" onClick={() => navigate(fromProject ? `/projects/${fromProject.id}` : '/contractors')}>
+          {fromProject ? `Back to ${fromProject.name}` : 'Back to contractors'}
+        </button>
+      </div>
+    );
   }
 
   const underperforming = contractor.performanceScore < 65 || stats.delayed.length >= 2 || stats.disputedBills.length >= 2;
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'Contractors', to: '/contractors' }, { label: contractor.company }]} />
+      <Breadcrumbs items={fromProject
+        ? [{ label: 'Projects', to: '/projects' }, { label: fromProject.name, to: `/projects/${fromProject.id}` }, { label: contractor.company }]
+        : [{ label: 'Contractors', to: '/contractors' }, { label: contractor.company }]} />
+
+      {fromProject && (
+        <button
+          onClick={() => navigate(`/projects/${fromProject.id}?tab=team`)}
+          className="mb-3 flex items-center gap-1.5 text-xs font-medium text-navy-700 hover:underline"
+        >
+          <ArrowLeft size={13} /> Back to {fromProject.name}
+        </button>
+      )}
 
       <Card className="mb-4">
         <CardContent className="p-5">

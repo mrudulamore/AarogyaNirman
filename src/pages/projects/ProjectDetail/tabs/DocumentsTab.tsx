@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Upload, FileText, CheckCircle2, Download, Search } from 'lucide-react';
-import type { Project, DocumentType } from '../../../../types';
+import type { Project, DocumentType, ProjectDocument } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td, Input, EmptyState } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
 import { formatDate } from '../../../../lib/utils';
+import { downloadDocumentRecord } from '../../../../lib/pdf';
+import { documentLifecyclePhase } from '../../../../lib/constants';
 
 const DOC_TYPES: DocumentType[] = ['DPR', 'Administrative Sanction', 'Technical Sanction', 'Tender', 'Work Order', 'Agreement', 'BOQ', 'Drawings', 'Inspection Report', 'Test Report', 'Bills', 'Approvals', 'Completion Certificate', 'Handover Documents'];
 
@@ -23,6 +25,25 @@ export function DocumentsTab({ project }: { project: Project }) {
 
   const filtered = documents.filter((d) => (typeFilter === 'ALL' || d.type === typeFilter) && d.name.toLowerCase().includes(q.toLowerCase()));
   const readOnly = currentUser?.role === 'MINISTER' || currentUser?.role === 'VIGILANCE_AUDIT';
+
+  function downloadRecord(d: ProjectDocument) {
+    downloadDocumentRecord({
+      heading: d.name,
+      filename: `${d.id}_${d.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`,
+      fields: [
+        { label: 'Document ID', value: d.id },
+        { label: 'Type', value: d.type },
+        { label: 'Lifecycle Phase', value: documentLifecyclePhase(d.type) },
+        { label: 'Project', value: project.name },
+        { label: 'Uploaded By', value: d.uploadedBy },
+        { label: 'Upload Date', value: formatDate(d.uploadDate) },
+        { label: 'Version', value: `v${d.version}` },
+        { label: 'Approval Status', value: d.approvalStatus },
+        { label: 'File Size', value: `${(d.sizeKb / 1024).toFixed(2)} MB` },
+      ],
+    });
+    toast.success('Document downloaded.');
+  }
 
   return (
     <div className="space-y-4">
@@ -56,7 +77,7 @@ export function DocumentsTab({ project }: { project: Project }) {
                   <Td>{(d.sizeKb / 1024).toFixed(1)} MB</Td>
                   <Td><StatusBadge status={d.approvalStatus} /></Td>
                   <Td className="space-x-1.5 whitespace-nowrap">
-                    <Button size="sm" variant="ghost" onClick={() => toast.info('Downloading (simulated)…')}><Download size={12} /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => downloadRecord(d)} title="Download document (PDF)"><Download size={12} /></Button>
                     {!readOnly && d.approvalStatus === 'PENDING' && <Button size="sm" variant="outline" onClick={() => { setDocumentStatus(d.id, 'APPROVED'); toast.success('Document approved.'); }}><CheckCircle2 size={12} /> Approve</Button>}
                   </Td>
                 </Tr>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, LayoutGrid, List as ListIcon, ArrowRight } from 'lucide-react';
+import { Plus, LayoutGrid, List as ListIcon, ArrowRight, ChevronRight, Landmark, Building2, Map, MapPinned, Hospital, RotateCcw } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
@@ -141,15 +141,31 @@ export function ProjectsList() {
         </div>
       )}
 
-      <Card className="mb-4">
-        <CardContent className="p-4">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Scheme → Facility Type → Region → District → Hospital / Project</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <CascadeSelect label="Scheme" value={scheme} onChange={setScheme} options={schemeOptions} />
-            <CascadeSelect label="Facility Type" value={facilityType} onChange={setFacilityType} options={facilityOptions} />
-            <CascadeSelect label="Region" value={region} onChange={setRegion} options={regionOptions} />
-            <CascadeSelect label="District" value={district} onChange={setDistrict} options={districtOptions} />
-            <CascadeSelect label="Hospital / Project" value={projectId} onChange={setProjectId} options={projectOptions} />
+      <Card className="mb-4 overflow-hidden">
+        <div className="flex items-center justify-between bg-gradient-to-r from-navy-50 to-white px-4 py-2.5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-navy-700">
+            <Landmark size={12} /> Jurisdictional Drill-Down
+          </p>
+          {(scheme !== 'ALL' || facilityType !== 'ALL' || region !== 'ALL' || district !== 'ALL' || projectId !== 'ALL') && (
+            <button
+              onClick={() => { setScheme('ALL'); setFacilityType('ALL'); setRegion('ALL'); setDistrict('ALL'); setProjectId('ALL'); }}
+              className="flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-navy-700"
+            >
+              <RotateCcw size={11} /> Reset filters
+            </button>
+          )}
+        </div>
+        <CardContent className="p-4 pt-3">
+          <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
+            <CascadeSelect icon={Landmark} label="Scheme" value={scheme} onChange={setScheme} options={schemeOptions} />
+            <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
+            <CascadeSelect icon={Building2} label="Facility Type" value={facilityType} onChange={setFacilityType} options={facilityOptions} />
+            <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
+            <CascadeSelect icon={Map} label="Region" value={region} onChange={setRegion} options={regionOptions} />
+            <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
+            <CascadeSelect icon={MapPinned} label="District" value={district} onChange={setDistrict} options={districtOptions} />
+            <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
+            <CascadeSelect icon={Hospital} label="Hospital / Project" value={projectId} onChange={setProjectId} options={projectOptions} />
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {QUICK_FILTERS.map((qf) => (
@@ -261,14 +277,15 @@ export function ProjectsList() {
   );
 }
 
-function CascadeSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: FilterOption[] }) {
+function CascadeSelect({ label, value, onChange, options, icon: Icon }: { label: string; value: string; onChange: (v: string) => void; options: FilterOption[]; icon: any }) {
+  const isActive = value !== 'ALL';
   return (
-    <div>
-      <p className="mb-1 text-[11px] font-medium text-slate-500">{label}</p>
+    <div className="min-w-0 flex-1">
+      <p className="mb-1 flex items-center gap-1 text-[11px] font-medium text-slate-500"><Icon size={11} className={isActive ? 'text-navy-700' : 'text-slate-400'} /> {label}</p>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectTrigger className={cn('transition-colors', isActive && 'border-navy-300 bg-navy-50/60 font-medium text-navy-800')}><SelectValue /></SelectTrigger>
         <SelectContent>
-          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label} [{o.count}]</SelectItem>)}
+          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label} <span className="text-slate-400">[{o.count}]</span></SelectItem>)}
         </SelectContent>
       </Select>
     </div>
