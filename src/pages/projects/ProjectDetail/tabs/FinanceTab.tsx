@@ -1,0 +1,350 @@
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
+import type { Project, BillStatus } from '../../../../types';
+import { useStore } from '../../../../store/useStore';
+import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td, Input } from '../../../../components/ui/primitives';
+import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
+import { KpiCard } from '../../../../components/common/KpiCard';
+import { formatCurrency, formatCurrencyFull, formatDate } from '../../../../lib/utils';
+
+// Bill status -> who it's currently pending with, in plain language (Part 22).
+const PENDING_WITH: Partial<Record<BillStatus, string>> = {
+  DRAFT: 'Contractor', SUBMITTED: 'Site Engineer', SITE_VERIFIED: 'Quality/Executive Engineer',
+  QUALITY_VERIFIED: 'Executive Engineer', APPROVED: 'Finance / Commissioner',
+};
+
+function ageingDays(dateIso: string): number {
+  return Math.max(0, Math.round((Date.now() - new Date(dateIso).getTime()) / 86400000));
+}
+
+/** Part 20-22: Finance simplified into one Project 360 tab — a senior user should understand
+ * financial position within seconds via the primary KPI row, then drill into bill status,
+ * payment timeline and variation impact. Answers: "How much has been certified/paid?" */
+export function FinanceTab({ project }: { project: Project }) {
+  const bills = useStore((s) => s.bills).filter((b) => b.projectId === project.id).sort((a, b) => (a.submittedDate < b.submittedDate ? 1 : -1));
+  const measurements = useStore((s) => s.measurements).filter((m) => m.projectId === project.id);
+  const changeOrders = useStore((s) => s.changeOrders).filter((c) => c.projectId === project.id);
+  const currentUser = useStore((s) => s.currentUser);
+  const submitBill = useStore((s) => s.submitBill);
+  const verifyBillSite = useStore((s) => s.verifyBillSite);
+  const verifyBillQuality = useStore((s) => s.verifyBillQuality);
+  const approveBill = useStore((s) => s.approveBill);
+  const rejectBill = useStore((s) => s.rejectBill);
+  const markBillPaid = useStore((s) => s.markBillPaid);
+  const verifyMeasurement = useStore((s) => s.verifyMeasurement);
+
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [form, setForm] = useState({ periodFrom: '', periodTo: '', grossAmount: 2000000 });
+
+  const active = bills.find((b) => b.id === detailId);
+  const activeMeasurements = measurements.filter((m) => m.billId === detailId);
+
+  // ---- Primary KPIs ----
+  const contractValue = project.workOrderValue || project.sanctionedBudget;
+  const workCertified = bills.filter((b) => ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status)).reduce((s, b) => s + b.netPayable, 0);
+  const amountPaid = bills.filter((b) => b.status === 'PAID').reduce((s, b) => s + b.netPayable, 0);
+  const pendingBills = bills.filter((b) => !['PAID', 'REJECTED'].includes(b.status));
+  const pendingBillsValue = pendingBills.reduce((s, b) => s + b.netPayable, 0);
+  const balanceContractValue = contractValue - amountPaid;
+
+  // ---- Secondary KPIs ----
+  const retentionHeld = bills.reduce((s, b) => s + b.retention, 0);
+  const approvedVariations = changeOrders.filter((c) => c.status === 'APPROVED').reduce((s, c) => s + c.costImpact, 0);
+  const currentApprovedCost = project.sanctionedBudget + approvedVariations;
+  const totalDeductions = bills.reduce((s, b) => s + b.deductions, 0);
+  const billsUnderReview = bills.filter((b) => ['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status)).length;
+  const paidBillsWithDates = bills.filter((b) => b.status === 'PAID' && b.paidDate);
+  const avgProcessingDays = paidBillsWithDates.length
+    ? Math.round(paidBillsWithDates.reduce((s, b) => s + (new Date(b.paidDate!).getTime() - new Date(b.submittedDate).getTime()) / 86400000, 0) / paidBillsWithDates.length)
+    : 0;
+
+  const gap = Math.abs(project.financialProgress - project.physicalProgress);
+
+  // ---- Chart data (Part 24) — each chart supports one management decision, capped at 4 ----
+  const progressReports = useStore((s) => s.progressReports).filter((r) => r.projectId === project.id).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const progressTrend = useMemo(() => {
+    const start = new Date(project.startDate).getTime();
+    const planned = new Date(project.plannedCompletionDate).getTime();
+    const byMonth = new Map<string, { verified: number; count: number }>();
+    progressReports.forEach((r) => {
+      const key = r.date.slice(0, 7);
+      const cur = byMonth.get(key) ?? { verified: 0, count: 0 };
+      byMonth.set(key, { verified: Math.max(cur.verified, r.progressPct), count: cur.count + 1 });
+    });
+    const months = Array.from(byMonth.keys()).sort().slice(-8);
+    return months.map((m) => {
+      const monthMid = new Date(`${m}-15`).getTime();
+      const plannedPct = Math.round(Math.min(100, Math.max(0, ((monthMid - start) / (planned - start)) * 100)));
+      return { month: m, planned: plannedPct, verified: byMonth.get(m)!.verified, financial: Math.min(100, byMonth.get(m)!.verified + (project.financialProgress - project.physicalProgress)) };
+    });
+  }, [progressReports, project.startDate, project.plannedCompletionDate, project.financialProgress, project.physicalProgress]);
+
+  const waterfallData = [
+    { name: 'Sanctioned', value: project.sanctionedBudget },
+    { name: 'Variations', value: approvedVariations },
+    { name: 'Approved Cost', value: currentApprovedCost },
+    { name: 'Contract Value', value: contractValue },
+    { name: 'Certified', value: workCertified },
+    { name: 'Paid', value: amountPaid },
+    { name: 'Balance', value: balanceContractValue },
+  ];
+
+  const ageingBuckets = useMemo(() => {
+    const buckets = { '0-7 Days': 0, '8-15 Days': 0, '16-30 Days': 0, '31-60 Days': 0, '60+ Days': 0 };
+    pendingBills.forEach((b) => {
+      const age = Math.round((Date.now() - new Date(b.submittedDate).getTime()) / 86400000);
+      if (age <= 7) buckets['0-7 Days']++;
+      else if (age <= 15) buckets['8-15 Days']++;
+      else if (age <= 30) buckets['16-30 Days']++;
+      else if (age <= 60) buckets['31-60 Days']++;
+      else buckets['60+ Days']++;
+    });
+    return Object.entries(buckets).map(([bucket, count]) => ({ bucket, count }));
+  }, [pendingBills]);
+
+  const paymentTrend = useMemo(() => {
+    const byMonth = new Map<string, { certified: number; paid: number }>();
+    bills.forEach((b) => {
+      if (['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status)) {
+        const key = b.submittedDate.slice(0, 7);
+        const cur = byMonth.get(key) ?? { certified: 0, paid: 0 };
+        cur.certified += b.netPayable;
+        byMonth.set(key, cur);
+      }
+      if (b.status === 'PAID' && b.paidDate) {
+        const key = b.paidDate.slice(0, 7);
+        const cur = byMonth.get(key) ?? { certified: 0, paid: 0 };
+        cur.paid += b.netPayable;
+        byMonth.set(key, cur);
+      }
+    });
+    return Array.from(byMonth.entries()).sort(([a], [b]) => (a < b ? -1 : 1)).slice(-8).map(([month, v]) => ({ month, ...v }));
+  }, [bills]);
+
+  function submit() {
+    const gross = form.grossAmount;
+    const deductions = Math.round(gross * 0.02);
+    const gst = Math.round(gross * 0.18);
+    const retention = Math.round(gross * 0.05);
+    submitBill({
+      billNumber: `RA/${project.district.slice(0, 3).toUpperCase()}/${100 + bills.length + 1}`,
+      contractorId: project.contractorId, projectId: project.id, periodFrom: form.periodFrom || new Date().toISOString().slice(0, 10),
+      periodTo: form.periodTo || new Date().toISOString().slice(0, 10), grossAmount: gross, deductions, gst, retention, penalty: 0,
+      netPayable: gross - deductions + gst - retention,
+    });
+    toast.success('RA Bill submitted for verification and approval.');
+    setSubmitOpen(false);
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* A. Financial Summary — primary KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <KpiCard label="Sanctioned Cost" value={formatCurrency(project.sanctionedBudget)} />
+        <KpiCard label="Contract Value" value={formatCurrency(contractValue)} />
+        <KpiCard label="Work Certified" value={formatCurrency(workCertified)} tone="blue" />
+        <KpiCard label="Amount Paid" value={formatCurrency(amountPaid)} tone="emerald" />
+        <KpiCard label="Pending Bills" value={formatCurrency(pendingBillsValue)} tone="amber" />
+        <KpiCard label="Balance Contract Value" value={formatCurrency(balanceContractValue)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <KpiCard label="Financial Progress" value={`${project.financialProgress}%`} />
+        <KpiCard label="Retention Held" value={formatCurrency(retentionHeld)} />
+        <KpiCard label="Approved Variations" value={formatCurrency(approvedVariations)} />
+        <KpiCard label="Total Deductions" value={formatCurrency(totalDeductions)} />
+        <KpiCard label="Bills Under Review" value={billsUnderReview} />
+        <KpiCard label="Avg. Bill Processing" value={`${avgProcessingDays}d`} />
+      </div>
+
+      {gap >= 12 && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <AlertTriangle size={14} className="shrink-0" />
+          <span>
+            <strong>{project.financialProgress > project.physicalProgress ? 'Review Required' : 'Payment Lag'}</strong> — Physical {project.physicalProgress}% vs. Financial {project.financialProgress}% ({gap} point gap).
+            {project.financialProgress > project.physicalProgress ? ' Financial progress is ahead of certified physical work.' : ' Certified work is ahead of payments released.'}
+          </span>
+        </div>
+      )}
+
+      {/* Decision-oriented finance charts (max 4, each supports a management decision) */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Physical vs. Financial Progress</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={progressTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
+                <RTooltip formatter={(v: any) => `${v}%`} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="planned" name="Planned Physical" stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="verified" name="Verified Physical" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="financial" name="Financial" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Sanction to Payment</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={waterfallData} layout="vertical" margin={{ left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
+                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} />
+                <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
+                <Bar dataKey="value" fill="#265aa0" radius={[0, 3, 3, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Bill Ageing</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={ageingBuckets}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
+                <XAxis dataKey="bucket" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                <RTooltip />
+                <Bar dataKey="count" name="Bills" radius={[3, 3, 0, 0]}>
+                  {ageingBuckets.map((b, i) => <Cell key={i} fill={b.bucket === '60+ Days' || b.bucket === '31-60 Days' ? '#ef4444' : b.bucket === '16-30 Days' ? '#f59e0b' : '#3b82f6'} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Payment Trend</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={paymentTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
+                <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="certified" name="Certified" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="paid" name="Paid" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* B. Bill Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Bills</CardTitle>
+          <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} /> Submit RA Bill</Button>
+        </CardHeader>
+        <Table>
+          <THead><Tr><Th>Bill No.</Th><Th>Type</Th><Th>Period</Th><Th>Claimed</Th><Th>Certified</Th><Th>Paid</Th><Th>Status</Th><Th>Pending With</Th><Th>Ageing</Th><Th /></Tr></THead>
+          <TBody>
+            {bills.map((b) => {
+              const certified = ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status) ? b.netPayable : 0;
+              const paid = b.status === 'PAID' ? b.netPayable : 0;
+              const age = ageingDays(b.submittedDate);
+              return (
+                <Tr key={b.id} onClick={() => setDetailId(b.id)}>
+                  <Td className="font-medium text-slate-800">{b.billNumber}</Td>
+                  <Td>RA Bill</Td>
+                  <Td>{formatDate(b.periodFrom)} — {formatDate(b.periodTo)}</Td>
+                  <Td>{formatCurrency(b.grossAmount)}</Td>
+                  <Td>{certified ? formatCurrency(certified) : '—'}</Td>
+                  <Td>{paid ? formatCurrency(paid) : '—'}</Td>
+                  <Td><StatusBadge status={b.status} /></Td>
+                  <Td className="text-[11px] text-slate-500">{PENDING_WITH[b.status] ?? '—'}</Td>
+                  <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`}</Td>
+                  <Td className="space-x-1.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    {b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { verifyBillSite(b.id); toast.success('Site-verified.'); }}>Site Verify</Button>}
+                    {b.status === 'SITE_VERIFIED' && <Button size="sm" variant="outline" onClick={() => { verifyBillQuality(b.id); toast.success('Quality-verified.'); }}>Quality Verify</Button>}
+                    {b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { approveBill(b.id); toast.success('Bill approved.'); }}>Approve</Button>}
+                    {b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => { markBillPaid(b.id); toast.success('Payment released. Financial progress updated.'); }}>Mark Paid</Button>}
+                    {['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status) && <Button size="sm" variant="destructive" onClick={() => { rejectBill(b.id, 'Discrepancy in measurement'); toast.error('Bill returned.'); }}>Return</Button>}
+                  </Td>
+                </Tr>
+              );
+            })}
+            {bills.length === 0 && <Tr><Td className="py-8 text-center text-slate-400"><span>No bills submitted yet.</span></Td></Tr>}
+          </TBody>
+        </Table>
+      </Card>
+
+      {/* D. Variation / Change Impact */}
+      {changeOrders.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Variation / Change Impact</CardTitle></CardHeader>
+          <Table>
+            <THead><Tr><Th>Change</Th><Th>Cost Impact</Th><Th>Status</Th></Tr></THead>
+            <TBody>
+              {changeOrders.map((c) => (
+                <Tr key={c.id}>
+                  <Td className="max-w-[260px] truncate font-medium text-slate-800">{c.title}</Td>
+                  <Td className={c.costImpact >= 0 ? 'text-amber-600' : 'text-emerald-600'}>{c.costImpact >= 0 ? '+' : ''}{formatCurrency(c.costImpact)}</Td>
+                  <Td><StatusBadge status={c.status} label={c.status.replace(/_/g, ' ')} /></Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        </Card>
+      )}
+
+      <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
+        <DialogContent title="Submit RA Bill" description={project.name}>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><p className="mb-1 text-xs font-medium text-slate-600">Period From</p><Input type="date" value={form.periodFrom} onChange={(e) => setForm({ ...form, periodFrom: e.target.value })} /></div>
+              <div><p className="mb-1 text-xs font-medium text-slate-600">Period To</p><Input type="date" value={form.periodTo} onChange={(e) => setForm({ ...form, periodTo: e.target.value })} /></div>
+            </div>
+            <div><p className="mb-1 text-xs font-medium text-slate-600">Gross Amount (₹)</p><Input type="number" value={form.grossAmount} onChange={(e) => setForm({ ...form, grossAmount: +e.target.value })} /></div>
+            <p className="text-[11px] text-slate-400">Deductions (2%), GST (18%) and retention (5%) will be computed automatically.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmitOpen(false)}>Cancel</Button>
+            <Button onClick={submit}>Submit Bill</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)}>
+        {active && (
+          <DialogContent title={active.billNumber} description={project.name} size="lg">
+            <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+              <Row label="Gross Amount" value={formatCurrencyFull(active.grossAmount)} />
+              <Row label="Deductions" value={formatCurrencyFull(active.deductions)} />
+              <Row label="GST" value={formatCurrencyFull(active.gst)} />
+              <Row label="Retention" value={formatCurrencyFull(active.retention)} />
+              <Row label="Penalty" value={formatCurrencyFull(active.penalty)} />
+              <Row label="Net Payable" value={formatCurrencyFull(active.netPayable)} />
+              <Row label="Site Verified By" value={active.siteVerifiedBy ?? '—'} />
+              <Row label="Quality Verified By" value={active.qualityVerifiedBy ?? '—'} />
+            </div>
+            <p className="mt-4 mb-2 text-xs font-semibold text-slate-600">Measurement Book Extract</p>
+            <Table>
+              <THead><Tr><Th>Work Item</Th><Th>Unit</Th><Th>Previous</Th><Th>Current</Th><Th>Total</Th><Th>Rate</Th><Th>Amount</Th><Th /></Tr></THead>
+              <TBody>
+                {activeMeasurements.map((m) => (
+                  <Tr key={m.id}>
+                    <Td>{m.workItem}</Td><Td>{m.unit}</Td><Td>{m.previousQty}</Td><Td>{m.currentQty}</Td><Td>{m.totalQty}</Td>
+                    <Td>{formatCurrencyFull(m.rate)}</Td><Td>{formatCurrencyFull(m.amount)}</Td>
+                    <Td>{m.verified ? <StatusBadge status="APPROVED" label="Verified" /> : <Button size="sm" variant="outline" onClick={() => verifyMeasurement(m.id, currentUser?.name ?? 'Engineer')}><FileCheck2 size={12} /> Verify</Button>}</Td>
+                  </Tr>
+                ))}
+                {activeMeasurements.length === 0 && <Tr><Td className="py-4 text-center text-slate-400"><span>No linked measurement entries.</span></Td></Tr>}
+              </TBody>
+            </Table>
+          </DialogContent>
+        )}
+      </Dialog>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-[10.5px] uppercase text-slate-400">{label}</p><p className="mt-0.5 font-medium text-slate-700">{value}</p></div>;
+}

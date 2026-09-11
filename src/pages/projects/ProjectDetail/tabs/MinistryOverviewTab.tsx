@@ -1,0 +1,238 @@
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Landmark, AlertTriangle, ShieldAlert, ArrowRight } from 'lucide-react';
+import type { Project } from '../../../../types';
+import { useStore } from '../../../../store/useStore';
+import { Card, CardContent, CardHeader, CardTitle, StatusBadge, SeverityBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
+import { Dialog, DialogContent } from '../../../../components/ui/overlays';
+import { KpiCard } from '../../../../components/common/KpiCard';
+import { DEFECT_STATUS_LABELS } from '../../../../lib/constants';
+import { formatCurrency, formatDate, cn } from '../../../../lib/utils';
+import { GovernanceTab } from './GovernanceTab';
+import { EvidenceCard } from './DefectsTab';
+
+type RiskSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
+
+interface RiskItem {
+  category: string;
+  severity: RiskSeverity;
+  description: string;
+  owner: string;
+  ageingDays?: number;
+  tab: string;
+}
+
+/** The Ministry/Secretary "Overview" combines what would otherwise be separate Governance,
+ * Risk, Defect and Finance tabs into one executive read — the whole point of the Ministry
+ * experience is summary + exception + evidence, not module-by-module navigation. */
+export function MinistryOverviewTab({ project }: { project: Project }) {
+  const [, setParams] = useSearchParams();
+  const users = useStore((s) => s.users);
+  const contractors = useStore((s) => s.contractors);
+  const contractorPocs = useStore((s) => s.contractorPocs);
+  const defects = useStore((s) => s.defects).filter((d) => d.projectId === project.id);
+  const bills = useStore((s) => s.bills).filter((b) => b.projectId === project.id);
+  const approvals = useStore((s) => s.approvals).filter((a) => a.projectId === project.id);
+  const changeOrders = useStore((s) => s.changeOrders).filter((c) => c.projectId === project.id);
+  const extensionsOfTime = useStore((s) => s.extensionsOfTime).filter((e) => e.projectId === project.id);
+  const qualityFailures = useStore((s) => s.qualityFailures).filter((f) => f.projectId === project.id);
+  const safetyRecords = useStore((s) => s.safetyRecords).filter((r) => r.projectId === project.id);
+  const handoverSteps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id);
+  const [governanceOpen, setGovernanceOpen] = useState(false);
+  const [defectId, setDefectId] = useState<string | null>(null);
+  const activeDefect = defects.find((d) => d.id === defectId);
+
+  const ee = users.find((u) => u.id === project.executiveEngineerId);
+  const contractor = contractors.find((c) => c.id === project.contractorId);
+  const now = Date.now();
+
+  // ---- Governance summary numbers ----
+  const approvedEot = extensionsOfTime.filter((e) => e.status === 'APPROVED').reduce((s, e) => s + (e.approvedDays ?? 0), 0);
+  const approvedChangeValue = changeOrders.filter((c) => c.status === 'APPROVED').reduce((s, c) => s + c.costImpact, 0);
+  const currentApprovedCost = project.sanctionedBudget + approvedChangeValue;
+
+  // ---- Overall project health ----
+  const criticalDefects = defects.filter((d) => d.severity === 'CRITICAL' && d.status !== 'CLOSED').length;
+  const health: 'On Track' | 'At Risk' | 'Critical' = project.status === 'DELAYED' || criticalDefects > 0 ? 'Critical' : project.status === 'AT_RISK' ? 'At Risk' : 'On Track';
+
+  // ---- Risk section (Part 7) ----
+  const elapsedRatio = Math.min(1, Math.max(0, (now - new Date(project.startDate).getTime()) / (new Date(project.plannedCompletionDate).getTime() - new Date(project.startDate).getTime())));
+  const scheduleGap = Math.round(elapsedRatio * 100) - project.physicalProgress;
+  const pendingBillsOver30 = bills.filter((b) => !['PAID', 'REJECTED'].includes(b.status) && (now - new Date(b.submittedDate).getTime()) / 86400000 > 30);
+  const openQualityFailures = qualityFailures.filter((f) => f.reinspectionStatus !== 'PASS');
+  const oldestPendingApproval = approvals.filter((a) => a.status === 'PENDING').sort((a, b) => (a.submittedDate < b.submittedDate ? -1 : 1))[0];
+  const oldestApprovalDays = oldestPendingApproval ? Math.round((now - new Date(oldestPendingApproval.submittedDate).getTime()) / 86400000) : 0;
+  const criticalSafety = safetyRecords.filter((r) => r.severity === 'CRITICAL' && r.status === 'OPEN');
+  const handoverPending = handoverSteps.filter((h) => h.status !== 'COMPLETED').length;
+  const nearHandover = project.physicalProgress >= 85 && project.status !== 'COMPLETED';
+
+  const risks: RiskItem[] = [
+    { category: 'Schedule Risk', severity: scheduleGap >= 15 ? 'HIGH' : scheduleGap >= 5 ? 'MEDIUM' : 'LOW', description: scheduleGap >= 5 ? `Project is ${scheduleGap}% behind planned physical progress.` : 'Physical progress is tracking close to plan.', owner: ee?.name ?? 'Executive Engineer', ageingDays: project.delayDays || undefined, tab: 'timeline' },
+    { category: 'Financial Risk', severity: pendingBillsOver30.length >= 2 ? 'HIGH' : pendingBillsOver30.length === 1 ? 'MEDIUM' : 'LOW', description: pendingBillsOver30.length > 0 ? `${pendingBillsOver30.length} running bill${pendingBillsOver30.length === 1 ? '' : 's'} pending beyond 30 days.` : 'No bills overdue beyond 30 days.', owner: 'Finance / Commissioner', tab: 'finance' },
+    { category: 'Quality Risk', severity: openQualityFailures.filter((f) => f.severity === 'CRITICAL').length > 0 ? 'HIGH' : openQualityFailures.length > 0 ? 'MEDIUM' : 'LOW', description: openQualityFailures.length > 0 ? `${openQualityFailures.length} critical quality failure${openQualityFailures.length === 1 ? '' : 's'} awaiting reinspection.` : 'No unresolved quality failures.', owner: ee?.name ?? 'Executive Engineer', tab: 'inspections' },
+    { category: 'Contractor Risk', severity: (contractor?.performanceScore ?? 100) < 60 ? 'HIGH' : (contractor?.performanceScore ?? 100) < 75 ? 'MEDIUM' : 'LOW', description: contractor ? `${contractor.company} performance score ${contractor.performanceScore}%, ${contractor.openDefects} open defect(s).` : 'No contractor data.', owner: contractor?.company ?? '—', tab: 'team' },
+    { category: 'Approval Risk', severity: oldestApprovalDays >= 15 ? 'HIGH' : oldestApprovalDays >= 7 ? 'MEDIUM' : 'LOW', description: oldestPendingApproval ? `${oldestPendingApproval.type.replace(/_/g, ' ')} approval pending for ${oldestApprovalDays} days.` : 'No pending approvals.', owner: 'Approving Authority', ageingDays: oldestApprovalDays || undefined, tab: 'approvals' },
+    { category: 'Safety Risk', severity: criticalSafety.length > 0 ? 'HIGH' : 'LOW', description: criticalSafety.length > 0 ? `${criticalSafety.length} open critical safety observation(s).` : 'No open critical safety observations.', owner: 'Site Safety Officer', tab: 'safety & commissioning' },
+    { category: 'Handover Risk', severity: nearHandover && handoverPending > 2 ? 'MEDIUM' : 'LOW', description: nearHandover ? `${handoverPending} handover step(s) still pending as project nears completion.` : 'Handover not yet due.', owner: ee?.name ?? 'Executive Engineer', tab: 'handover' },
+  ];
+  const activeRisks = risks.filter((r) => r.severity !== 'LOW');
+
+  // ---- Defect summary (Part 8) ----
+  const openDefects = defects.filter((d) => d.status !== 'CLOSED');
+  const overdueDefects = openDefects.filter((d) => new Date(d.dueDate) < new Date());
+  const reinspectionPendingDefects = defects.filter((d) => d.status === 'REINSPECTION');
+  const closedWithDates = defects.filter((d) => d.status === 'CLOSED' && d.closedDate);
+  const avgClosureDays = closedWithDates.length ? Math.round(closedWithDates.reduce((s, d) => s + (new Date(d.closedDate!).getTime() - new Date(d.createdDate).getTime()) / 86400000, 0) / closedWithDates.length) : 0;
+  const topCriticalDefects = [...openDefects].filter((d) => d.severity === 'CRITICAL' || d.severity === 'HIGH').sort((a, b) => (a.createdDate < b.createdDate ? -1 : 1)).slice(0, 5);
+
+  return (
+    <div className="space-y-4">
+      {/* Progress KPI row — four separate numbers, never combined */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <KpiCard label="Reported Progress" value={`${project.reportedProgress}%`} />
+        <KpiCard label="Verified Progress" value={`${project.verifiedProgress}%`} tone="blue" />
+        <KpiCard label="Certified Progress" value={`${project.physicalProgress}%`} tone="emerald" />
+        <KpiCard label="Financial Progress" value={`${project.financialProgress}%`} tone="amber" />
+        <KpiCard label="Days Delayed" value={project.delayDays > 0 ? `${project.delayDays}` : '0'} tone={project.delayDays > 0 ? 'red' : 'default'} />
+        <KpiCard label="Overall Project Health" value={health} tone={health === 'Critical' ? 'red' : health === 'At Risk' ? 'amber' : 'emerald'} />
+      </div>
+
+      {/* Governance summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Landmark size={15} /> Governance Summary</CardTitle>
+          <button onClick={() => setGovernanceOpen(true)} className="text-xs font-medium text-navy-700 underline">View Governance Details →</button>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4 p-5 text-xs sm:grid-cols-3 lg:grid-cols-4">
+          <GField label="Administrative Approval" value={formatDate(project.startDate)} />
+          <GField label="Technical Sanction" value={formatDate(project.startDate)} />
+          <GField label="Original Sanctioned Cost" value={formatCurrency(project.sanctionedBudget)} />
+          <GField label="Current Approved Cost" value={formatCurrency(currentApprovedCost)} tone={approvedChangeValue !== 0 ? 'amber' : undefined} />
+          <GField label="Contract Value" value={formatCurrency(project.workOrderValue || project.sanctionedBudget)} />
+          <GField label="Original Completion" value={formatDate(project.originalCompletionDate)} />
+          <GField label="Current Approved Completion" value={formatDate(project.plannedCompletionDate)} tone={project.plannedCompletionDate !== project.originalCompletionDate ? 'amber' : undefined} />
+          <GField label="Extension of Time" value={approvedEot > 0 ? `+${approvedEot} days` : 'None'} tone={approvedEot > 0 ? 'amber' : undefined} />
+          <GField label="Change Orders" value={String(changeOrders.length)} />
+          <GField label="Approved Cost Variation" value={formatCurrency(approvedChangeValue)} tone={approvedChangeValue !== 0 ? 'amber' : undefined} />
+          <GField label="Funding Scheme" value={project.scheme} />
+          <GField label="Executing Authority" value="Public Works Department (Health Wing)" />
+        </CardContent>
+      </Card>
+
+      {/* Executive risk section */}
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle size={15} /> Executive Risk Summary</CardTitle></CardHeader>
+        <CardContent className="space-y-2 p-4">
+          {activeRisks.length === 0 && <p className="text-xs text-slate-400">No elevated risks identified across schedule, finance, quality, contractor, approvals, safety or handover.</p>}
+          {activeRisks.map((r) => (
+            <button
+              key={r.category}
+              onClick={() => setParams({ tab: r.tab })}
+              className={cn(
+                'flex w-full items-start justify-between gap-3 rounded-md border px-3 py-2.5 text-left transition-colors',
+                r.severity === 'HIGH' ? 'border-red-200 bg-red-50 hover:bg-red-100' : 'border-amber-200 bg-amber-50 hover:bg-amber-100',
+              )}
+            >
+              <div>
+                <p className={cn('text-xs font-semibold', r.severity === 'HIGH' ? 'text-red-700' : 'text-amber-700')}>{r.category} — {r.severity}</p>
+                <p className={cn('mt-0.5 text-[11.5px]', r.severity === 'HIGH' ? 'text-red-700' : 'text-amber-700')}>{r.description}</p>
+                <p className="mt-1 text-[10.5px] text-slate-500">Owner: {r.owner}{r.ageingDays ? ` · Ageing: ${r.ageingDays} days` : ''}</p>
+              </div>
+              <ArrowRight size={13} className={cn('mt-0.5 shrink-0', r.severity === 'HIGH' ? 'text-red-400' : 'text-amber-400')} />
+            </button>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Defect summary — read-only */}
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><ShieldAlert size={15} /> Defect Summary (Read Only)</CardTitle></CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <MiniKpi label="Open Defects" value={openDefects.length} />
+            <MiniKpi label="Critical" value={defects.filter((d) => d.severity === 'CRITICAL' && d.status !== 'CLOSED').length} tone="red" />
+            <MiniKpi label="Overdue" value={overdueDefects.length} tone="red" />
+            <MiniKpi label="Reinspection Pending" value={reinspectionPendingDefects.length} tone="amber" />
+            <MiniKpi label="Avg. Closure Time" value={`${avgClosureDays}d`} />
+          </div>
+          {topCriticalDefects.length > 0 && (
+            <Table>
+              <THead><Tr><Th>ID</Th><Th>Location</Th><Th>Severity</Th><Th>Assigned Contractor</Th><Th>Ageing</Th><Th>Status</Th></Tr></THead>
+              <TBody>
+                {topCriticalDefects.map((d) => (
+                  <Tr key={d.id} onClick={() => setDefectId(d.id)}>
+                    <Td className="font-mono text-[11px] text-slate-500">{d.id}</Td>
+                    <Td className="max-w-[160px] truncate">{d.location}</Td>
+                    <Td><SeverityBadge severity={d.severity} /></Td>
+                    <Td className="max-w-[160px] truncate">{contractors.find((c) => c.id === d.contractorId)?.company ?? '—'}</Td>
+                    <Td>{Math.round((now - new Date(d.createdDate).getTime()) / 86400000)}d</Td>
+                    <Td><StatusBadge status={d.status} label={DEFECT_STATUS_LABELS[d.status]} /></Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={governanceOpen} onOpenChange={setGovernanceOpen}>
+        <DialogContent title="Governance Details (Read Only)" description={project.name} size="xl">
+          <GovernanceTab project={project} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!defectId} onOpenChange={(v) => !v && setDefectId(null)}>
+        {activeDefect && (
+          <DialogContent title={`Defect ${activeDefect.id} (Read Only)`} description={activeDefect.location} size="xl">
+            <div className="mb-3 flex gap-2">
+              <SeverityBadge severity={activeDefect.severity} /><StatusBadge status={activeDefect.status} label={DEFECT_STATUS_LABELS[activeDefect.status]} />
+            </div>
+            <p className="mb-3 text-xs text-slate-600">{activeDefect.description}</p>
+            <p className="mb-2 text-xs font-semibold text-slate-600">Evidence</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <EvidenceCard label="BEFORE" seed={activeDefect.imageSeed} category={activeDefect.category} date={activeDefect.createdDate} by={activeDefect.reportedBy} />
+              <EvidenceCard label="RECTIFICATION" seed={activeDefect.correctiveActionPhotoSeed} category={activeDefect.category} date={activeDefect.acknowledgedDate} empty="Awaiting contractor rectification evidence" />
+              <EvidenceCard label="AFTER / REINSPECTION" seed={activeDefect.reinspectionPhotoSeed} category={activeDefect.category} date={activeDefect.closedDate} empty="Awaiting reinspection closure evidence" />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+              <DField label="Category" value={activeDefect.category.replace(/_/g, ' ')} />
+              <DField label="Contractor" value={contractors.find((c) => c.id === activeDefect.contractorId)?.company ?? '—'} />
+              <DField label="Assigned POC" value={contractorPocs.find((p) => p.id === activeDefect.assignedPocId)?.name ?? 'Not yet assigned'} />
+              <DField label="Government Engineer" value={users.find((u) => u.id === activeDefect.responsibleEngineerId)?.name ?? '—'} />
+              <DField label="Due Date" value={formatDate(activeDefect.dueDate)} />
+              <DField label="Created" value={formatDate(activeDefect.createdDate)} />
+            </div>
+            {activeDefect.correctiveActionNotes && (
+              <div className="mt-3 rounded-md bg-emerald-50 p-2.5 text-xs">
+                <p className="font-medium text-emerald-700">Corrective Action Notes</p>
+                <p className="mt-1 text-emerald-700">{activeDefect.correctiveActionNotes}</p>
+              </div>
+            )}
+          </DialogContent>
+        )}
+      </Dialog>
+    </div>
+  );
+}
+
+function DField({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-[10.5px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-0.5 font-medium text-slate-700">{value}</p></div>;
+}
+
+function GField({ label, value, tone }: { label: string; value: string; tone?: 'amber' }) {
+  return (
+    <div>
+      <p className="text-[10.5px] uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={cn('mt-0.5 font-medium', tone === 'amber' ? 'text-amber-700' : 'text-slate-700')}>{value}</p>
+    </div>
+  );
+}
+
+function MiniKpi({ label, value, tone }: { label: string; value: string | number; tone?: 'red' | 'amber' }) {
+  return (
+    <div className="rounded-md border border-slate-200 p-3">
+      <p className="text-[10.5px] font-medium uppercase text-slate-400">{label}</p>
+      <p className={cn('mt-1 text-xl font-bold', tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : 'text-slate-800')}>{value}</p>
+    </div>
+  );
+}
