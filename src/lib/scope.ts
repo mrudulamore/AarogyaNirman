@@ -58,11 +58,17 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
   });
 
   switch (user.role) {
+    case 'SUPERADMIN':
+      return statewide('Statewide — full administrative access');
+
     case 'MINISTER':
       return statewide('Statewide (read-only)');
 
     case 'COMMISSIONER':
       return statewide('Statewide — full access');
+
+    case 'IT_ADMIN':
+      return statewide('Statewide — system administration');
 
     case 'VIGILANCE_AUDIT':
       // Independent oversight function — spans every division/district by mandate.

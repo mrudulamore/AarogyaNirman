@@ -3,19 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
-  Building2, Activity, CheckCircle2, AlertTriangle, Wallet, TrendingUp, ClipboardCheck, ShieldAlert, ArrowRight, MapPinned, ScanEye, SignalZero, Gavel,
+  Building2, AlertTriangle, Wallet, ClipboardCheck, ShieldAlert, ArrowRight, MapPinned, ScanEye, Gavel, Layers,
 } from 'lucide-react';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
 } from 'recharts';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
-import { KpiCard } from '../../components/common/KpiCard';
+import { KpiGroupCard } from '../../components/common/KpiCard';
 import { ProjectMap } from '../../components/common/ProjectMap';
 import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Button, Textarea, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
 import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlays';
 import { formatCurrency, formatDate, seededImageUrl, cn } from '../../lib/utils';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
+import { AccessManagement } from '../admin/AccessManagement';
 
 const SENIOR_ROLES = ['MINISTER', 'COMMISSIONER', 'REGIONAL_DIRECTOR'];
 const PRIORITY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
@@ -36,6 +37,7 @@ export function Dashboard() {
   const currentUser = useStore((s) => s.currentUser);
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [outcome, setOutcome] = useState('');
+  const [focusDivision, setFocusDivision] = useState<string | null>(null);
 
   const approvals = useMemo(() => allApprovals.filter((a) => projectIds.has(a.projectId)), [allApprovals, projectIds]);
   const inspections = useMemo(() => allInspections.filter((i) => projectIds.has(i.projectId)), [allInspections, projectIds]);
@@ -79,6 +81,18 @@ export function Dashboard() {
     name: s.replace('_', ' '), value: projects.filter((p) => p.status === s).length, key: s,
   }));
 
+  const divisionStats = useMemo(() => {
+    const map = new Map<string, { division: string; total: number; delayed: number; completed: number }>();
+    projects.forEach((p) => {
+      const cur = map.get(p.division) ?? { division: p.division, total: 0, delayed: 0, completed: 0 };
+      cur.total += 1;
+      if (p.status === 'DELAYED') cur.delayed += 1;
+      if (p.status === 'COMPLETED') cur.completed += 1;
+      map.set(p.division, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [projects]);
+
   const districtBudget = useMemo(() => {
     const map = new Map<string, { district: string; sanctioned: number; spent: number }>();
     projects.forEach((p) => {
@@ -111,6 +125,10 @@ export function Dashboard() {
     [allDecisions, projectIds]);
   const activeDecision = pendingDecisions.find((d) => d.id === decisionId);
 
+  // Superadmin's "dashboard" is the Access Management console — access/permission
+  // governance is their job, not project monitoring.
+  if (currentUser?.role === 'SUPERADMIN') return <AccessManagement />;
+
   return (
     <div>
       <PageHeader
@@ -132,33 +150,80 @@ export function Dashboard() {
         </div>
       ) : (
       <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label={t('dashboard.kpiTotalProjects')} value={kpis.total} icon={Building2} tone="blue" onClick={() => navigate('/projects')} />
-        <KpiCard label={t('dashboard.kpiInProgress')} value={kpis.inProgress} icon={Activity} tone="blue" />
-        <KpiCard label={t('dashboard.kpiCompleted')} value={kpis.completed} icon={CheckCircle2} tone="emerald" />
-        <KpiCard label={t('dashboard.kpiDelayed')} value={kpis.delayed} icon={AlertTriangle} tone="red" />
-        <KpiCard label={t('dashboard.kpiSanctionedBudget')} value={formatCurrency(kpis.sanctioned)} icon={Wallet} tone="default" />
-        <KpiCard label={t('dashboard.kpiExpenditure')} value={formatCurrency(kpis.spent)} sub={t('dashboard.kpiUtilized', { pct: kpis.sanctioned ? Math.round((kpis.spent / kpis.sanctioned) * 100) : 0 })} icon={TrendingUp} tone="amber" />
-        <KpiCard label={t('dashboard.kpiPendingApprovals')} value={kpis.pendingApprovals} icon={ClipboardCheck} tone="amber" onClick={() => navigate('/approvals')} />
-        <KpiCard label={t('dashboard.kpiFailedQuality')} value={kpis.failedQc} icon={ShieldAlert} tone="red" onClick={() => navigate('/quality')} />
-        <KpiCard label="Progress/Financial Anomalies" value={kpis.financialAnomalies} sub="Reported or financial progress well ahead of certified" icon={ScanEye} tone="amber" onClick={() => navigate('/projects')} />
-        <KpiCard label="No Recent Field Activity" value={kpis.staleProjects} sub="No geo-tagged evidence in 14+ days" icon={SignalZero} tone="red" onClick={() => navigate('/projects')} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiGroupCard
+          title={t('dashboard.kpiTotalProjects')} icon={Building2} tone="blue"
+          primary={{ value: kpis.total, label: 'projects' }} onPrimaryClick={() => navigate('/projects')}
+          stats={[
+            { label: t('dashboard.kpiInProgress').toLowerCase(), value: kpis.inProgress, tone: 'blue' },
+            { label: t('dashboard.kpiCompleted').toLowerCase(), value: kpis.completed, tone: 'emerald' },
+            { label: t('dashboard.kpiDelayed').toLowerCase(), value: kpis.delayed, tone: 'red' },
+          ]}
+        />
+        <KpiGroupCard
+          title="Budget & Spend" icon={Wallet} tone="amber"
+          primary={{ value: formatCurrency(kpis.sanctioned), label: 'sanctioned' }}
+          stats={[
+            { label: `spent (${kpis.sanctioned ? Math.round((kpis.spent / kpis.sanctioned) * 100) : 0}%)`, value: formatCurrency(kpis.spent), tone: 'amber', onClick: () => navigate('/finance') },
+          ]}
+        />
+        <KpiGroupCard
+          title="Approvals & Quality" icon={ClipboardCheck} tone="amber"
+          primary={{ value: kpis.pendingApprovals, label: 'pending approvals' }} onPrimaryClick={() => navigate('/approvals')}
+          stats={[
+            { label: t('dashboard.kpiFailedQuality').toLowerCase(), value: kpis.failedQc, tone: 'red', onClick: () => navigate('/quality') },
+          ]}
+        />
+        <KpiGroupCard
+          title="Data Integrity Flags" icon={ScanEye} tone="red"
+          primary={{ value: kpis.financialAnomalies + kpis.staleProjects, label: 'flagged projects' }} onPrimaryClick={() => navigate('/projects')}
+          stats={[
+            { label: 'progress/financial anomalies', value: kpis.financialAnomalies, tone: 'amber' },
+            { label: 'no recent field activity', value: kpis.staleProjects, tone: 'red' },
+          ]}
+        />
         {isSeniorRole && (
-          <>
-            <KpiCard label="Inspections Overdue" value={kpis.overdueInspections} icon={ClipboardCheck} tone={kpis.overdueInspections > 0 ? 'red' : 'default'} />
-            <KpiCard label="Approvals Overdue (15+ days)" value={kpis.overdueApprovals} icon={ClipboardCheck} tone={kpis.overdueApprovals > 0 ? 'red' : 'default'} onClick={() => navigate('/approvals')} />
-            <KpiCard label="Bills > 30 Days" value={kpis.billsOver30Days} icon={Wallet} tone={kpis.billsOver30Days > 0 ? 'red' : 'default'} onClick={() => navigate('/finance')} />
-            <KpiCard label="Projects Requiring EOT" value={kpis.projectsRequiringEot} icon={AlertTriangle} tone="amber" />
-            <KpiCard label="Projects With Cost Variation" value={kpis.projectsWithCostVariation} icon={AlertTriangle} tone="amber" />
-            <KpiCard label="Handover Due (Next 30 Days)" value={kpis.handoverDueSoon} icon={CheckCircle2} tone="blue" />
-          </>
+          <KpiGroupCard
+            title="Governance Watchlist" icon={AlertTriangle} tone="red"
+            primary={{ value: kpis.overdueInspections + kpis.overdueApprovals + kpis.billsOver30Days + kpis.projectsRequiringEot + kpis.projectsWithCostVariation, label: 'items need attention' }}
+            stats={[
+              { label: 'inspections overdue', value: kpis.overdueInspections, tone: kpis.overdueInspections > 0 ? 'red' : 'default' },
+              { label: 'approvals 15+ days', value: kpis.overdueApprovals, tone: kpis.overdueApprovals > 0 ? 'red' : 'default', onClick: () => navigate('/approvals') },
+              { label: 'bills > 30 days', value: kpis.billsOver30Days, tone: kpis.billsOver30Days > 0 ? 'red' : 'default', onClick: () => navigate('/finance') },
+              { label: 'EOT requests', value: kpis.projectsRequiringEot, tone: 'amber' },
+              { label: 'cost variations', value: kpis.projectsWithCostVariation, tone: 'amber' },
+              { label: 'handovers due (30d)', value: kpis.handoverDueSoon, tone: 'blue' },
+            ]}
+          />
         )}
       </div>
+
+      <Card className="mt-4">
+        <CardHeader><CardTitle className="flex items-center gap-2"><Layers size={15} /> Zone-wise Overview</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+          {divisionStats.map((z) => (
+            <button
+              key={z.division}
+              onClick={() => setFocusDivision(z.division)}
+              className={cn(
+                'rounded-lg border p-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50',
+                focusDivision === z.division ? 'border-navy-400 bg-navy-50' : 'border-slate-200 bg-white',
+              )}
+            >
+              <p className="truncate text-xs font-semibold text-slate-800">{z.division.replace(' Division', '')}</p>
+              <p className="mt-1 text-xl font-bold text-navy-700">{z.total}</p>
+              <p className="mt-0.5 text-[10.5px] text-slate-400">
+                {z.completed} completed{z.delayed > 0 && <span className="text-red-500"> · {z.delayed} delayed</span>}
+              </p>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader><CardTitle>{t('dashboard.mapTitle')}</CardTitle></CardHeader>
-          <CardContent><ProjectMap projects={projects} /></CardContent>
+          <CardContent><ProjectMap projects={projects} focusDivision={focusDivision} onDivisionSelect={setFocusDivision} /></CardContent>
         </Card>
 
         <Card>

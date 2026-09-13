@@ -38,7 +38,8 @@
     "notifications": "Notifications",
     "audit": "Audit Log",
     "search": "Global Search",
-    "field": "Field App"
+    "field": "Field App",
+    "access": "Manage Access"
   },
   "sidebar": {
     "govName": "Govt. of Maharashtra",
@@ -87,6 +88,7 @@
     "selectRoleSubtitle": "Your government account is provisioned with the following access levels. Choose how you'd like to continue this session."
   },
   "roles": {
+    "SUPERADMIN": "Super Administrator",
     "MINISTER": "Minister / Secretary (Public Health)",
     "COMMISSIONER": "Commissioner / Director (Health Services)",
     "REGIONAL_DIRECTOR": "Regional Deputy Director",
@@ -95,7 +97,8 @@
     "DEPUTY_ENGINEER": "Junior Engineer / Deputy Engineer",
     "CONTRACTOR": "Contractor",
     "MEDICAL_OFFICER": "Medical Officer / Facility In-Charge",
-    "VIGILANCE_AUDIT": "Vigilance & Audit Officer"
+    "VIGILANCE_AUDIT": "Vigilance & Audit Officer",
+    "IT_ADMIN": "IT / System Administrator"
   },
   "status": {
     "ON_TRACK": "On Track",
@@ -189,6 +192,38 @@
     "notifications": { "title": "Notifications", "desc": "{{count}} unread notifications" },
     "audit": { "title": "Audit Log", "desc": "{{count}} recorded actions across the platform" },
     "search": { "title": "Global Search", "desc": "Search across projects, contractors, workers, engineers, bills, inspections, defects and documents" },
-    "observer": { "title": "Vigilance & Audit Desk", "desc": "Independent oversight — {{name}}" }
+    "observer": { "title": "Vigilance & Audit Desk", "desc": "Independent oversight — {{name}}" },
+    "access": { "title": "Access Management", "desc": "Grant or revoke module-level access per role, and reassign user roles" }
+  },
+  "landing": {
+    "brand": "AarogyaNirman",
+    "navSignIn": "Sign In",
+    "navGetStarted": "Enter Portal",
+    "heroEyebrow": "Government of Maharashtra · Public Health Infrastructure",
+    "heroTitle": "Building Healthier Communities, One Hospital at a Time",
+    "heroSubtitle": "A unified command center for tracking every public hospital construction project — from administrative sanction to operational handover — with real-time transparency, verified quality and accountable spend.",
+    "ctaPrimary": "Enter Portal",
+    "ctaSecondary": "Sign In",
+    "quote": "The health of the people is really the foundation upon which all their happiness and all their powers as a state depend.",
+    "quoteAuthor": "Benjamin Disraeli",
+    "leadershipTitle": "Governance you can see through",
+    "leadershipSubtitle": "Every hospital project is answerable up this chain of accountable roles.",
+    "leadershipNote": "Illustrative role-holders from this demonstration prototype — not real office-bearers.",
+    "statsProjects": "Hospital Projects Tracked",
+    "statsDistricts": "Districts Covered",
+    "statsTransparency": "Progress Traceability",
+    "statsRoles": "Accountable Role Tiers",
+    "featuresTitle": "Everything oversight needs, in one place",
+    "featuresSubtitle": "Purpose-built for the way government infrastructure programmes actually run.",
+    "feature1Title": "Real-Time Project Tracking",
+    "feature1Desc": "Live physical and financial progress across every hospital, from foundation to handover.",
+    "feature2Title": "Transparent Financial Oversight",
+    "feature2Desc": "Every rupee sanctioned, released and spent is traceable through a verified approval chain.",
+    "feature3Title": "Evidence-Backed Quality",
+    "feature3Desc": "Geo-tagged photos, inspections and defect closure evidence at every construction milestone.",
+    "feature4Title": "Role-Based Secure Access",
+    "feature4Desc": "Nine-plus accountable role tiers, from field engineers to the Superadmin who governs access itself.",
+    "footerTagline": "Secure government access · Role-based authorization · Full audit trail",
+    "footerCopyright": "© Government of Maharashtra. For authorized departmental use only. This is a demonstration prototype using fictional data."
   }
 }

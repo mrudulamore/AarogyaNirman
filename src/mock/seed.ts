@@ -100,6 +100,8 @@ export function generateMockData(): SeedResult {
   // ---------- USERS ----------
   const users: User[] = [];
   const roleDefs: { role: Role; count: number; deptPrefix: string }[] = [
+    { role: 'SUPERADMIN', count: 1, deptPrefix: 'System Administration Cell' },
+    { role: 'IT_ADMIN', count: 2, deptPrefix: 'IT & Systems Cell' },
     { role: 'MINISTER', count: 1, deptPrefix: 'Ministry of Public Health' },
     { role: 'COMMISSIONER', count: 2, deptPrefix: 'Directorate of Health Services' },
     { role: 'REGIONAL_DIRECTOR', count: 4, deptPrefix: 'Regional Directorate of Health Services' },
@@ -110,6 +112,7 @@ export function generateMockData(): SeedResult {
     { role: 'VIGILANCE_AUDIT', count: 4, deptPrefix: 'Vigilance & Audit Cell' },
   ];
   const designationByRole: Record<string, string> = {
+    SUPERADMIN: 'Super Administrator, System Access', IT_ADMIN: 'IT / System Administrator',
     MINISTER: 'Minister of State, Public Health', COMMISSIONER: 'Commissioner, Health Services', REGIONAL_DIRECTOR: 'Regional Deputy Director, Health Services',
     CIVIL_SURGEON: 'District Health Officer / Civil Surgeon', EXECUTIVE_ENGINEER: 'Executive Engineer, PWD', DEPUTY_ENGINEER: 'Junior Engineer / Deputy Engineer',
     MEDICAL_OFFICER: 'Medical Officer (Facility In-Charge)', VIGILANCE_AUDIT: 'Vigilance & Audit Officer',

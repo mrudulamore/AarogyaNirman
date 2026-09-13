@@ -3,6 +3,7 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
   | 'MINISTER'            // Minister / Secretary (Public Health) — State, read-oriented oversight
   | 'COMMISSIONER'        // Commissioner / Director (Health Services) — State, full access
   | 'REGIONAL_DIRECTOR'   // Regional Deputy Director — Division
@@ -11,7 +12,8 @@ export type Role =
   | 'DEPUTY_ENGINEER'     // Junior Engineer / Deputy Engineer — Site
   | 'CONTRACTOR'          // Contractor — own awarded projects only
   | 'MEDICAL_OFFICER'     // Medical Officer / Facility In-Charge — operational hospital
-  | 'VIGILANCE_AUDIT';    // Vigilance & Audit Officer — State, cross-cutting oversight
+  | 'VIGILANCE_AUDIT'     // Vigilance & Audit Officer — State, cross-cutting oversight
+  | 'IT_ADMIN';           // IT / System Administrator — State, system configuration & support (no access-grant rights)
 
 // Funding/administrative scheme and facility type are separate classification axes —
 // never conflate them (see lib/constants.ts SCHEMES / FACILITY_TYPES).

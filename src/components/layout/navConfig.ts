@@ -1,7 +1,7 @@
 import type { Role } from '../../types';
 import {
   LayoutDashboard, Building2, HardHat, Wallet, ShieldCheck, AlertTriangle, ClipboardCheck,
-  FileText, BarChart3, Bell, History, Search, Users, Radar, Smartphone, Gavel,
+  FileText, BarChart3, Bell, History, Search, Users, Radar, Smartphone, Gavel, KeyRound,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -28,9 +28,13 @@ export const NAV_ITEMS: Record<string, NavItem> = {
   audit: { label: 'Audit Log', path: '/audit', icon: History },
   search: { label: 'Global Search', path: '/search', icon: Search },
   field: { label: 'Field App', path: '/field', icon: Smartphone },
+  access: { label: 'Manage Access', path: '/access', icon: KeyRound },
 };
 
 export const ROLE_NAV: Record<Role, string[]> = {
+  // Superadmin — full statewide visibility across every module, plus the exclusive
+  // Access Management screen where role-to-feature permissions are granted/revoked.
+  SUPERADMIN: ['dashboard', 'projects', 'tenders', 'contractors', 'workers', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'observer', 'notifications', 'audit', 'search', 'field', 'access'],
   // Minister/Secretary — top-level statewide oversight only. Deliberately minimal:
   // no BOQ/materials/attendance/staff-roster screens — command-center summary,
   // statewide financial and contractor-performance visibility, tenders, reports, alerts, search.
@@ -46,4 +50,7 @@ export const ROLE_NAV: Record<Role, string[]> = {
   CONTRACTOR: ['dashboard', 'projects', 'field', 'finance', 'defects', 'documents', 'notifications', 'search'],
   MEDICAL_OFFICER: ['dashboard', 'projects', 'documents', 'reports', 'notifications', 'search'],
   VIGILANCE_AUDIT: ['dashboard', 'projects', 'observer', 'defects', 'approvals', 'audit', 'notifications', 'search'],
+  // IT/System Admin — technical support & system health only; deliberately excluded from
+  // 'access' (permission grants stay a Superadmin-only capability).
+  IT_ADMIN: ['dashboard', 'documents', 'audit', 'notifications', 'search'],
 };

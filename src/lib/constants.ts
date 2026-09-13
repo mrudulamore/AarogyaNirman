@@ -17,6 +17,7 @@ export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = {
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  SUPERADMIN: 'Super Administrator',
   MINISTER: 'Minister / Secretary (Public Health)',
   COMMISSIONER: 'Commissioner / Director (Health Services)',
   REGIONAL_DIRECTOR: 'Regional Deputy Director',
@@ -26,9 +27,11 @@ export const ROLE_LABELS: Record<Role, string> = {
   CONTRACTOR: 'Contractor',
   MEDICAL_OFFICER: 'Medical Officer / Facility In-Charge',
   VIGILANCE_AUDIT: 'Vigilance & Audit Officer',
+  IT_ADMIN: 'IT / System Administrator',
 };
 
 export const ROLE_DEPARTMENTS: Record<Role, string> = {
+  SUPERADMIN: 'System Administration Cell, GoM',
   MINISTER: 'Ministry of Public Health, Govt. of Maharashtra',
   COMMISSIONER: 'Directorate of Health Services, GoM',
   REGIONAL_DIRECTOR: 'Regional Directorate of Health Services',
@@ -38,6 +41,7 @@ export const ROLE_DEPARTMENTS: Record<Role, string> = {
   CONTRACTOR: 'Empanelled Contracting Agency',
   MEDICAL_OFFICER: 'Hospital Administration',
   VIGILANCE_AUDIT: 'Vigilance & Audit Cell, GoM',
+  IT_ADMIN: 'IT & Systems Cell, GoM',
 };
 
 interface DivisionInfo {

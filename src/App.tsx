@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AppShell } from './components/layout/AppShell';
 
+import { Landing } from './pages/landing/Landing';
 import { Login } from './pages/auth/Login';
-import { Otp } from './pages/auth/Otp';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { SelectRole } from './pages/auth/SelectRole';
 
@@ -26,14 +26,15 @@ import { AuditLogPage } from './pages/audit/AuditLogPage';
 import { GlobalSearch } from './pages/search/GlobalSearch';
 import { ObserverDashboard } from './pages/observer/ObserverDashboard';
 import { FieldHome } from './pages/field/FieldHome';
+import { AccessManagement } from './pages/admin/AccessManagement';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/otp" element={<Otp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/select-role" element={<SelectRole />} />
 
@@ -57,9 +58,9 @@ export default function App() {
           <Route path="/search" element={<GlobalSearch />} />
           <Route path="/observer" element={<ObserverDashboard />} />
           <Route path="/field" element={<FieldHome />} />
+          <Route path="/access" element={<AccessManagement />} />
         </Route>
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

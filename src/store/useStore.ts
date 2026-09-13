@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
+import { ROLE_NAV } from '../components/layout/navConfig';
 import type {
   Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
   Contractor, Worker, AttendanceRecord, Bill, MeasurementEntry, BoqItem, Material, MaterialTest,
@@ -17,6 +18,9 @@ const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toStri
 interface StoreState {
   currentUser: User | null;
   users: User[];
+  /** Which nav sections each role can see — seeded from ROLE_NAV, editable by Superadmin via
+   * the Access Management screen so permission changes apply live across Sidebar/AppShell. */
+  rolePermissions: Record<Role, string[]>;
   projects: Project[];
   tenders: Tender[];
   changeOrders: ChangeOrder[];
@@ -53,6 +57,10 @@ interface StoreState {
   // auth
   login: (role: Role, userId?: string) => void;
   logout: () => void;
+
+  // access management (Superadmin)
+  setRoleNavAccess: (role: Role, keys: string[]) => void;
+  updateUserRole: (userId: string, role: Role) => void;
 
   // generic audit
   logAction: (action: string, project?: string, previousValue?: string, newValue?: string) => void;
@@ -158,12 +166,23 @@ export const useStore = create<StoreState>()(
     (set, get) => ({
       currentUser: null,
       ...seed,
+      rolePermissions: JSON.parse(JSON.stringify(ROLE_NAV)),
 
       login: (role, userId) => {
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
         set({ currentUser: user ?? { ...get().users[0], role } });
       },
       logout: () => set({ currentUser: null }),
+
+      setRoleNavAccess: (role, keys) => {
+        set((s) => ({ rolePermissions: { ...s.rolePermissions, [role]: keys } }));
+        get().logAction(`Updated access permissions for role ${role}`);
+      },
+      updateUserRole: (userId, role) => {
+        const user = get().users.find((u) => u.id === userId);
+        set((s) => ({ users: s.users.map((u) => (u.id === userId ? { ...u, role } : u)) }));
+        if (user) get().logAction(`Changed ${user.name}'s role from ${user.role} to ${role}`);
+      },
 
       logAction: (action, project, previousValue, newValue) => {
         const u = get().currentUser;
@@ -641,9 +660,9 @@ export const useStore = create<StoreState>()(
       pushNotification: (n) => set((s) => ({ notifications: [{ ...n, id: nid('NOT'), read: false, date: new Date().toISOString().slice(0, 10) }, ...s.notifications] })),
     }),
     {
-      name: 'hcms-maharashtra-store-v1',
+      name: 'hcms-maharashtra-store-v2',
       partialize: (state) => {
-        const { logAction, login, logout, addProject, updateProject, ...persisted } = state as any;
+        const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;
         return persisted;
       },
     },
