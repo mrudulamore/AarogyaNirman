@@ -34,6 +34,7 @@ export default function App() {
       <Toaster position="top-right" richColors closeButton />
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/select-role" element={<SelectRole />} />
@@ -61,7 +62,7 @@ export default function App() {
           <Route path="/access" element={<AccessManagement />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
     </BrowserRouter>
   );
