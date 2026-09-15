@@ -1,3 +1,4 @@
+import { FundDisbursalReports } from '../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -273,6 +274,8 @@ export function ReportsCenter() {
   return (
     <div>
       <PageHeader title={t('pages.reports.title')} description={t('pages.reports.desc')} />
+
+      <FundDisbursalReports projects={scopedProjects} scopeLabel={scopeLabel} />
 
       <Card className="mb-4">
         <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">

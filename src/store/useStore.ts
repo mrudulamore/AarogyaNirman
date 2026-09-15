@@ -1,9 +1,11 @@
+import { generateFundInstallments } from '../mock/fundInstallments';
+import { todayDate } from '../lib/fundDisbursal';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
 import { ROLE_NAV } from '../components/layout/navConfig';
 import type {
-  Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
+  FundInstallment, Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
   Contractor, Worker, AttendanceRecord, Bill, MeasurementEntry, BoqItem, Material, MaterialTest,
   SafetyRecord, Risk, ProjectDocument, CommissioningItem, HandoverStep, Notification, AuditEntry,
   Observation, Role, DefectStatus, ApprovalStatus, InspectionResult, Tender,
@@ -22,6 +24,7 @@ interface StoreState {
    * the Access Management screen so permission changes apply live across Sidebar/AppShell. */
   rolePermissions: Record<Role, string[]>;
   projects: Project[];
+  fundInstallments: FundInstallment[];
   tenders: Tender[];
   changeOrders: ChangeOrder[];
   extensionsOfTime: ExtensionOfTime[];
@@ -166,7 +169,11 @@ export const useStore = create<StoreState>()(
     (set, get) => ({
       currentUser: null,
       ...seed,
+<<<<<<< HEAD
       rolePermissions: JSON.parse(JSON.stringify(ROLE_NAV)),
+=======
+      fundInstallments: generateFundInstallments(seed.projects, todayDate()),
+>>>>>>> 95c95cb (Add fund disbursal and contractor payment reports)
 
       login: (role, userId) => {
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
@@ -661,6 +668,10 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'hcms-maharashtra-store-v5',
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<StoreState> | undefined;
+        return { ...current, ...saved, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+      },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;
         return persisted;
