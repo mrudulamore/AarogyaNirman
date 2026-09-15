@@ -169,11 +169,8 @@ export const useStore = create<StoreState>()(
     (set, get) => ({
       currentUser: null,
       ...seed,
-<<<<<<< HEAD
       rolePermissions: JSON.parse(JSON.stringify(ROLE_NAV)),
-=======
       fundInstallments: generateFundInstallments(seed.projects, todayDate()),
->>>>>>> 95c95cb (Add fund disbursal and contractor payment reports)
 
       login: (role, userId) => {
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
