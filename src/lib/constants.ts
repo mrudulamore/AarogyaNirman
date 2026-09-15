@@ -17,27 +17,33 @@ export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = {
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  SUPERADMIN: 'Super Administrator',
   MINISTER: 'Minister / Secretary (Public Health)',
   COMMISSIONER: 'Commissioner / Director (Health Services)',
   REGIONAL_DIRECTOR: 'Regional Deputy Director',
   CIVIL_SURGEON: 'District Health Officer / Civil Surgeon',
   EXECUTIVE_ENGINEER: 'Executive Engineer',
+  PROJECT_MANAGER: 'Project Manager (PMU/PMC)',
   DEPUTY_ENGINEER: 'Junior Engineer / Deputy Engineer',
   CONTRACTOR: 'Contractor',
   MEDICAL_OFFICER: 'Medical Officer / Facility In-Charge',
   VIGILANCE_AUDIT: 'Vigilance & Audit Officer',
+  IT_ADMIN: 'IT / System Administrator',
 };
 
 export const ROLE_DEPARTMENTS: Record<Role, string> = {
+  SUPERADMIN: 'System Administration Cell, GoM',
   MINISTER: 'Ministry of Public Health, Govt. of Maharashtra',
   COMMISSIONER: 'Directorate of Health Services, GoM',
   REGIONAL_DIRECTOR: 'Regional Directorate of Health Services',
   CIVIL_SURGEON: 'District Health Office / Civil Surgeon Office',
   EXECUTIVE_ENGINEER: 'Public Works Department (Health Wing)',
+  PROJECT_MANAGER: 'Project Management Unit, GoM',
   DEPUTY_ENGINEER: 'Public Works Department (Health Wing)',
   CONTRACTOR: 'Empanelled Contracting Agency',
   MEDICAL_OFFICER: 'Hospital Administration',
   VIGILANCE_AUDIT: 'Vigilance & Audit Cell, GoM',
+  IT_ADMIN: 'IT & Systems Cell, GoM',
 };
 
 interface DivisionInfo {
@@ -74,7 +80,7 @@ export const MAHARASHTRA_HIERARCHY: DivisionInfo[] = [
     ],
   },
   {
-    division: 'Aurangabad Division',
+    division: 'Chhatrapati Sambhajinagar Division',
     districts: [
       { district: 'Chhatrapati Sambhajinagar', talukas: ['Paithan', 'Gangapur'] },
       { district: 'Jalna', talukas: ['Jalna', 'Ambad'] },

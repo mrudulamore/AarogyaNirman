@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useStore } from '../../store/useStore';
-import { ROLE_NAV, NAV_ITEMS } from './navConfig';
+import { NAV_ITEMS } from './navConfig';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
@@ -19,12 +19,13 @@ function navKeyForPath(pathname: string): string | null {
 
 export function AppShell() {
   const currentUser = useStore((s) => s.currentUser);
+  const rolePermissions = useStore((s) => s.rolePermissions);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const navKey = currentUser ? navKeyForPath(location.pathname) : null;
-  const allowed = currentUser ? !navKey || ROLE_NAV[currentUser.role].includes(navKey) : true;
+  const allowed = currentUser ? !navKey || (rolePermissions[currentUser.role] ?? []).includes(navKey) : true;
 
   useEffect(() => {
     if (currentUser && !allowed) {

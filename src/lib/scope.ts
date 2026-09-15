@@ -58,11 +58,17 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
   });
 
   switch (user.role) {
+    case 'SUPERADMIN':
+      return statewide('Statewide — full administrative access');
+
     case 'MINISTER':
       return statewide('Statewide (read-only)');
 
     case 'COMMISSIONER':
       return statewide('Statewide — full access');
+
+    case 'IT_ADMIN':
+      return statewide('Statewide — system administration');
 
     case 'VIGILANCE_AUDIT':
       // Independent oversight function — spans every division/district by mandate.
@@ -81,6 +87,11 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
     case 'EXECUTIVE_ENGINEER': {
       const assigned = allProjects.filter((p) => p.executiveEngineerId === user.id);
       return scoped(assigned, `${assigned.length} assigned project${assigned.length === 1 ? '' : 's'} (PWD Circle)`);
+    }
+
+    case 'PROJECT_MANAGER': {
+      const assigned = allProjects.filter((p) => p.projectManagerId === user.id);
+      return scoped(assigned, `${assigned.length} managed project${assigned.length === 1 ? '' : 's'} (Portfolio)`);
     }
 
     case 'DEPUTY_ENGINEER': {

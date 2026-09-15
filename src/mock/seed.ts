@@ -100,18 +100,23 @@ export function generateMockData(): SeedResult {
   // ---------- USERS ----------
   const users: User[] = [];
   const roleDefs: { role: Role; count: number; deptPrefix: string }[] = [
+    { role: 'SUPERADMIN', count: 1, deptPrefix: 'System Administration Cell' },
+    { role: 'IT_ADMIN', count: 2, deptPrefix: 'IT & Systems Cell' },
     { role: 'MINISTER', count: 1, deptPrefix: 'Ministry of Public Health' },
     { role: 'COMMISSIONER', count: 2, deptPrefix: 'Directorate of Health Services' },
     { role: 'REGIONAL_DIRECTOR', count: 4, deptPrefix: 'Regional Directorate of Health Services' },
     { role: 'CIVIL_SURGEON', count: 6, deptPrefix: 'District Health Office' },
     { role: 'EXECUTIVE_ENGINEER', count: 6, deptPrefix: 'PWD Circle' },
+    { role: 'PROJECT_MANAGER', count: 6, deptPrefix: 'Project Management Unit' },
     { role: 'DEPUTY_ENGINEER', count: 10, deptPrefix: 'PWD Sub-Division' },
     { role: 'MEDICAL_OFFICER', count: 4, deptPrefix: 'Hospital Administration' },
     { role: 'VIGILANCE_AUDIT', count: 4, deptPrefix: 'Vigilance & Audit Cell' },
   ];
   const designationByRole: Record<string, string> = {
+    SUPERADMIN: 'Super Administrator, System Access', IT_ADMIN: 'IT / System Administrator',
     MINISTER: 'Minister of State, Public Health', COMMISSIONER: 'Commissioner, Health Services', REGIONAL_DIRECTOR: 'Regional Deputy Director, Health Services',
-    CIVIL_SURGEON: 'District Health Officer / Civil Surgeon', EXECUTIVE_ENGINEER: 'Executive Engineer, PWD', DEPUTY_ENGINEER: 'Junior Engineer / Deputy Engineer',
+    CIVIL_SURGEON: 'District Health Officer / Civil Surgeon', EXECUTIVE_ENGINEER: 'Executive Engineer, PWD', PROJECT_MANAGER: 'Project Manager, PMU',
+    DEPUTY_ENGINEER: 'Junior Engineer / Deputy Engineer',
     MEDICAL_OFFICER: 'Medical Officer (Facility In-Charge)', VIGILANCE_AUDIT: 'Vigilance & Audit Officer',
   };
   for (const rd of roleDefs) {
@@ -212,19 +217,20 @@ export function generateMockData(): SeedResult {
     const contractor = pick(contractors);
     const eeUsers = users.filter((u) => u.role === 'EXECUTIVE_ENGINEER');
     const seUsers = users.filter((u) => u.role === 'DEPUTY_ENGINEER');
+    const pmUsers = users.filter((u) => u.role === 'PROJECT_MANAGER');
     // The flagship project anchors the guided demo (failed inspection -> defect -> reinspect,
     // RA bill approval chain). Pin it to the FIRST engineer of each role so that logging in as
-    // "Executive Engineer" / "Site Engineer" (which resolves to that same first user) always
-    // lands on this project under role-based data scoping, instead of a random one.
+    // "Executive Engineer" / "Site Engineer" / "Project Manager" (which resolves to that same
+    // first user) always lands on this project under role-based data scoping, not a random one.
     const ee = isFlagship ? eeUsers[0] : pick(eeUsers);
     const se = isFlagship ? seUsers[0] : pick(seUsers);
     const siteCoords = districtCoords(def.district, index + 1);
     const start = addDays(TODAY, -int(180, 1000));
     const plannedCompletion = addDays(start, int(400, 900));
     const delayDays = status === 'DELAYED' ? int(15, 120) : status === 'AT_RISK' ? int(1, 20) : 0;
-    // Project Manager (operational coordinator) and Owner/Director (accountable senior owner) are
-    // deliberately distinct from the Executive Engineer — a real project answers to both.
-    const pmUser = pick(eeUsers.filter((u) => u.id !== ee.id).length ? eeUsers.filter((u) => u.id !== ee.id) : eeUsers);
+    // Project Manager (day-to-day operational coordinator) and Owner/Director (accountable senior
+    // owner) are deliberately distinct from the Executive Engineer — a real project answers to all three.
+    const pmUser = isFlagship ? pmUsers[0] : pick(pmUsers);
     const districtCivilSurgeon = users.find((u) => u.role === 'CIVIL_SURGEON' && u.district === def.district);
     const divisionRegionalDirector = users.find((u) => u.role === 'REGIONAL_DIRECTOR' && u.division === def.division);
     const ownerDirector = districtCivilSurgeon ?? divisionRegionalDirector ?? pick(users.filter((u) => u.role === 'COMMISSIONER'));
@@ -278,6 +284,7 @@ export function generateMockData(): SeedResult {
     contractor.assignedProjectIds.push(p.id);
     ee.assignedProjectIds.push(p.id);
     se.assignedProjectIds.push(p.id);
+    pmUser.assignedProjectIds.push(p.id);
     contractorPocs.filter((poc) => poc.contractorId === contractor.id).forEach((poc) => poc.assignedProjectIds.push(p.id));
     return p;
   }
@@ -1022,7 +1029,8 @@ export function generateMockData(): SeedResult {
     });
   }
 
-  // Decision Tracker — surfaced on Secretary/Commissioner dashboards.
+  // Decision Tracker — surfaced on Secretary/Commissioner/Regional Director dashboards, and on
+  // the Project Manager dashboard for decisions routed to them.
   const decisions: Decision[] = [];
   const decisionCatalog = [
     { text: 'Approve revised estimate for structural design change', role: 'COMMISSIONER' as Role, priority: 'HIGH' as const },
@@ -1031,10 +1039,15 @@ export function generateMockData(): SeedResult {
     { text: 'Approve additional budget allocation for medical gas infrastructure', role: 'MINISTER' as Role, priority: 'HIGH' as const },
     { text: 'Approve change in project scope — additional floor', role: 'COMMISSIONER' as Role, priority: 'MEDIUM' as const },
     { text: 'Ratify emergency repair works undertaken without prior approval', role: 'CIVIL_SURGEON' as Role, priority: 'HIGH' as const },
+    { text: 'Decide on resequencing milestone execution order due to contractor resource constraint', role: 'PROJECT_MANAGER' as Role, priority: 'MEDIUM' as const },
   ];
-  for (let i = 0; i < 6; i++) {
-    const p = projects[i % projects.length];
+  for (let i = 0; i < decisionCatalog.length; i++) {
     const d = decisionCatalog[i % decisionCatalog.length];
+    // Pin the Project Manager's decision to the flagship project specifically — that's the one
+    // project guaranteed to be managed by the first seeded Project Manager (see isFlagship
+    // above), so the demo "Project Manager" login reliably lands on a decision routed to them
+    // instead of a random other PM's project.
+    const p = d.role === 'PROJECT_MANAGER' ? projects[0] : projects[i % projects.length];
     decisions.push({
       id: id('DEC'), projectId: p.id, decisionRequired: d.text,
       financialImpact: rng() > 0.3 ? Math.round(p.sanctionedBudget * (0.02 + rng() * 0.08)) : undefined,

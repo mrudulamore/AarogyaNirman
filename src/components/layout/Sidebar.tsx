@@ -4,7 +4,7 @@ import { Landmark, MapPinned } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { useNavCounts } from '../../lib/navCounts';
-import { ROLE_NAV, NAV_ITEMS } from './navConfig';
+import { NAV_ITEMS } from './navConfig';
 import { cn } from '../../lib/utils';
 
 // Only these nav keys ever show a counter — kept short so it stays a signal, not clutter.
@@ -13,9 +13,10 @@ const COUNTED_KEYS = new Set(['projects', 'approvals', 'defects', 'quality', 'fi
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
+  const rolePermissions = useStore((s) => s.rolePermissions);
   const { scopeLabel } = useProjectScope();
   const counts = useNavCounts();
-  const keys = currentUser ? ROLE_NAV[currentUser.role] : [];
+  const keys = currentUser ? rolePermissions[currentUser.role] ?? [] : [];
 
   return (
     <>

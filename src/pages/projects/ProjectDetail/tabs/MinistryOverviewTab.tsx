@@ -8,7 +8,7 @@ import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { KpiCard } from '../../../../components/common/KpiCard';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { DEFECT_STATUS_LABELS } from '../../../../lib/constants';
-import { seededImageUrl, formatCurrency, formatDate, cn } from '../../../../lib/utils';
+import { photoSrc, formatCurrency, formatDate, cn } from '../../../../lib/utils';
 import { isMilestoneDelivered } from '../../../../lib/milestones';
 import { GovernanceTab } from './GovernanceTab';
 import { EvidenceCard } from './DefectsTab';
@@ -247,7 +247,7 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activeMilestonePhotos.map((p) => (
-                  <GeoPhoto key={p.id} src={seededImageUrl(p.seed, 320, 220, p.stage)} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
+                  <GeoPhoto key={p.id} src={photoSrc(p)} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
                 ))}
               </div>
             )}

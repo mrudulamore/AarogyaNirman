@@ -8,15 +8,18 @@ import { useStore } from '../../store/useStore';
 import type { Role } from '../../types';
 
 const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
+  { role: 'SUPERADMIN', username: 'superadmin' },
   { role: 'MINISTER', username: 'minister.secretary' },
   { role: 'COMMISSIONER', username: 'commissioner' },
   { role: 'REGIONAL_DIRECTOR', username: 'regional.director' },
   { role: 'CIVIL_SURGEON', username: 'civil.surgeon' },
   { role: 'EXECUTIVE_ENGINEER', username: 'exec.engineer' },
+  { role: 'PROJECT_MANAGER', username: 'project.manager' },
   { role: 'DEPUTY_ENGINEER', username: 'deputy.engineer' },
   { role: 'CONTRACTOR', username: 'contractor' },
   { role: 'MEDICAL_OFFICER', username: 'medical.officer' },
   { role: 'VIGILANCE_AUDIT', username: 'vigilance.audit' },
+  { role: 'IT_ADMIN', username: 'it.admin' },
 ];
 
 export function Login() {
@@ -29,16 +32,14 @@ export function Login() {
 
   function quickLogin(role: Role) {
     login(role);
-    sessionStorage.setItem('pendingRole', role);
-    navigate('/otp');
+    navigate('/select-role');
   }
 
   function manualSubmit(e: React.FormEvent) {
     e.preventDefault();
     const match = DEMO_ACCOUNTS.find((a) => a.username === username.trim()) ?? DEMO_ACCOUNTS[0];
     login(match.role);
-    sessionStorage.setItem('pendingRole', match.role);
-    navigate('/otp');
+    navigate('/select-role');
   }
 
   return (

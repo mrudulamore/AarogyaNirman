@@ -3,15 +3,18 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
   | 'MINISTER'            // Minister / Secretary (Public Health) — State, read-oriented oversight
   | 'COMMISSIONER'        // Commissioner / Director (Health Services) — State, full access
   | 'REGIONAL_DIRECTOR'   // Regional Deputy Director — Division
   | 'CIVIL_SURGEON'       // District Health Officer / Civil Surgeon — District
   | 'EXECUTIVE_ENGINEER'  // Executive Engineer — Circle (cluster of projects)
+  | 'PROJECT_MANAGER'     // Project Manager (PMU/PMC) — their assigned project portfolio, cross-zone
   | 'DEPUTY_ENGINEER'     // Junior Engineer / Deputy Engineer — Site
   | 'CONTRACTOR'          // Contractor — own awarded projects only
   | 'MEDICAL_OFFICER'     // Medical Officer / Facility In-Charge — operational hospital
-  | 'VIGILANCE_AUDIT';    // Vigilance & Audit Officer — State, cross-cutting oversight
+  | 'VIGILANCE_AUDIT'     // Vigilance & Audit Officer — State, cross-cutting oversight
+  | 'IT_ADMIN';           // IT / System Administrator — State, system configuration & support (no access-grant rights)
 
 // Funding/administrative scheme and facility type are separate classification axes —
 // never conflate them (see lib/constants.ts SCHEMES / FACILITY_TYPES).
@@ -174,7 +177,8 @@ export interface SitePhoto {
   uploadedBy: string;
   uploadedByRole: Role;
   description: string;
-  seed: number;
+  seed: number;         // fallback stock-photo picker — used only when dataUrl is absent (seed data)
+  dataUrl?: string;      // actual captured image (base64 data URL) from device camera, when present
   lat: number; // real WGS84 — device-captured (or manually entered) coordinate
   lng: number;
   gpsAccuracyM?: number;      // only present when locationSource is CAPTURED
@@ -718,4 +722,19 @@ export interface InspectionAppointment {
   remarks: string;
   status: AppointmentStatus;
   linkedInspectionId?: string;
+}
+
+/** Government funding received by a project, separate from contractor bill payments. */
+export interface FundInstallment {
+  id: string;
+  projectId: string;
+  number: number;
+  amount: number;
+  plannedDate: string;
+  receivedDate?: string;
+  source: string;
+  reference?: string;
+  purpose: string;
+  releaseCondition: string;
+  authority: string;
 }

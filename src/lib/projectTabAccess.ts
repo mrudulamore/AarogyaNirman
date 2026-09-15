@@ -43,11 +43,14 @@ export const PROJECT_360_TABS: Project360Tab[] = [
  * Overview instead (see MinistryOverview), and only Timeline/Tender & Contract/Field Evidence/
  * Team/Inspections/Safety & Commissioning/Approvals/Documents/Handover remain as their own tabs. */
 export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
+  SUPERADMIN: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover', 'audit'],
+  IT_ADMIN: ['overview', 'documents', 'audit'],
   MINISTER: ['overview', 'timeline', 'tender', 'boq', 'milestones', 'field evidence', 'team', 'inspections', 'safety & commissioning', 'finance', 'approvals', 'documents', 'handover'],
   COMMISSIONER: ['overview', 'governance', 'timeline', 'tender', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'safety & commissioning', 'defects', 'finance', 'approvals', 'documents', 'handover', 'audit'],
   REGIONAL_DIRECTOR: ['overview', 'governance', 'timeline', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'defects', 'finance', 'approvals', 'documents', 'handover'],
   CIVIL_SURGEON: ['overview', 'governance', 'timeline', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'defects', 'finance', 'approvals', 'documents', 'handover'],
   EXECUTIVE_ENGINEER: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'],
+  PROJECT_MANAGER: ['overview', 'governance', 'timeline', 'tender', 'boq', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'],
   DEPUTY_ENGINEER: ['overview', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'workers', 'quality', 'inspections', 'defects', 'documents'],
   CONTRACTOR: ['overview', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'inspections', 'safety & commissioning', 'defects', 'finance', 'documents'],
   MEDICAL_OFFICER: ['overview', 'timeline', 'progress', 'field evidence', 'inspections', 'safety & commissioning', 'governance', 'documents', 'handover'],

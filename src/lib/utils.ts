@@ -51,6 +51,12 @@ export function seededImageUrl(seed: number, _w = 640, _h = 420, label?: string)
   return SITE_PHOTOS[(Math.abs(seed) % (SITE_PHOTOS.length - 1)) + 1];
 }
 
+/** A real device-captured photo (dataUrl) always wins; seed data without one falls back to the
+ * deterministic stock-photo picker so old records keep rendering something sensible. */
+export function photoSrc(p: { dataUrl?: string; seed: number; stage: string }): string {
+  return p.dataUrl || seededImageUrl(p.seed, 640, 420, p.stage);
+}
+
 let idCounter = 1000;
 export function genId(prefix: string): string {
   idCounter += 1;

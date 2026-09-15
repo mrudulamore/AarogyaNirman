@@ -3,29 +3,78 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
-  Building2, Activity, CheckCircle2, AlertTriangle, Wallet, TrendingUp, ClipboardCheck, ShieldAlert, ArrowRight, MapPinned, ScanEye, SignalZero, Gavel,
+  Building2, AlertTriangle, Wallet, ClipboardCheck, ShieldAlert, ArrowRight, MapPinned, ScanEye, Gavel, Layers, X,
+  Flame, GitBranch, CalendarClock, TriangleAlert,
 } from 'lucide-react';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
 } from 'recharts';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
-import { KpiCard } from '../../components/common/KpiCard';
+import { KpiGroupCard } from '../../components/common/KpiCard';
 import { ProjectMap } from '../../components/common/ProjectMap';
-import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Button, Textarea, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
+import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Button, Textarea, Table, THead, TBody, Tr, Th, Td, Label } from '../../components/ui/primitives';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlays';
-import { formatCurrency, formatDate, seededImageUrl, cn } from '../../lib/utils';
+import { formatCurrency, formatDate, photoSrc, cn } from '../../lib/utils';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
+import { AccessManagement } from '../admin/AccessManagement';
+import { FieldHome } from '../field/FieldHome';
+import { SCHEMES, MAHARASHTRA_HIERARCHY } from '../../lib/constants';
+import type { Project, SitePhoto } from '../../types';
+import { Capacitor } from '@capacitor/core';
 
 const SENIOR_ROLES = ['MINISTER', 'COMMISSIONER', 'REGIONAL_DIRECTOR'];
+const FIELD_ROLES = ['DEPUTY_ENGINEER', 'CONTRACTOR'];
 const PRIORITY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 const STATUS_HEX: Record<string, string> = { ON_TRACK: '#3b82f6', AT_RISK: '#f59e0b', DELAYED: '#ef4444', COMPLETED: '#10b981' };
 
+type StatusFilterKey = 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED' | 'ANOMALY' | 'STALE';
+
+const BUDGET_BANDS: { key: string; label: string; test: (p: Project) => boolean }[] = [
+  { key: 'UNDER_10', label: 'Under ₹10 Cr', test: (p) => p.sanctionedBudget < 100000000 },
+  { key: '10_25', label: '₹10–25 Cr', test: (p) => p.sanctionedBudget >= 100000000 && p.sanctionedBudget < 250000000 },
+  { key: '25_50', label: '₹25–50 Cr', test: (p) => p.sanctionedBudget >= 250000000 && p.sanctionedBudget < 500000000 },
+  { key: 'OVER_50', label: '₹50 Cr+', test: (p) => p.sanctionedBudget >= 500000000 },
+];
+
+/** Zone/Budget/Scheme are simple field-level filters — no dependency on other derived state. */
+function matchesScopeFilters(p: Project, f: { zone: string; budget: string; scheme: string }) {
+  if (f.zone !== 'ALL' && p.division !== f.zone) return false;
+  if (f.scheme !== 'ALL' && p.scheme !== f.scheme) return false;
+  if (f.budget !== 'ALL') {
+    const band = BUDGET_BANDS.find((b) => b.key === f.budget);
+    if (band && !band.test(p)) return false;
+  }
+  return true;
+}
+
+function isFinancialAnomaly(p: Project) {
+  return p.status !== 'COMPLETED' && (p.reportedProgress - p.physicalProgress >= 8 || p.financialProgress - p.physicalProgress >= 15);
+}
+function isStaleProject(p: Project, photos: SitePhoto[]) {
+  if (p.status === 'COMPLETED') return false;
+  const lastPhoto = photos.filter((ph) => ph.projectId === p.id).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  if (!lastPhoto) return true;
+  return (Date.now() - new Date(lastPhoto.date).getTime()) / 86400000 > 14;
+}
+/** The status-click filter depends on staleness, which itself needs a photo set — kept as a
+ * separate function so callers can pass whichever photo scope is appropriate. */
+function matchesStatusFilter(p: Project, status: StatusFilterKey | null, photos: SitePhoto[]) {
+  if (!status) return true;
+  if (status === 'IN_PROGRESS') return p.status === 'ON_TRACK' || p.status === 'AT_RISK';
+  if (status === 'COMPLETED') return p.status === 'COMPLETED';
+  if (status === 'DELAYED') return p.status === 'DELAYED';
+  if (status === 'ANOMALY') return isFinancialAnomaly(p);
+  if (status === 'STALE') return isStaleProject(p, photos);
+  return true;
+}
+
 export function Dashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { projects, projectIds, scopeLabel, isStatewide } = useProjectScope();
+  const { projects: roleProjects, scopeLabel, isStatewide } = useProjectScope();
   const allApprovals = useStore((s) => s.approvals);
   const allInspections = useStore((s) => s.inspections);
   const allContractors = useStore((s) => s.contractors);
@@ -36,48 +85,103 @@ export function Dashboard() {
   const currentUser = useStore((s) => s.currentUser);
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [outcome, setOutcome] = useState('');
+  const [focusDivision, setFocusDivision] = useState<string | null>(null);
+
+  // Zone / Budget / Scheme are plain data filters; the status filter comes from clicking a KPI
+  // card segment (Projects: In Progress/Completed/Delayed, Data Integrity: Anomalies/Stale).
+  const [zoneFilter, setZoneFilter] = useState('ALL');
+  const [budgetFilter, setBudgetFilter] = useState('ALL');
+  const [schemeFilter, setSchemeFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey | null>(null);
+  const filtersActive = zoneFilter !== 'ALL' || budgetFilter !== 'ALL' || schemeFilter !== 'ALL' || !!statusFilter;
+
+  function selectZone(division: string | null) {
+    setZoneFilter(division ?? 'ALL');
+    setFocusDivision(division);
+  }
+  function toggleStatusFilter(key: StatusFilterKey) {
+    setStatusFilter((cur) => (cur === key ? null : key));
+  }
+  function clearFilters() {
+    setZoneFilter('ALL'); setBudgetFilter('ALL'); setSchemeFilter('ALL'); setStatusFilter(null); setFocusDivision(null);
+  }
+
+  // Layer 1 (zone/budget/scheme) — drives the KPI strip + status pie chart, which stay showing
+  // every category so a card never collapses to a single number when you click one of its own
+  // segments.
+  const scopedProjects = useMemo(
+    () => roleProjects.filter((p) => matchesScopeFilters(p, { zone: zoneFilter, budget: budgetFilter, scheme: schemeFilter })),
+    [roleProjects, zoneFilter, budgetFilter, schemeFilter]);
+  const scopedProjectIds = useMemo(() => new Set(scopedProjects.map((p) => p.id)), [scopedProjects]);
+  const scopedPhotos = useMemo(() => allPhotos.filter((p) => scopedProjectIds.has(p.projectId)), [allPhotos, scopedProjectIds]);
+  const scopedApprovals = useMemo(() => allApprovals.filter((a) => scopedProjectIds.has(a.projectId)), [allApprovals, scopedProjectIds]);
+  const scopedInspections = useMemo(() => allInspections.filter((i) => scopedProjectIds.has(i.projectId)), [allInspections, scopedProjectIds]);
+
+  // Layer 2 (status click) on top of layer 1 — this is what every other section of the page
+  // (map, zone overview, charts, tables, lists) renders, so "select a card" changes the whole page.
+  const finalProjects = useMemo(
+    () => scopedProjects.filter((p) => matchesStatusFilter(p, statusFilter, scopedPhotos)),
+    [scopedProjects, statusFilter, scopedPhotos]);
+  const projects = finalProjects;
+  const projectIds = useMemo(() => new Set(finalProjects.map((p) => p.id)), [finalProjects]);
+
+  const allExtensionsOfTime = useStore((s) => s.extensionsOfTime);
+  const allChangeOrders = useStore((s) => s.changeOrders);
+  const allRisks = useStore((s) => s.risks);
+  const allSiteIssues = useStore((s) => s.siteIssues);
+  const allBills = useStore((s) => s.bills);
 
   const approvals = useMemo(() => allApprovals.filter((a) => projectIds.has(a.projectId)), [allApprovals, projectIds]);
   const inspections = useMemo(() => allInspections.filter((i) => projectIds.has(i.projectId)), [allInspections, projectIds]);
   const photos = useMemo(() => allPhotos.filter((p) => projectIds.has(p.projectId)), [allPhotos, projectIds]);
   const workers = useMemo(() => allWorkers.filter((w) => projectIds.has(w.projectId)), [allWorkers, projectIds]);
   const contractors = useMemo(() => allContractors.filter((c) => c.assignedProjectIds.some((id) => projectIds.has(id))), [allContractors, projectIds]);
-  const allExtensionsOfTime = useStore((s) => s.extensionsOfTime);
-  const allChangeOrders = useStore((s) => s.changeOrders);
-  const allBills = useStore((s) => s.bills);
 
   const kpis = useMemo(() => {
-    const total = projects.length;
-    const inProgress = projects.filter((p) => p.status === 'ON_TRACK' || p.status === 'AT_RISK').length;
-    const completed = projects.filter((p) => p.status === 'COMPLETED').length;
-    const delayed = projects.filter((p) => p.status === 'DELAYED').length;
-    const sanctioned = projects.reduce((s, p) => s + p.sanctionedBudget, 0);
-    const spent = projects.reduce((s, p) => s + p.amountSpent, 0);
-    const pendingApprovals = approvals.filter((a) => a.status === 'PENDING').length;
-    const failedQc = inspections.filter((i) => i.overallResult === 'FAIL').length;
+    const total = scopedProjects.length;
+    const inProgress = scopedProjects.filter((p) => p.status === 'ON_TRACK' || p.status === 'AT_RISK').length;
+    const completed = scopedProjects.filter((p) => p.status === 'COMPLETED').length;
+    const delayed = scopedProjects.filter((p) => p.status === 'DELAYED').length;
+    const sanctioned = scopedProjects.reduce((s, p) => s + p.sanctionedBudget, 0);
+    const spent = scopedProjects.reduce((s, p) => s + p.amountSpent, 0);
+    const pendingApprovals = scopedApprovals.filter((a) => a.status === 'PENDING').length;
+    const failedQc = scopedInspections.filter((i) => i.overallResult === 'FAIL').length;
     // Exception-first signals: a report shouldn't just be "72% physical progress" — it should
     // also surface where reported/financial progress has drifted ahead of certified field evidence.
-    const financialAnomalies = projects.filter((p) => p.status !== 'COMPLETED' && (p.reportedProgress - p.physicalProgress >= 8 || p.financialProgress - p.physicalProgress >= 15)).length;
+    const financialAnomalies = scopedProjects.filter(isFinancialAnomaly).length;
     const now = Date.now();
-    const staleProjects = projects.filter((p) => {
-      if (p.status === 'COMPLETED') return false;
-      const lastPhoto = photos.filter((ph) => ph.projectId === p.id).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-      if (!lastPhoto) return true;
-      return (now - new Date(lastPhoto.date).getTime()) / 86400000 > 14;
-    }).length;
-    const projectIdsInScope = new Set(projects.map((p) => p.id));
-    const overdueInspections = inspections.filter((i) => i.status === 'SCHEDULED' && new Date(i.scheduledDate) < new Date()).length;
-    const overdueApprovals = approvals.filter((a) => a.status === 'PENDING' && (now - new Date(a.submittedDate).getTime()) / 86400000 > 15).length;
-    const billsOver30Days = allBills.filter((b) => projectIdsInScope.has(b.projectId) && !['PAID', 'REJECTED'].includes(b.status) && (now - new Date(b.submittedDate).getTime()) / 86400000 > 30).length;
-    const projectsRequiringEot = allExtensionsOfTime.filter((e) => projectIdsInScope.has(e.projectId) && (e.status === 'PENDING' || e.status === 'RECOMMENDED')).length;
-    const projectsWithCostVariation = allChangeOrders.filter((c) => projectIdsInScope.has(c.projectId) && c.status === 'PENDING_APPROVAL').length;
-    const handoverDueSoon = projects.filter((p) => p.status !== 'COMPLETED' && (new Date(p.plannedCompletionDate).getTime() - now) / 86400000 <= 30 && (new Date(p.plannedCompletionDate).getTime() - now) / 86400000 >= 0).length;
+    const staleProjects = scopedProjects.filter((p) => isStaleProject(p, scopedPhotos)).length;
+    const overdueInspections = scopedInspections.filter((i) => i.status === 'SCHEDULED' && new Date(i.scheduledDate) < new Date()).length;
+    const overdueApprovals = scopedApprovals.filter((a) => a.status === 'PENDING' && (now - new Date(a.submittedDate).getTime()) / 86400000 > 15).length;
+    const billsOver30Days = allBills.filter((b) => scopedProjectIds.has(b.projectId) && !['PAID', 'REJECTED'].includes(b.status) && (now - new Date(b.submittedDate).getTime()) / 86400000 > 30).length;
+    const projectsRequiringEot = allExtensionsOfTime.filter((e) => scopedProjectIds.has(e.projectId) && (e.status === 'PENDING' || e.status === 'RECOMMENDED')).length;
+    const projectsWithCostVariation = allChangeOrders.filter((c) => scopedProjectIds.has(c.projectId) && c.status === 'PENDING_APPROVAL').length;
+    const handoverDueSoon = scopedProjects.filter((p) => p.status !== 'COMPLETED' && (new Date(p.plannedCompletionDate).getTime() - now) / 86400000 <= 30 && (new Date(p.plannedCompletionDate).getTime() - now) / 86400000 >= 0).length;
     return { total, inProgress, completed, delayed, sanctioned, spent, pendingApprovals, failedQc, financialAnomalies, staleProjects, overdueInspections, overdueApprovals, billsOver30Days, projectsRequiringEot, projectsWithCostVariation, handoverDueSoon };
-  }, [projects, approvals, inspections, photos, allBills, allExtensionsOfTime, allChangeOrders]);
+  }, [scopedProjects, scopedApprovals, scopedInspections, scopedPhotos, scopedProjectIds, allBills, allExtensionsOfTime, allChangeOrders]);
 
   const statusDist = ['ON_TRACK', 'AT_RISK', 'DELAYED', 'COMPLETED'].map((s) => ({
-    name: s.replace('_', ' '), value: projects.filter((p) => p.status === s).length, key: s,
+    name: s.replace('_', ' '), value: scopedProjects.filter((p) => p.status === s).length, key: s,
   }));
+
+  // Every zone tile stays visible (counts reflect budget/scheme/status, but never zone itself) so
+  // picking a zone narrows the rest of the page without hiding the other zones you could switch to.
+  const divisionStats = useMemo(() => {
+    const base = roleProjects.filter((p) => matchesScopeFilters(p, { zone: 'ALL', budget: budgetFilter, scheme: schemeFilter }));
+    const baseIds = new Set(base.map((p) => p.id));
+    const basePhotos = allPhotos.filter((p) => baseIds.has(p.projectId));
+    const forTiles = base.filter((p) => matchesStatusFilter(p, statusFilter, basePhotos));
+    const map = new Map<string, { division: string; total: number; delayed: number; completed: number }>();
+    MAHARASHTRA_HIERARCHY.forEach((d) => map.set(d.division, { division: d.division, total: 0, delayed: 0, completed: 0 }));
+    forTiles.forEach((p) => {
+      const cur = map.get(p.division) ?? { division: p.division, total: 0, delayed: 0, completed: 0 };
+      cur.total += 1;
+      if (p.status === 'DELAYED') cur.delayed += 1;
+      if (p.status === 'COMPLETED') cur.completed += 1;
+      map.set(p.division, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [roleProjects, budgetFilter, schemeFilter, statusFilter, allPhotos]);
 
   const districtBudget = useMemo(() => {
     const map = new Map<string, { district: string; sanctioned: number; spent: number }>();
@@ -104,12 +208,37 @@ export function Dashboard() {
   const topContractors = [...contractors].sort((a, b) => b.performanceScore - a.performanceScore).slice(0, 5);
 
   const isSeniorRole = !!currentUser && SENIOR_ROLES.includes(currentUser.role);
+  const isProjectManager = currentUser?.role === 'PROJECT_MANAGER';
   const pendingDecisions = useMemo(() =>
     allDecisions
       .filter((d) => d.status === 'PENDING' && projectIds.has(d.projectId))
       .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || (a.pendingSince < b.pendingSince ? -1 : 1)),
     [allDecisions, projectIds]);
   const activeDecision = pendingDecisions.find((d) => d.id === decisionId);
+
+  // PM Dashboard rollup — Risk/Site-Issue/Change-Order/EOT registers already exist per-project
+  // (GovernanceTab, SafetyRisksTab) but nowhere aggregates them across a manager's portfolio.
+  const portfolioRisks = useMemo(
+    () => allRisks.filter((r) => projectIds.has(r.projectId) && r.status !== 'CLOSED').sort((a, b) => b.score - a.score),
+    [allRisks, projectIds]);
+  const portfolioSiteIssues = useMemo(
+    () => allSiteIssues.filter((i) => projectIds.has(i.projectId) && i.status !== 'RESOLVED'),
+    [allSiteIssues, projectIds]);
+  const portfolioChangeOrders = useMemo(
+    () => allChangeOrders.filter((c) => projectIds.has(c.projectId) && c.status === 'PENDING_APPROVAL'),
+    [allChangeOrders, projectIds]);
+  const portfolioEots = useMemo(
+    () => allExtensionsOfTime.filter((e) => projectIds.has(e.projectId) && (e.status === 'PENDING' || e.status === 'RECOMMENDED')),
+    [allExtensionsOfTime, projectIds]);
+
+  // Superadmin's "dashboard" is the Access Management console — access/permission
+  // governance is their job, not project monitoring.
+  if (currentUser?.role === 'SUPERADMIN') return <AccessManagement />;
+
+  // The native app is built for field roles: Deputy/Junior Engineers and Contractors land
+  // straight on the Field app (capture, progress, defects) instead of the desktop-oriented
+  // command-centre dashboard. The website itself is unaffected — same code, different shell.
+  if (Capacitor.isNativePlatform() && currentUser && FIELD_ROLES.includes(currentUser.role)) return <FieldHome />;
 
   return (
     <div>
@@ -124,41 +253,132 @@ export function Dashboard() {
         </div>
       )}
 
+      <Card className="mb-4">
+        <CardContent className="flex flex-wrap items-end gap-3 p-4">
+          <div className="w-full sm:w-52">
+            <Label>Zone</Label>
+            <Select value={zoneFilter} onValueChange={(v) => selectZone(v === 'ALL' ? null : v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Zones</SelectItem>
+                {MAHARASHTRA_HIERARCHY.map((d) => <SelectItem key={d.division} value={d.division}>{d.division}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full sm:w-48">
+            <Label>Budget</Label>
+            <Select value={budgetFilter} onValueChange={setBudgetFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Budgets</SelectItem>
+                {BUDGET_BANDS.map((b) => <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full sm:w-52">
+            <Label>Scheme</Label>
+            <Select value={schemeFilter} onValueChange={setSchemeFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Schemes</SelectItem>
+                {SCHEMES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {filtersActive && (
+            <Button variant="outline" size="sm" onClick={clearFilters}><X size={13} /> Clear Filters</Button>
+          )}
+        </CardContent>
+      </Card>
+
       {projects.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-white py-16 text-center">
           <Building2 className="mx-auto mb-2 text-slate-300" size={28} />
-          <p className="text-sm font-medium text-slate-600">No projects are currently assigned to your account.</p>
-          <p className="mt-1 text-xs text-slate-400">Contact your Executive Engineer or District Health Officer if this seems incorrect.</p>
+          <p className="text-sm font-medium text-slate-600">
+            {filtersActive ? 'No projects match the current filters.' : 'No projects are currently assigned to your account.'}
+          </p>
+          {filtersActive ? (
+            <button onClick={clearFilters} className="mt-1 text-xs font-medium text-navy-700 hover:underline">Clear filters</button>
+          ) : (
+            <p className="mt-1 text-xs text-slate-400">Contact your Executive Engineer or District Health Officer if this seems incorrect.</p>
+          )}
         </div>
       ) : (
       <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label={t('dashboard.kpiTotalProjects')} value={kpis.total} icon={Building2} tone="blue" onClick={() => navigate('/projects')} />
-        <KpiCard label={t('dashboard.kpiInProgress')} value={kpis.inProgress} icon={Activity} tone="blue" />
-        <KpiCard label={t('dashboard.kpiCompleted')} value={kpis.completed} icon={CheckCircle2} tone="emerald" />
-        <KpiCard label={t('dashboard.kpiDelayed')} value={kpis.delayed} icon={AlertTriangle} tone="red" />
-        <KpiCard label={t('dashboard.kpiSanctionedBudget')} value={formatCurrency(kpis.sanctioned)} icon={Wallet} tone="default" />
-        <KpiCard label={t('dashboard.kpiExpenditure')} value={formatCurrency(kpis.spent)} sub={t('dashboard.kpiUtilized', { pct: kpis.sanctioned ? Math.round((kpis.spent / kpis.sanctioned) * 100) : 0 })} icon={TrendingUp} tone="amber" />
-        <KpiCard label={t('dashboard.kpiPendingApprovals')} value={kpis.pendingApprovals} icon={ClipboardCheck} tone="amber" onClick={() => navigate('/approvals')} />
-        <KpiCard label={t('dashboard.kpiFailedQuality')} value={kpis.failedQc} icon={ShieldAlert} tone="red" onClick={() => navigate('/quality')} />
-        <KpiCard label="Progress/Financial Anomalies" value={kpis.financialAnomalies} sub="Reported or financial progress well ahead of certified" icon={ScanEye} tone="amber" onClick={() => navigate('/projects')} />
-        <KpiCard label="No Recent Field Activity" value={kpis.staleProjects} sub="No geo-tagged evidence in 14+ days" icon={SignalZero} tone="red" onClick={() => navigate('/projects')} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiGroupCard
+          title={t('dashboard.kpiTotalProjects')} icon={Building2} tone="blue"
+          primary={{ value: kpis.total, label: 'projects' }} onPrimaryClick={() => setStatusFilter(null)}
+          stats={[
+            { label: t('dashboard.kpiInProgress').toLowerCase(), value: kpis.inProgress, tone: 'blue', onClick: () => toggleStatusFilter('IN_PROGRESS'), active: statusFilter === 'IN_PROGRESS' },
+            { label: t('dashboard.kpiCompleted').toLowerCase(), value: kpis.completed, tone: 'emerald', onClick: () => toggleStatusFilter('COMPLETED'), active: statusFilter === 'COMPLETED' },
+            { label: t('dashboard.kpiDelayed').toLowerCase(), value: kpis.delayed, tone: 'red', onClick: () => toggleStatusFilter('DELAYED'), active: statusFilter === 'DELAYED' },
+          ]}
+        />
+        <KpiGroupCard
+          title="Budget & Spend" icon={Wallet} tone="amber"
+          primary={{ value: formatCurrency(kpis.sanctioned), label: 'sanctioned' }}
+          stats={[
+            { label: `spent (${kpis.sanctioned ? Math.round((kpis.spent / kpis.sanctioned) * 100) : 0}%)`, value: formatCurrency(kpis.spent), tone: 'amber', onClick: () => navigate('/finance') },
+          ]}
+        />
+        <KpiGroupCard
+          title="Approvals & Quality" icon={ClipboardCheck} tone="amber"
+          primary={{ value: kpis.pendingApprovals, label: 'pending approvals' }} onPrimaryClick={() => navigate('/approvals')}
+          stats={[
+            { label: t('dashboard.kpiFailedQuality').toLowerCase(), value: kpis.failedQc, tone: 'red', onClick: () => navigate('/quality') },
+          ]}
+        />
+        <KpiGroupCard
+          title="Data Integrity Flags" icon={ScanEye} tone="red"
+          primary={{ value: kpis.financialAnomalies + kpis.staleProjects, label: 'flagged projects' }}
+          stats={[
+            { label: 'progress/financial anomalies', value: kpis.financialAnomalies, tone: 'amber', onClick: () => toggleStatusFilter('ANOMALY'), active: statusFilter === 'ANOMALY' },
+            { label: 'no recent field activity', value: kpis.staleProjects, tone: 'red', onClick: () => toggleStatusFilter('STALE'), active: statusFilter === 'STALE' },
+          ]}
+        />
         {isSeniorRole && (
-          <>
-            <KpiCard label="Inspections Overdue" value={kpis.overdueInspections} icon={ClipboardCheck} tone={kpis.overdueInspections > 0 ? 'red' : 'default'} />
-            <KpiCard label="Approvals Overdue (15+ days)" value={kpis.overdueApprovals} icon={ClipboardCheck} tone={kpis.overdueApprovals > 0 ? 'red' : 'default'} onClick={() => navigate('/approvals')} />
-            <KpiCard label="Bills > 30 Days" value={kpis.billsOver30Days} icon={Wallet} tone={kpis.billsOver30Days > 0 ? 'red' : 'default'} onClick={() => navigate('/finance')} />
-            <KpiCard label="Projects Requiring EOT" value={kpis.projectsRequiringEot} icon={AlertTriangle} tone="amber" />
-            <KpiCard label="Projects With Cost Variation" value={kpis.projectsWithCostVariation} icon={AlertTriangle} tone="amber" />
-            <KpiCard label="Handover Due (Next 30 Days)" value={kpis.handoverDueSoon} icon={CheckCircle2} tone="blue" />
-          </>
+          <KpiGroupCard
+            title="Governance Watchlist" icon={AlertTriangle} tone="red"
+            primary={{ value: kpis.overdueInspections + kpis.overdueApprovals + kpis.billsOver30Days + kpis.projectsRequiringEot + kpis.projectsWithCostVariation, label: 'items need attention' }}
+            stats={[
+              { label: 'inspections overdue', value: kpis.overdueInspections, tone: kpis.overdueInspections > 0 ? 'red' : 'default' },
+              { label: 'approvals 15+ days', value: kpis.overdueApprovals, tone: kpis.overdueApprovals > 0 ? 'red' : 'default', onClick: () => navigate('/approvals') },
+              { label: 'bills > 30 days', value: kpis.billsOver30Days, tone: kpis.billsOver30Days > 0 ? 'red' : 'default', onClick: () => navigate('/finance') },
+              { label: 'EOT requests', value: kpis.projectsRequiringEot, tone: 'amber' },
+              { label: 'cost variations', value: kpis.projectsWithCostVariation, tone: 'amber' },
+              { label: 'handovers due (30d)', value: kpis.handoverDueSoon, tone: 'blue' },
+            ]}
+          />
         )}
       </div>
+
+      <Card className="mt-4">
+        <CardHeader><CardTitle className="flex items-center gap-2"><Layers size={15} /> Zone-wise Overview</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+          {divisionStats.map((z) => (
+            <button
+              key={z.division}
+              onClick={() => selectZone(zoneFilter === z.division ? null : z.division)}
+              className={cn(
+                'rounded-lg border p-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50',
+                zoneFilter === z.division ? 'border-navy-400 bg-navy-50 ring-1 ring-navy-300' : 'border-slate-200 bg-white',
+              )}
+            >
+              <p className="truncate text-xs font-semibold text-slate-800">{z.division.replace(' Division', '')}</p>
+              <p className="mt-1 text-xl font-bold text-navy-700">{z.total}</p>
+              <p className="mt-0.5 text-[10.5px] text-slate-400">
+                {z.completed} completed{z.delayed > 0 && <span className="text-red-500"> · {z.delayed} delayed</span>}
+              </p>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader><CardTitle>{t('dashboard.mapTitle')}</CardTitle></CardHeader>
-          <CardContent><ProjectMap projects={projects} /></CardContent>
+          <CardContent><ProjectMap projects={projects} focusDivision={focusDivision} onDivisionSelect={selectZone} /></CardContent>
         </Card>
 
         <Card>
@@ -177,7 +397,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {isSeniorRole && (
+      {(isSeniorRole || isProjectManager) && (
         <Card className="mt-4">
           <CardHeader><CardTitle className="flex items-center gap-2"><Gavel size={15} /> Decision Tracker ({pendingDecisions.length} pending)</CardTitle></CardHeader>
           {pendingDecisions.length === 0 ? (
@@ -205,6 +425,42 @@ export function Dashboard() {
               </TBody>
             </Table>
           )}
+        </Card>
+      )}
+
+      {isProjectManager && (
+        <Card className="mt-4">
+          <CardHeader><CardTitle className="flex items-center gap-2"><Flame size={15} /> Portfolio Governance & Risk Rollup</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+            <RollupPanel
+              icon={Flame} title="Open Risks" count={portfolioRisks.length} emptyText="No open risks in your portfolio."
+              items={portfolioRisks.slice(0, 4).map((r) => ({
+                id: r.id, primary: r.risk, secondary: `${projects.find((p) => p.id === r.projectId)?.name ?? ''} · ${r.level}`,
+                onClick: () => navigate(`/projects/${r.projectId}?tab=risks`),
+              }))}
+            />
+            <RollupPanel
+              icon={TriangleAlert} title="Site Issues" count={portfolioSiteIssues.length} emptyText="No open site issues."
+              items={portfolioSiteIssues.slice(0, 4).map((i) => ({
+                id: i.id, primary: i.description, secondary: `${projects.find((p) => p.id === i.projectId)?.name ?? ''} · ${i.category.replace(/_/g, ' ')}`,
+                onClick: () => navigate(`/projects/${i.projectId}?tab=governance`),
+              }))}
+            />
+            <RollupPanel
+              icon={GitBranch} title="Change Orders" count={portfolioChangeOrders.length} emptyText="No change orders pending approval."
+              items={portfolioChangeOrders.slice(0, 4).map((c) => ({
+                id: c.id, primary: c.title, secondary: `${projects.find((p) => p.id === c.projectId)?.name ?? ''} · ${formatCurrency(c.costImpact)}`,
+                onClick: () => navigate(`/projects/${c.projectId}?tab=governance`),
+              }))}
+            />
+            <RollupPanel
+              icon={CalendarClock} title="EOT Requests" count={portfolioEots.length} emptyText="No pending EOT requests."
+              items={portfolioEots.slice(0, 4).map((e) => ({
+                id: e.id, primary: e.reason, secondary: `${projects.find((p) => p.id === e.projectId)?.name ?? ''} · ${e.daysRequested} days requested`,
+                onClick: () => navigate(`/projects/${e.projectId}?tab=governance`),
+              }))}
+            />
+          </CardContent>
         </Card>
       )}
 
@@ -349,7 +605,7 @@ export function Dashboard() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {recentPhotos.map((ph) => (
               <button key={ph.id} onClick={() => navigate(`/projects/${ph.projectId}?tab=photos`)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
-                <img src={seededImageUrl(ph.seed, 300, 200, ph.stage)} className="h-24 w-full object-cover transition-transform group-hover:scale-105" />
+                <img src={photoSrc(ph)} className="h-24 w-full object-cover transition-transform group-hover:scale-105" />
                 <div className="p-1.5">
                   <p className="truncate text-[10.5px] font-medium text-slate-700">{ph.stage}</p>
                   <p className="text-[10px] text-slate-400">{formatDate(ph.date)}</p>
@@ -376,6 +632,35 @@ export function Dashboard() {
           </DialogContent>
         )}
       </Dialog>
+    </div>
+  );
+}
+
+/** One register's compact summary within the PM Portfolio Governance & Risk Rollup — a count
+ * plus its top few items, each deep-linking to that project's own governance/risk tab rather
+ * than duplicating the full register UI here. */
+function RollupPanel({ icon: Icon, title, count, items, emptyText }: {
+  icon: React.ComponentType<{ size?: number; className?: string }>; title: string; count: number;
+  items: { id: string; primary: string; secondary: string; onClick: () => void }[]; emptyText: string;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Icon size={14} className="text-slate-400" /> {title}</p>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{count}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-[11px] text-slate-400">{emptyText}</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((it) => (
+            <button key={it.id} onClick={it.onClick} className="block w-full text-left">
+              <p className="truncate text-[11.5px] font-medium text-slate-700 hover:text-navy-700 hover:underline">{it.primary}</p>
+              <p className="truncate text-[10.5px] text-slate-400">{it.secondary}</p>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
