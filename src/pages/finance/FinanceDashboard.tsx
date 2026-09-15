@@ -1,3 +1,4 @@
+import { FundDisbursalReports } from './FundDisbursalReports';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -55,6 +56,8 @@ export function FinanceDashboard() {
           <MapPinned size={14} /> Showing finance data scoped to your jurisdiction: {scopeLabel}
         </div>
       )}
+
+      <FundDisbursalReports projects={projects} scopeLabel={scopeLabel} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard label="Sanctioned Budget" value={formatCurrency(sanctioned)} icon={Wallet} />

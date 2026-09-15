@@ -1,3 +1,4 @@
+import { FundDisbursalReports } from '../../../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
@@ -141,6 +142,7 @@ export function FinanceTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
+      <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
       {/* A. Financial Summary — primary KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label="Sanctioned Cost" value={formatCurrency(project.sanctionedBudget)} />

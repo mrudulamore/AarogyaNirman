@@ -75,6 +75,8 @@ export function downloadPdfReport(opts: {
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(15, 23, 42);
+      const valueWidth = doc.getTextWidth(kpi.value);
+      if (valueWidth > boxW - 16) doc.setFontSize(13 * (boxW - 16) / valueWidth);
       doc.text(kpi.value, x + 8, by + 32);
       doc.setFont('helvetica', 'normal');
     });

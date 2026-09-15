@@ -719,3 +719,18 @@ export interface InspectionAppointment {
   status: AppointmentStatus;
   linkedInspectionId?: string;
 }
+
+/** Government funding received by a project, separate from contractor bill payments. */
+export interface FundInstallment {
+  id: string;
+  projectId: string;
+  number: number;
+  amount: number;
+  plannedDate: string;
+  receivedDate?: string;
+  source: string;
+  reference?: string;
+  purpose: string;
+  releaseCondition: string;
+  authority: string;
+}

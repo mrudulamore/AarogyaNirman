@@ -1,8 +1,10 @@
+import { generateFundInstallments } from '../mock/fundInstallments';
+import { todayDate } from '../lib/fundDisbursal';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
 import type {
-  Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
+  FundInstallment, Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
   Contractor, Worker, AttendanceRecord, Bill, MeasurementEntry, BoqItem, Material, MaterialTest,
   SafetyRecord, Risk, ProjectDocument, CommissioningItem, HandoverStep, Notification, AuditEntry,
   Observation, Role, DefectStatus, ApprovalStatus, InspectionResult, Tender,
@@ -18,6 +20,7 @@ interface StoreState {
   currentUser: User | null;
   users: User[];
   projects: Project[];
+  fundInstallments: FundInstallment[];
   tenders: Tender[];
   changeOrders: ChangeOrder[];
   extensionsOfTime: ExtensionOfTime[];
@@ -158,6 +161,7 @@ export const useStore = create<StoreState>()(
     (set, get) => ({
       currentUser: null,
       ...seed,
+      fundInstallments: generateFundInstallments(seed.projects, todayDate()),
 
       login: (role, userId) => {
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
@@ -642,6 +646,10 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'hcms-maharashtra-store-v1',
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<StoreState> | undefined;
+        return { ...current, ...saved, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+      },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, ...persisted } = state as any;
         return persisted;
