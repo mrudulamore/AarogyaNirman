@@ -5,7 +5,7 @@ import { useStore } from '../../../../store/useStore';
 import { Card, CardContent } from '../../../../components/ui/primitives';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
-import { seededImageUrl, formatDate, cn } from '../../../../lib/utils';
+import { photoSrc, formatDate, cn } from '../../../../lib/utils';
 import { isMilestoneDelivered } from '../../../../lib/milestones';
 
 type StepState = 'DONE' | 'ACTIVE' | 'PENDING';
@@ -113,7 +113,7 @@ export function TimelineTab({ project }: { project: Project }) {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activeStepPhotos.map((p) => (
-                  <GeoPhoto key={p.id} src={seededImageUrl(p.seed, 320, 220, p.stage)} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
+                  <GeoPhoto key={p.id} src={photoSrc(p)} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
                 ))}
               </div>
             )}

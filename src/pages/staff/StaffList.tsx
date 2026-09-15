@@ -10,7 +10,7 @@ import { Avatar } from '../../components/ui/forms';
 import { formatDate } from '../../lib/utils';
 import type { Role } from '../../types';
 
-const STAFF_ROLES: Role[] = ['EXECUTIVE_ENGINEER', 'DEPUTY_ENGINEER', 'MEDICAL_OFFICER', 'VIGILANCE_AUDIT', 'CIVIL_SURGEON', 'REGIONAL_DIRECTOR', 'COMMISSIONER', 'SUPERADMIN', 'IT_ADMIN'];
+const STAFF_ROLES: Role[] = ['EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'DEPUTY_ENGINEER', 'MEDICAL_OFFICER', 'VIGILANCE_AUDIT', 'CIVIL_SURGEON', 'REGIONAL_DIRECTOR', 'COMMISSIONER', 'SUPERADMIN', 'IT_ADMIN'];
 
 export function StaffList() {
   const navigate = useNavigate();

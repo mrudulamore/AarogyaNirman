@@ -33,6 +33,9 @@ export interface GroupStat {
   value: string | number;
   tone?: 'default' | 'blue' | 'amber' | 'red' | 'emerald';
   onClick?: () => void;
+  /** Marks this stat as the currently-selected page filter — gets a highlighted pill so it
+   * reads as "on" rather than just another number. */
+  active?: boolean;
 }
 
 /** A single card that bundles several related numbers together (one headline stat + a row of
@@ -58,13 +61,15 @@ export function KpiGroupCard({ title, icon: Icon, tone = 'default', primary, sta
             key={i}
             onClick={s.onClick}
             disabled={!s.onClick}
+            title={s.onClick ? `Filter by ${s.label}` : undefined}
             className={cn(
-              'flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] leading-none disabled:cursor-default',
-              s.onClick && 'hover:bg-slate-50',
+              'flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] leading-none transition-colors disabled:cursor-default',
+              s.onClick && !s.active && 'hover:bg-slate-50',
+              s.active && 'bg-slate-100 ring-1 ring-inset ring-slate-300',
             )}
           >
             <span className={cn('font-bold', TONE_TEXT[s.tone ?? 'default'])}>{s.value}</span>
-            <span className="text-slate-400">{s.label}</span>
+            <span className={cn(s.active ? 'text-slate-600' : 'text-slate-400')}>{s.label}</span>
           </button>
         ))}
       </div>

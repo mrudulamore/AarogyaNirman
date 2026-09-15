@@ -660,7 +660,7 @@ export const useStore = create<StoreState>()(
       pushNotification: (n) => set((s) => ({ notifications: [{ ...n, id: nid('NOT'), read: false, date: new Date().toISOString().slice(0, 10) }, ...s.notifications] })),
     }),
     {
-      name: 'hcms-maharashtra-store-v2',
+      name: 'hcms-maharashtra-store-v5',
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;
         return persisted;

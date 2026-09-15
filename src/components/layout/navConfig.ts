@@ -1,7 +1,7 @@
 import type { Role } from '../../types';
 import {
   LayoutDashboard, Building2, HardHat, Wallet, ShieldCheck, AlertTriangle, ClipboardCheck,
-  FileText, BarChart3, Bell, History, Search, Users, Radar, Smartphone, Gavel, KeyRound,
+  FileText, BarChart3, Bell, History, Search, Users, Radar, Smartphone, Gavel, KeyRound, GanttChart,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -29,6 +29,7 @@ export const NAV_ITEMS: Record<string, NavItem> = {
   search: { label: 'Global Search', path: '/search', icon: Search },
   field: { label: 'Field App', path: '/field', icon: Smartphone },
   access: { label: 'Manage Access', path: '/access', icon: KeyRound },
+  portfolioTimeline: { label: 'Portfolio Timeline', path: '/portfolio-timeline', icon: GanttChart },
 };
 
 export const ROLE_NAV: Record<Role, string[]> = {
@@ -46,6 +47,10 @@ export const ROLE_NAV: Record<Role, string[]> = {
   REGIONAL_DIRECTOR: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   CIVIL_SURGEON: ['dashboard', 'projects', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   EXECUTIVE_ENGINEER: ['dashboard', 'projects', 'contractors', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
+  // Project Manager (PMU/PMC) — day-to-day cross-functional coordinator for their assigned
+  // portfolio: schedule, budget, contractor/workforce coordination, risk & governance registers,
+  // and field visibility, without the statewide/jurisdictional oversight senior roles carry.
+  PROJECT_MANAGER: ['dashboard', 'projects', 'tenders', 'contractors', 'workers', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'search', 'field', 'portfolioTimeline'],
   DEPUTY_ENGINEER: ['dashboard', 'projects', 'field', 'workers', 'quality', 'defects', 'documents', 'notifications', 'search'],
   CONTRACTOR: ['dashboard', 'projects', 'field', 'finance', 'defects', 'documents', 'notifications', 'search'],
   MEDICAL_OFFICER: ['dashboard', 'projects', 'documents', 'reports', 'notifications', 'search'],

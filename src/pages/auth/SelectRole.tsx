@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Building2, Landmark, HardHat, ClipboardList, Radar, Hammer, Stethoscope, Crown, MapPinned, KeyRound, Settings2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Building2, Landmark, HardHat, ClipboardList, Radar, Hammer, Stethoscope, Crown, MapPinned, KeyRound, Settings2, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ROLE_LABELS, ROLE_DEPARTMENTS } from '../../lib/constants';
 import type { Role } from '../../types';
@@ -9,7 +9,7 @@ import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
 const ROLE_ICONS: Record<Role, typeof Building2> = {
   SUPERADMIN: KeyRound, MINISTER: Crown, COMMISSIONER: Landmark, REGIONAL_DIRECTOR: MapPinned, CIVIL_SURGEON: Building2,
-  EXECUTIVE_ENGINEER: Hammer, DEPUTY_ENGINEER: HardHat, CONTRACTOR: ClipboardList,
+  EXECUTIVE_ENGINEER: Hammer, PROJECT_MANAGER: Briefcase, DEPUTY_ENGINEER: HardHat, CONTRACTOR: ClipboardList,
   MEDICAL_OFFICER: Stethoscope, VIGILANCE_AUDIT: Radar, IT_ADMIN: Settings2,
 };
 

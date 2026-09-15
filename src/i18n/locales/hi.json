@@ -39,7 +39,8 @@
     "audit": "ऑडिट लॉग",
     "search": "वैश्विक खोज",
     "field": "फील्ड ऐप",
-    "access": "पहुंच प्रबंधन"
+    "access": "पहुंच प्रबंधन",
+    "portfolioTimeline": "पोर्टफोलियो समयरेखा"
   },
   "sidebar": {
     "govName": "महाराष्ट्र शासन",
@@ -94,6 +95,7 @@
     "REGIONAL_DIRECTOR": "क्षेत्रीय उप निदेशक",
     "CIVIL_SURGEON": "जिला स्वास्थ्य अधिकारी / सिविल सर्जन",
     "EXECUTIVE_ENGINEER": "कार्यकारी अभियंता",
+    "PROJECT_MANAGER": "परियोजना प्रबंधक (पीएमयू/पीएमसी)",
     "DEPUTY_ENGINEER": "कनिष्ठ अभियंता / उप अभियंता",
     "CONTRACTOR": "ठेकेदार",
     "MEDICAL_OFFICER": "चिकित्सा अधिकारी / प्रभारी",

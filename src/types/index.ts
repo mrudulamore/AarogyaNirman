@@ -9,6 +9,7 @@ export type Role =
   | 'REGIONAL_DIRECTOR'   // Regional Deputy Director — Division
   | 'CIVIL_SURGEON'       // District Health Officer / Civil Surgeon — District
   | 'EXECUTIVE_ENGINEER'  // Executive Engineer — Circle (cluster of projects)
+  | 'PROJECT_MANAGER'     // Project Manager (PMU/PMC) — their assigned project portfolio, cross-zone
   | 'DEPUTY_ENGINEER'     // Junior Engineer / Deputy Engineer — Site
   | 'CONTRACTOR'          // Contractor — own awarded projects only
   | 'MEDICAL_OFFICER'     // Medical Officer / Facility In-Charge — operational hospital
@@ -176,7 +177,8 @@ export interface SitePhoto {
   uploadedBy: string;
   uploadedByRole: Role;
   description: string;
-  seed: number;
+  seed: number;         // fallback stock-photo picker — used only when dataUrl is absent (seed data)
+  dataUrl?: string;      // actual captured image (base64 data URL) from device camera, when present
   lat: number; // real WGS84 — device-captured (or manually entered) coordinate
   lng: number;
   gpsAccuracyM?: number;      // only present when locationSource is CAPTURED

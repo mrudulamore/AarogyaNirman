@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, StatusBadge, Table, THead, TBody, Tr, Th, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
-import { seededImageUrl, formatDateTime } from '../../../../lib/utils';
+import { photoSrc, formatDateTime } from '../../../../lib/utils';
 import { distanceMeters, isWithinGeofence, GEOFENCE_RADIUS_M } from '../../../../lib/geo';
 
 type FenceFilter = 'ALL' | 'WITHIN' | 'OUTSIDE' | 'MANUAL';
@@ -71,7 +71,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
                 <Tr key={photo.id} onClick={() => setViewerId(photo.id)}>
                   <Td>
                     <button className="group block overflow-hidden rounded-md border border-slate-200" title="Click to view photo evidence">
-                      <img src={seededImageUrl(photo.seed, 120, 80, photo.stage)} className="h-12 w-16 object-cover transition-transform group-hover:scale-105" />
+                      <img src={photoSrc(photo)} className="h-12 w-16 object-cover transition-transform group-hover:scale-105" />
                     </button>
                   </Td>
                   <Td>{formatDateTime(photo.capturedAt)}</Td>
@@ -105,7 +105,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
         {viewerPhoto && (
           <DialogContent title={`${viewerPhoto.stage} — Field Evidence`} description={formatDateTime(viewerPhoto.capturedAt)} size="lg">
             <GeoPhoto
-              src={seededImageUrl(viewerPhoto.seed, 1000, 620, viewerPhoto.stage)}
+              src={photoSrc(viewerPhoto)}
               lat={viewerPhoto.lat}
               lng={viewerPhoto.lng}
               timestamp={viewerPhoto.capturedAt}

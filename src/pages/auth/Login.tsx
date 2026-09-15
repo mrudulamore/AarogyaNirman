@@ -14,6 +14,7 @@ const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
   { role: 'REGIONAL_DIRECTOR', username: 'regional.director' },
   { role: 'CIVIL_SURGEON', username: 'civil.surgeon' },
   { role: 'EXECUTIVE_ENGINEER', username: 'exec.engineer' },
+  { role: 'PROJECT_MANAGER', username: 'project.manager' },
   { role: 'DEPUTY_ENGINEER', username: 'deputy.engineer' },
   { role: 'CONTRACTOR', username: 'contractor' },
   { role: 'MEDICAL_OFFICER', username: 'medical.officer' },

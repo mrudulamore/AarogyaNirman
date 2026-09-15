@@ -50,6 +50,7 @@ export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
   REGIONAL_DIRECTOR: ['overview', 'governance', 'timeline', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'defects', 'finance', 'approvals', 'documents', 'handover'],
   CIVIL_SURGEON: ['overview', 'governance', 'timeline', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'defects', 'finance', 'approvals', 'documents', 'handover'],
   EXECUTIVE_ENGINEER: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'],
+  PROJECT_MANAGER: ['overview', 'governance', 'timeline', 'tender', 'boq', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'],
   DEPUTY_ENGINEER: ['overview', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'workers', 'quality', 'inspections', 'defects', 'documents'],
   CONTRACTOR: ['overview', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'inspections', 'safety & commissioning', 'defects', 'finance', 'documents'],
   MEDICAL_OFFICER: ['overview', 'timeline', 'progress', 'field evidence', 'inspections', 'safety & commissioning', 'governance', 'documents', 'handover'],

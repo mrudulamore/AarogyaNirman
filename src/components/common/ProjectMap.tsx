@@ -20,7 +20,7 @@ const DIVISION_ANCHORS: Record<string, { lat: number; lng: number }> = {
   'Pune Division': DISTRICT_COORDS.Pune,
   'Nashik Division': DISTRICT_COORDS.Nashik,
   'Nagpur Division': DISTRICT_COORDS.Nagpur,
-  'Aurangabad Division': DISTRICT_COORDS['Chhatrapati Sambhajinagar'],
+  'Chhatrapati Sambhajinagar Division': DISTRICT_COORDS['Chhatrapati Sambhajinagar'],
   'Amravati Division': DISTRICT_COORDS.Amravati,
   'Konkan Division': DISTRICT_COORDS.Thane,
 };

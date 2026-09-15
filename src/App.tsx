@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { AppShell } from './components/layout/AppShell';
 
 import { Landing } from './pages/landing/Landing';
@@ -27,8 +30,25 @@ import { GlobalSearch } from './pages/search/GlobalSearch';
 import { ObserverDashboard } from './pages/observer/ObserverDashboard';
 import { FieldHome } from './pages/field/FieldHome';
 import { AccessManagement } from './pages/admin/AccessManagement';
+import { PortfolioTimeline } from './pages/portfolio/PortfolioTimeline';
+
+/** In the native Android WebView shell, the hardware/gesture back button otherwise exits the app
+ * outright instead of navigating within it — a jarring, easy-to-miss gap for a real app. Mirror
+ * normal Android behaviour: step back through in-app history, only exit once there's nowhere
+ * left to go. No-ops on the website (Capacitor.isNativePlatform() is false there). */
+function useAndroidBackButton() {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) window.history.back();
+      else CapacitorApp.exitApp();
+    });
+    return () => { listener.then((l) => l.remove()); };
+  }, []);
+}
 
 export default function App() {
+  useAndroidBackButton();
   return (
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
@@ -60,6 +80,7 @@ export default function App() {
           <Route path="/observer" element={<ObserverDashboard />} />
           <Route path="/field" element={<FieldHome />} />
           <Route path="/access" element={<AccessManagement />} />
+          <Route path="/portfolio-timeline" element={<PortfolioTimeline />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/landing" replace />} />

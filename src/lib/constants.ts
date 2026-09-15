@@ -23,6 +23,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   REGIONAL_DIRECTOR: 'Regional Deputy Director',
   CIVIL_SURGEON: 'District Health Officer / Civil Surgeon',
   EXECUTIVE_ENGINEER: 'Executive Engineer',
+  PROJECT_MANAGER: 'Project Manager (PMU/PMC)',
   DEPUTY_ENGINEER: 'Junior Engineer / Deputy Engineer',
   CONTRACTOR: 'Contractor',
   MEDICAL_OFFICER: 'Medical Officer / Facility In-Charge',
@@ -37,6 +38,7 @@ export const ROLE_DEPARTMENTS: Record<Role, string> = {
   REGIONAL_DIRECTOR: 'Regional Directorate of Health Services',
   CIVIL_SURGEON: 'District Health Office / Civil Surgeon Office',
   EXECUTIVE_ENGINEER: 'Public Works Department (Health Wing)',
+  PROJECT_MANAGER: 'Project Management Unit, GoM',
   DEPUTY_ENGINEER: 'Public Works Department (Health Wing)',
   CONTRACTOR: 'Empanelled Contracting Agency',
   MEDICAL_OFFICER: 'Hospital Administration',
@@ -78,7 +80,7 @@ export const MAHARASHTRA_HIERARCHY: DivisionInfo[] = [
     ],
   },
   {
-    division: 'Aurangabad Division',
+    division: 'Chhatrapati Sambhajinagar Division',
     districts: [
       { district: 'Chhatrapati Sambhajinagar', talukas: ['Paithan', 'Gangapur'] },
       { district: 'Jalna', talukas: ['Jalna', 'Ambad'] },

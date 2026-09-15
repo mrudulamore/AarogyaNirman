@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Badge, EmptyState, Te
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent, DialogFooter, ConfirmDialog } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
-import { seededImageUrl, formatDate, formatDateTime } from '../../../../lib/utils';
+import { photoSrc, formatDate, formatDateTime } from '../../../../lib/utils';
 import { simulateCapture, isWithinGeofence } from '../../../../lib/geo';
 
 const STAGE_OPTIONS = ['Foundation', 'Structure', 'Roofing', 'MEP', 'Finishing', 'Medical Infrastructure'];
@@ -73,7 +73,7 @@ export function PhotosTab({ project }: { project: Project }) {
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[{ label: 'BEFORE', photo: beforeShot }, { label: 'LATEST', photo: latestShot }].map(({ label, photo }) => (
               <div key={label} className="overflow-hidden rounded-md border border-slate-200">
-                <img src={seededImageUrl(photo.seed, 500, 320, photo.stage)} className="h-52 w-full object-cover" />
+                <img src={photoSrc(photo)} className="h-52 w-full object-cover" />
                 <div className="p-2.5">
                   <Badge>{label}</Badge>
                   <p className="mt-1 text-xs font-medium text-slate-700">{photo.stage}</p>
@@ -94,7 +94,7 @@ export function PhotosTab({ project }: { project: Project }) {
             {items.map((ph) => (
               <button key={ph.id} onClick={() => setViewerId(ph.id)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
                 <div className="relative">
-                  <img src={seededImageUrl(ph.seed, 320, 220, ph.stage)} className="h-28 w-full object-cover transition-transform group-hover:scale-105" />
+                  <img src={photoSrc(ph)} className="h-28 w-full object-cover transition-transform group-hover:scale-105" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{ph.type}</Badge>
                 </div>
                 <div className="p-1.5">
@@ -145,7 +145,7 @@ export function PhotosTab({ project }: { project: Project }) {
           <DialogContent title={`${viewerPhoto.stage} — ${viewerPhoto.type}`} description={formatDateTime(viewerPhoto.date)} size="xl">
             <div className="relative">
               <GeoPhoto
-                src={seededImageUrl(viewerPhoto.seed, 1000, 620, viewerPhoto.stage)}
+                src={photoSrc(viewerPhoto)}
                 lat={viewerPhoto.lat}
                 lng={viewerPhoto.lng}
                 timestamp={viewerPhoto.capturedAt}

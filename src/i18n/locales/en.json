@@ -39,7 +39,8 @@
     "audit": "Audit Log",
     "search": "Global Search",
     "field": "Field App",
-    "access": "Manage Access"
+    "access": "Manage Access",
+    "portfolioTimeline": "Portfolio Timeline"
   },
   "sidebar": {
     "govName": "Govt. of Maharashtra",
@@ -94,6 +95,7 @@
     "REGIONAL_DIRECTOR": "Regional Deputy Director",
     "CIVIL_SURGEON": "District Health Officer / Civil Surgeon",
     "EXECUTIVE_ENGINEER": "Executive Engineer",
+    "PROJECT_MANAGER": "Project Manager (PMU/PMC)",
     "DEPUTY_ENGINEER": "Junior Engineer / Deputy Engineer",
     "CONTRACTOR": "Contractor",
     "MEDICAL_OFFICER": "Medical Officer / Facility In-Charge",

@@ -89,6 +89,11 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
       return scoped(assigned, `${assigned.length} assigned project${assigned.length === 1 ? '' : 's'} (PWD Circle)`);
     }
 
+    case 'PROJECT_MANAGER': {
+      const assigned = allProjects.filter((p) => p.projectManagerId === user.id);
+      return scoped(assigned, `${assigned.length} managed project${assigned.length === 1 ? '' : 's'} (Portfolio)`);
+    }
+
     case 'DEPUTY_ENGINEER': {
       const assigned = allProjects.filter((p) => p.siteEngineerId === user.id);
       return scoped(assigned, `${assigned.length} assigned project${assigned.length === 1 ? '' : 's'} (Site)`);
