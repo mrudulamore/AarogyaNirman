@@ -5,7 +5,8 @@ import { useStore } from '../../../store/useStore';
 import { useProjectScope } from '../../../lib/scope';
 import { Breadcrumbs } from '../../../components/layout/Breadcrumbs';
 import { Card, CardContent, ProgressBar, StatusBadge, Button, Input, Textarea } from '../../../components/ui/primitives';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
+import { Tabs, TabsContent } from '../../../components/ui/tabs';
+import { ProjectNavigation } from './ProjectNavigation';
 import { Dialog, DialogContent, DialogFooter } from '../../../components/ui/overlays';
 import { formatCurrency, formatDate } from '../../../lib/utils';
 import { PHYSICAL_VS_FINANCIAL_THRESHOLD } from '../../../lib/constants';
@@ -150,10 +151,8 @@ export function ProjectDetail() {
         </CardContent>
       </Card>
 
-      <Tabs value={tab} onValueChange={(v) => setParams({ tab: v })}>
-        <TabsList>
-          {visibleTabs.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
-        </TabsList>
+      <Tabs value={tab} onValueChange={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })}>
+        <ProjectNavigation tabs={visibleTabs} value={tab} onSelect={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })} />
 
         <TabsContent value="overview">{currentUser?.role === 'MINISTER' ? <MinistryOverviewTab project={project} /> : <OverviewTab project={project} />}</TabsContent>
         <TabsContent value="governance"><GovernanceTab project={project} /></TabsContent>

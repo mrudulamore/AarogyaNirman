@@ -40,7 +40,7 @@ export function titleCase(s: string): string {
 // Real, locally-hosted construction-site photographs (verified + downloaded from Unsplash;
 // see public/site-photos) rather than abstract generated art — deterministically picked by
 // seed/category so the same photo record always shows the same photo across the app.
-const SITE_PHOTOS = ['/site-photos/rebar.jpg', '/site-photos/structure.jpg', '/site-photos/scaffolding.jpg'];
+const SITE_PHOTOS = ['/site-photos/rebar.jpg', '/site-photos/hospital-construction.jpg', '/site-photos/civil-works.jpg', '/site-photos/structure.jpg', '/site-photos/scaffolding.jpg'];
 // Categories/stages that read as foundation/reinforcement work bias toward the rebar close-up;
 // everything else cycles across the full set by seed for visual variety.
 const FOUNDATION_STAGE_HINTS = ['foundation', 'structural', 'rcc', 'column', 'reinforcement'];

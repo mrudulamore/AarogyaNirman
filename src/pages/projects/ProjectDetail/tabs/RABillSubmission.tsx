@@ -1,0 +1,86 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
+import type { BillAttachment, Project } from '../../../../types';
+import { useStore } from '../../../../store/useStore';
+import { useProjectScope } from '../../../../lib/scope';
+import { todayDate } from '../../../../lib/fundDisbursal';
+import { saveBillFiles } from '../../../../lib/billAttachments';
+import { validateBillSubmission } from '../../../../lib/billSubmission';
+import { formatCurrencyFull } from '../../../../lib/utils';
+import { Button, Input, Textarea } from '../../../../components/ui/primitives';
+import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
+
+const INITIAL = { billNumber: '', invoiceDate: todayDate(), periodFrom: '', periodTo: '', workOrderReference: '', measurementBookId: '', workDescription: '', previousBillReference: '', grossAmount: '', gst: '0', deductions: '0', retention: '0', penalty: '0' };
+const PROOF_FIELDS = [
+  { category: 'SIGNED_BILL', label: 'Signed RA bill / invoice', required: true },
+  { category: 'MEASUREMENT', label: 'Measurement book extract / measured-work statement', required: true },
+  { category: 'SUPPORTING', label: 'Site photos, test reports or applicable material invoices', required: false },
+] as const;
+
+export function RABillSubmission({ project, onClose }: { project: Project; onClose: () => void }) {
+  const [form, setForm] = useState(INITIAL);
+  const [declaration, setDeclaration] = useState(false);
+  const [files, setFiles] = useState<Partial<Record<BillAttachment['category'], File[]>>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const user = useStore((state) => state.currentUser);
+  const bills = useStore((state) => state.bills);
+  const submitBill = useStore((state) => state.submitBill);
+  const { projectIds } = useProjectScope();
+  const set = (key: keyof typeof form, value: string) => setForm((previous) => ({ ...previous, [key]: value }));
+  const numbers = { grossAmount: Number(form.grossAmount), gst: Number(form.gst), deductions: Number(form.deductions), retention: Number(form.retention), penalty: Number(form.penalty) };
+  const netPayable = Math.round((numbers.grossAmount + numbers.gst - numbers.deductions - numbers.retention - numbers.penalty) * 100) / 100;
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const uploads = PROOF_FIELDS.flatMap(({ category }) => (files[category] ?? []).map((file) => ({ file, category })));
+      const bill = { ...form, ...numbers, netPayable, projectId: project.id, contractorId: project.contractorId, declarationAccepted: declaration,
+        attachments: uploads.map(({ file, category }, index) => ({ id: `pending-${index}`, name: file.name, mimeType: file.type, size: file.size, category })) };
+      validateBillSubmission(bill, user, project, projectIds, bills);
+      const attachments = await saveBillFiles(uploads);
+      await submitBill({ ...bill, attachments });
+      toast.success('RA bill and supporting proof submitted for engineer verification.');
+      onClose();
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Bill submission failed. Please try again.'); }
+    finally { setBusy(false); }
+  }
+
+  return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
+    <DialogContent title="Submit RA Bill" description={project.name} size="lg">
+      <form onSubmit={submit}>
+        <fieldset disabled={busy} className="space-y-4 disabled:opacity-60">
+          <p className="rounded-md bg-navy-50 p-3 text-xs text-navy-700">Submit the current period claim with signed billing documents and measurement proof. Your engineer will verify quantities, quality and admissible amounts before approval.</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {([
+              ['billNumber', 'RA bill / invoice number', 'text'], ['invoiceDate', 'Bill date', 'date'],
+              ['periodFrom', 'Work period from', 'date'], ['periodTo', 'Work period to', 'date'],
+              ['workOrderReference', 'Agreement / work-order reference', 'text'], ['measurementBookId', 'MB / e-MB reference and pages', 'text'],
+            ] as const).map(([key, label, type]) => <label key={key} className="space-y-1 text-xs font-medium text-slate-600">{label} *<Input required type={type} max={type === 'date' ? todayDate() : undefined} value={form[key]} onChange={(event) => set(key, event.target.value)} /></label>)}
+          </div>
+          <label className="block space-y-1 text-xs font-medium text-slate-600">Previous RA bill / measurement reference (if applicable)<Input value={form.previousBillReference} onChange={(event) => set('previousBillReference', event.target.value)} /></label>
+          <label className="block space-y-1 text-xs font-medium text-slate-600">Work executed and BOQ item references *<Textarea required rows={3} value={form.workDescription} onChange={(event) => set('workDescription', event.target.value)} /></label>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {([['grossAmount', 'Current work value before tax'], ['gst', 'GST amount'], ['deductions', 'Other deductions / advance recovery'], ['retention', 'Retention / security deduction'], ['penalty', 'Other recoveries / penalty']] as const).map(([key, label]) => <label key={key} className="space-y-1 text-xs font-medium text-slate-600">{label} (INR) *<Input required type="number" min="0" step="0.01" value={form[key]} onChange={(event) => set(key, event.target.value)} /></label>)}
+          </div>
+          <p className="text-xs text-slate-500">Enter amounts from the signed bill and applicable contract. Do not repeat amounts already claimed in an earlier RA bill. These amounts remain subject to verification.</p>
+          <p className="rounded-md bg-slate-50 p-3 text-sm font-semibold text-navy-800">Net claim: {Number.isFinite(netPayable) ? formatCurrencyFull(netPayable) : 'Enter valid amounts'}</p>
+          <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+            <h3 className="text-sm font-semibold text-slate-800">Supporting proof</h3>
+            <p className="text-xs text-slate-500">PDF, JPEG or PNG; up to 5 MB each, 6 files total. Attachments are saved on this device.</p>
+            {PROOF_FIELDS.map(({ category, label, required }) => <label key={category} className="block space-y-1 text-xs font-medium text-slate-600">{label}{required ? ' *' : ' (optional)'}
+              <input className="block w-full rounded-md border border-slate-200 p-2 text-xs file:mr-2 file:rounded file:border-0 file:bg-navy-50 file:px-2 file:py-1 file:text-navy-700" type="file" required={required} multiple={category === 'SUPPORTING'} accept="application/pdf,image/jpeg,image/png" onChange={(event) => setFiles((previous) => ({ ...previous, [category]: Array.from(event.target.files ?? []) }))} />
+              {!!files[category]?.length && <span className="block break-words text-[11px] text-slate-500">{files[category]!.map((file) => file.name).join(', ')}</span>}
+            </label>)}
+          </div>
+          <label className="flex items-start gap-2 text-xs text-slate-600"><input type="checkbox" required checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} className="mt-0.5" />I confirm that the claimed work was executed, the attached documents support this claim, and this claim does not duplicate previously billed work.</label>
+        </fieldset>
+        {error && <p role="alert" className="mt-3 rounded-md bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+        <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={onClose}>Cancel</Button><Button type="submit" disabled={busy}>{busy ? 'Saving proof...' : 'Submit for verification'}</Button></DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>;
+}

@@ -13,10 +13,10 @@ import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { KpiGroupCard } from '../../components/common/KpiCard';
 import { ProjectMap } from '../../components/common/ProjectMap';
-import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Button, Textarea, Table, THead, TBody, Tr, Th, Td, Label } from '../../components/ui/primitives';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Button, Textarea, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
 import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlays';
-import { formatCurrency, formatDate, photoSrc, cn } from '../../lib/utils';
+import { formatCurrency, formatDate, formatDateTime, photoSrc, cn } from '../../lib/utils';
+import { tabsForRole } from '../../lib/projectTabAccess';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
 import { AccessManagement } from '../admin/AccessManagement';
 import { FieldHome } from '../field/FieldHome';
@@ -40,14 +40,15 @@ const BUDGET_BANDS: { key: string; label: string; test: (p: Project) => boolean 
 ];
 
 /** Zone/Budget/Scheme are simple field-level filters — no dependency on other derived state. */
-function matchesScopeFilters(p: Project, f: { zone: string; budget: string; scheme: string }) {
-  if (f.zone !== 'ALL' && p.division !== f.zone) return false;
-  if (f.scheme !== 'ALL' && p.scheme !== f.scheme) return false;
-  if (f.budget !== 'ALL') {
-    const band = BUDGET_BANDS.find((b) => b.key === f.budget);
-    if (band && !band.test(p)) return false;
-  }
+function matchesScopeFilters(p: Project, f: { zone: string[]; budget: string[]; scheme: string[] }) {
+  if (f.zone.length && !f.zone.includes(p.division)) return false;
+  if (f.scheme.length && !f.scheme.includes(p.scheme)) return false;
+  if (f.budget.length && !BUDGET_BANDS.some((band) => f.budget.includes(band.key) && band.test(p))) return false;
   return true;
+}
+
+function toggleSelection(values: string[], key: string) {
+  return values.includes(key) ? values.filter((value) => value !== key) : [...values, key];
 }
 
 function isFinancialAnomaly(p: Project) {
@@ -84,26 +85,28 @@ export function Dashboard() {
   const resolveDecision = useStore((s) => s.resolveDecision);
   const currentUser = useStore((s) => s.currentUser);
   const [decisionId, setDecisionId] = useState<string | null>(null);
+  const [photoId, setPhotoId] = useState<string | null>(null);
   const [outcome, setOutcome] = useState('');
-  const [focusDivision, setFocusDivision] = useState<string | null>(null);
+
 
   // Zone / Budget / Scheme are plain data filters; the status filter comes from clicking a KPI
   // card segment (Projects: In Progress/Completed/Delayed, Data Integrity: Anomalies/Stale).
-  const [zoneFilter, setZoneFilter] = useState('ALL');
-  const [budgetFilter, setBudgetFilter] = useState('ALL');
-  const [schemeFilter, setSchemeFilter] = useState('ALL');
+  const [overviewMode, setOverviewMode] = useState<'zone' | 'budget' | 'scheme'>('zone');
+  const [zoneFilter, setZoneFilter] = useState<string[]>([]);
+  const [budgetFilter, setBudgetFilter] = useState<string[]>([]);
+  const [schemeFilter, setSchemeFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey | null>(null);
-  const filtersActive = zoneFilter !== 'ALL' || budgetFilter !== 'ALL' || schemeFilter !== 'ALL' || !!statusFilter;
+  const filtersActive = zoneFilter.length > 0 || budgetFilter.length > 0 || schemeFilter.length > 0 || !!statusFilter;
 
+  const focusDivision = zoneFilter.length === 1 ? zoneFilter[0] : null;
   function selectZone(division: string | null) {
-    setZoneFilter(division ?? 'ALL');
-    setFocusDivision(division);
+    setZoneFilter(division ? [division] : []);
   }
   function toggleStatusFilter(key: StatusFilterKey) {
     setStatusFilter((cur) => (cur === key ? null : key));
   }
   function clearFilters() {
-    setZoneFilter('ALL'); setBudgetFilter('ALL'); setSchemeFilter('ALL'); setStatusFilter(null); setFocusDivision(null);
+    setZoneFilter([]); setBudgetFilter([]); setSchemeFilter([]); setStatusFilter(null);
   }
 
   // Layer 1 (zone/budget/scheme) — drives the KPI strip + status pie chart, which stay showing
@@ -164,30 +167,35 @@ export function Dashboard() {
     name: s.replace('_', ' '), value: scopedProjects.filter((p) => p.status === s).length, key: s,
   }));
 
-  // Every zone tile stays visible (counts reflect budget/scheme/status, but never zone itself) so
-  // picking a zone narrows the rest of the page without hiding the other zones you could switch to.
-  const divisionStats = useMemo(() => {
-    const base = roleProjects.filter((p) => matchesScopeFilters(p, { zone: 'ALL', budget: budgetFilter, scheme: schemeFilter }));
-    const baseIds = new Set(base.map((p) => p.id));
-    const basePhotos = allPhotos.filter((p) => baseIds.has(p.projectId));
-    const forTiles = base.filter((p) => matchesStatusFilter(p, statusFilter, basePhotos));
-    const map = new Map<string, { division: string; total: number; delayed: number; completed: number }>();
-    MAHARASHTRA_HIERARCHY.forEach((d) => map.set(d.division, { division: d.division, total: 0, delayed: 0, completed: 0 }));
-    forTiles.forEach((p) => {
-      const cur = map.get(p.division) ?? { division: p.division, total: 0, delayed: 0, completed: 0 };
-      cur.total += 1;
-      if (p.status === 'DELAYED') cur.delayed += 1;
-      if (p.status === 'COMPLETED') cur.completed += 1;
-      map.set(p.division, cur);
+  const overviewStats = useMemo(() => {
+    const base = roleProjects.filter((p) => matchesScopeFilters(p, {
+      zone: overviewMode === 'zone' ? [] : zoneFilter,
+      budget: overviewMode === 'budget' ? [] : budgetFilter,
+      scheme: overviewMode === 'scheme' ? [] : schemeFilter,
+    }) && matchesStatusFilter(p, statusFilter, allPhotos));
+    const groups = overviewMode === 'zone'
+      ? MAHARASHTRA_HIERARCHY.map((d) => ({ key: d.division, label: d.division.replace(' Division', ''), test: (p: Project) => p.division === d.division }))
+      : overviewMode === 'budget' ? BUDGET_BANDS
+      : SCHEMES.map((scheme) => ({ key: scheme, label: scheme, test: (p: Project) => p.scheme === scheme }));
+    return groups.map((group) => {
+      const items = base.filter(group.test);
+      return { key: group.key, label: group.label, total: items.length,
+        completed: items.filter((p) => p.status === 'COMPLETED').length,
+        delayed: items.filter((p) => p.status === 'DELAYED').length };
     });
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [roleProjects, budgetFilter, schemeFilter, statusFilter, allPhotos]);
+  }, [roleProjects, overviewMode, zoneFilter, budgetFilter, schemeFilter, statusFilter, allPhotos]);
+  const selectedOverview = overviewMode === 'zone' ? zoneFilter : overviewMode === 'budget' ? budgetFilter : schemeFilter;
+  function selectOverview(key: string) {
+    if (overviewMode === 'zone') setZoneFilter((values) => toggleSelection(values, key));
+    else if (overviewMode === 'budget') setBudgetFilter((values) => toggleSelection(values, key));
+    else setSchemeFilter((values) => toggleSelection(values, key));
+  }
 
   const districtBudget = useMemo(() => {
-    const map = new Map<string, { district: string; sanctioned: number; spent: number }>();
+    const map = new Map<string, { district: string; sanctioned: number; spent: number; disbursed: number }>();
     projects.forEach((p) => {
-      const cur = map.get(p.district) ?? { district: p.district, sanctioned: 0, spent: 0 };
-      cur.sanctioned += p.sanctionedBudget; cur.spent += p.amountSpent;
+      const cur = map.get(p.district) ?? { district: p.district, sanctioned: 0, spent: 0, disbursed: 0 };
+      cur.sanctioned += p.sanctionedBudget; cur.spent += p.amountSpent; cur.disbursed += p.amountReleased;
       map.set(p.district, cur);
     });
     return Array.from(map.values()).slice(0, 8);
@@ -203,7 +211,13 @@ export function Dashboard() {
     ...inspections.filter((i) => i.overallResult === 'FAIL').slice(0, 3).map((i) => ({ text: t('dashboard.alertInspectionFailed', { project: projects.find((p) => p.id === i.projectId)?.name }), id: i.id })),
     ...projects.filter((p) => p.status === 'DELAYED').slice(0, 2).map((p) => ({ text: t('dashboard.alertDelayedBy', { project: p.name, days: p.delayDays }), id: p.id })),
   ].slice(0, 5);
-  const recentPhotos = [...photos].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 6);
+  const recentPhotos = [...photos].sort((a, b) => Number(!!b.dataUrl) - Number(!!a.dataUrl)
+    || (b.capturedAt || b.date).localeCompare(a.capturedAt || a.date)).slice(0, 6);
+  const selectedPhoto = photos.find((photo) => photo.id === photoId);
+  const selectedPhotoProject = projects.find((project) => project.id === selectedPhoto?.projectId);
+  const photoTabs = tabsForRole(currentUser?.role);
+  const photoProjectTab = photoTabs.find((tab) => tab.value === 'field evidence')
+    ?? photoTabs.find((tab) => tab.value === 'photos') ?? photoTabs[0];
   const workersOnSite = workers.filter((w) => w.attendanceStatus === 'PRESENT').length;
   const topContractors = [...contractors].sort((a, b) => b.performanceScore - a.performanceScore).slice(0, 5);
 
@@ -253,59 +267,8 @@ export function Dashboard() {
         </div>
       )}
 
-      <Card className="mb-4">
-        <CardContent className="flex flex-wrap items-end gap-3 p-4">
-          <div className="w-full sm:w-52">
-            <Label>Zone</Label>
-            <Select value={zoneFilter} onValueChange={(v) => selectZone(v === 'ALL' ? null : v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Zones</SelectItem>
-                {MAHARASHTRA_HIERARCHY.map((d) => <SelectItem key={d.division} value={d.division}>{d.division}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:w-48">
-            <Label>Budget</Label>
-            <Select value={budgetFilter} onValueChange={setBudgetFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Budgets</SelectItem>
-                {BUDGET_BANDS.map((b) => <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:w-52">
-            <Label>Scheme</Label>
-            <Select value={schemeFilter} onValueChange={setSchemeFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Schemes</SelectItem>
-                {SCHEMES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          {filtersActive && (
-            <Button variant="outline" size="sm" onClick={clearFilters}><X size={13} /> Clear Filters</Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {projects.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white py-16 text-center">
-          <Building2 className="mx-auto mb-2 text-slate-300" size={28} />
-          <p className="text-sm font-medium text-slate-600">
-            {filtersActive ? 'No projects match the current filters.' : 'No projects are currently assigned to your account.'}
-          </p>
-          {filtersActive ? (
-            <button onClick={clearFilters} className="mt-1 text-xs font-medium text-navy-700 hover:underline">Clear filters</button>
-          ) : (
-            <p className="mt-1 text-xs text-slate-400">Contact your Executive Engineer or District Health Officer if this seems incorrect.</p>
-          )}
-        </div>
-      ) : (
-      <>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      {projects.length > 0 && (
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <KpiGroupCard
           title={t('dashboard.kpiTotalProjects')} icon={Building2} tone="blue"
           primary={{ value: kpis.total, label: 'projects' }} onPrimaryClick={() => setStatusFilter(null)}
@@ -352,29 +315,63 @@ export function Dashboard() {
           />
         )}
       </div>
+      )}
 
-      <Card className="mt-4">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Layers size={15} /> Zone-wise Overview</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          {divisionStats.map((z) => (
-            <button
-              key={z.division}
-              onClick={() => selectZone(zoneFilter === z.division ? null : z.division)}
-              className={cn(
-                'rounded-lg border p-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50',
-                zoneFilter === z.division ? 'border-navy-400 bg-navy-50 ring-1 ring-navy-300' : 'border-slate-200 bg-white',
-              )}
-            >
-              <p className="truncate text-xs font-semibold text-slate-800">{z.division.replace(' Division', '')}</p>
-              <p className="mt-1 text-xl font-bold text-navy-700">{z.total}</p>
-              <p className="mt-0.5 text-[10.5px] text-slate-400">
-                {z.completed} completed{z.delayed > 0 && <span className="text-red-500"> · {z.delayed} delayed</span>}
-              </p>
-            </button>
-          ))}
+      <Card className="mb-4">
+        <CardHeader><CardTitle className="flex items-center gap-2"><Layers size={15} /> Project Overview</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-5 border-b border-slate-200" role="group" aria-label="Overview grouping">
+            {([{ key: 'zone', label: 'Zone wise', icon: MapPinned, count: zoneFilter.length }, { key: 'budget', label: 'Budget wise', icon: Wallet, count: budgetFilter.length }, { key: 'scheme', label: 'Scheme wise', icon: Layers, count: schemeFilter.length }] as const).map((mode) => (
+              <button key={mode.key} aria-pressed={overviewMode === mode.key} onClick={() => setOverviewMode(mode.key)}
+                className={cn('-mb-px flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500',
+                  overviewMode === mode.key ? 'border-navy-700 text-navy-800' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800')}>
+                <mode.icon size={15} /> {mode.label}
+                {mode.count > 0 && <span className="rounded-full bg-navy-50 px-1.5 py-0.5 text-[10px] font-semibold text-navy-700">{mode.count}</span>}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500">Select one or more options. No selection includes all options.</p>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+            {overviewStats.map((group) => (
+              <button key={group.key} aria-pressed={selectedOverview.includes(group.key)} onClick={() => selectOverview(group.key)}
+                className={cn('rounded-lg border p-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50',
+                  selectedOverview.includes(group.key) ? 'border-navy-400 bg-navy-50 ring-1 ring-navy-300' : 'border-slate-200 bg-white')}>
+                <p className="text-xs font-semibold text-slate-800">{group.label}</p>
+                <p className="mt-1 text-xl font-bold text-navy-700">{group.total}</p>
+                <p className="mt-0.5 text-[10.5px] text-slate-500">{group.completed} completed
+                  {group.delayed > 0 && <span className="text-red-500"> &middot; {group.delayed} delayed</span>}
+                </p>
+              </button>
+            ))}
+          </div>
+          {filtersActive && <div className="flex flex-wrap items-center gap-2 text-xs">
+            {[
+              ...zoneFilter.map((key) => ({ key, label: key, remove: () => setZoneFilter((values) => toggleSelection(values, key)) })),
+              ...budgetFilter.map((key) => ({ key, label: BUDGET_BANDS.find((band) => band.key === key)?.label, remove: () => setBudgetFilter((values) => toggleSelection(values, key)) })),
+              ...schemeFilter.map((key) => ({ key, label: key, remove: () => setSchemeFilter((values) => toggleSelection(values, key)) })),
+            ].map((filter) => <button key={filter.key} onClick={filter.remove} aria-label={`Remove ${filter.label} filter`}
+              className="flex items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-navy-700 hover:bg-navy-100">
+              {filter.label}<X size={12} />
+            </button>)}
+            <Button variant="outline" size="sm" onClick={clearFilters}><X size={13} /> Clear Filters</Button>
+          </div>}
         </CardContent>
       </Card>
 
+      {projects.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white py-16 text-center">
+          <Building2 className="mx-auto mb-2 text-slate-300" size={28} />
+          <p className="text-sm font-medium text-slate-600">
+            {filtersActive ? 'No projects match the current filters.' : 'No projects are currently assigned to your account.'}
+          </p>
+          {filtersActive ? (
+            <button onClick={clearFilters} className="mt-1 text-xs font-medium text-navy-700 hover:underline">Clear filters</button>
+          ) : (
+            <p className="mt-1 text-xs text-slate-400">Contact your Executive Engineer or District Health Officer if this seems incorrect.</p>
+          )}
+        </div>
+      ) : (
+      <>
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader><CardTitle>{t('dashboard.mapTitle')}</CardTitle></CardHeader>
@@ -468,15 +465,34 @@ export function Dashboard() {
         <Card>
           <CardHeader><CardTitle>{t('dashboard.statusDistribution')}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={statusDist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                  {statusDist.map((s) => <Cell key={s.key} fill={STATUS_HEX[s.key]} />)}
+            <div className="relative">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart style={{ fontSize: 10 }}>
+                <Pie data={statusDist.filter((status) => status.value > 0)} dataKey="value" nameKey="name" innerRadius={62} outerRadius={100} paddingAngle={2} labelLine={false}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    if ((percent ?? 0) < 0.08) return null;
+                    const angle = -(midAngle ?? 0) * Math.PI / 180;
+                    const radius = (Number(innerRadius) + Number(outerRadius)) / 2;
+                    return <text x={Number(cx) + radius * Math.cos(angle)} y={Number(cy) + radius * Math.sin(angle)} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={12} fontWeight={700} stroke="#0f172a" strokeWidth={2} paintOrder="stroke">{((percent ?? 0) * 100).toFixed(1)}%</text>;
+                  }}>
+                  {statusDist.filter((status) => status.value > 0).map((s) => <Cell key={s.key} fill={STATUS_HEX[s.key]} />)}
                 </Pie>
-                <RTooltip />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                <RTooltip formatter={(value) => `${value} projects (${scopedProjects.length ? (Number(value) / scopedProjects.length * 100).toFixed(1) : 0}%)`} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold text-slate-800">{scopedProjects.length}</span>
+              <span className="text-xs text-slate-500">Total projects</span>
+            </div>
+            </div>
+            <div className="pb-2 text-xs">
+              <div className="grid grid-cols-[1fr_3rem_4rem] gap-2 border-b border-slate-200 pb-2 text-slate-500"><span>Status</span><span className="text-right">Count</span><span className="text-right">Share</span></div>
+              {statusDist.map((status) => <div key={status.key} className="grid grid-cols-[1fr_3rem_4rem] items-center gap-2 border-b border-slate-100 py-2.5 last:border-0">
+                <span className="flex items-center gap-2 text-slate-600"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: STATUS_HEX[status.key] }} />{status.name}</span>
+                <span className="text-right font-semibold tabular-nums text-slate-800">{status.value}</span>
+                <span className="text-right tabular-nums text-slate-600">{scopedProjects.length ? (status.value / scopedProjects.length * 100).toFixed(1) : '0.0'}%</span>
+              </div>)}
+            </div>
           </CardContent>
         </Card>
 
@@ -504,14 +520,16 @@ export function Dashboard() {
         <Card>
           <CardHeader><CardTitle>{t('dashboard.districtBudget')}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={Math.max(260, districtBudget.length * 64)}>
               <BarChart data={districtBudget} layout="vertical" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eef2f8" />
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <YAxis type="category" dataKey="district" width={70} tick={{ fontSize: 10 }} />
                 <RTooltip formatter={(v: any) => formatCurrency(v)} />
-                <Bar dataKey="sanctioned" fill="#d7e0ee" name="Sanctioned" radius={[0, 3, 3, 0]} />
-                <Bar dataKey="spent" fill="#265aa0" name="Spent" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="sanctioned" fill="#3b82f6" name="Sanctioned Amount" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="spent" fill="#f59e0b" name="Amount Spent" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="disbursed" fill="#10b981" name="Amount Disbursed" radius={[0, 3, 3, 0]} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -602,21 +620,46 @@ export function Dashboard() {
       <Card className="mt-4">
         <CardHeader><CardTitle>{t('dashboard.recentSiteImages')}</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {recentPhotos.map((ph) => (
-              <button key={ph.id} onClick={() => navigate(`/projects/${ph.projectId}?tab=photos`)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
-                <img src={photoSrc(ph)} className="h-24 w-full object-cover transition-transform group-hover:scale-105" />
-                <div className="p-1.5">
-                  <p className="truncate text-[10.5px] font-medium text-slate-700">{ph.stage}</p>
-                  <p className="text-[10px] text-slate-400">{formatDate(ph.date)}</p>
+              <button key={ph.id} onClick={() => setPhotoId(ph.id)} className="flex gap-3 rounded-lg border border-slate-200 p-2.5 text-left transition-colors hover:border-navy-300 hover:bg-navy-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500">
+                <img src={photoSrc(ph)} alt={`${ph.dataUrl ? 'Site capture' : 'Sample construction photo'}: ${ph.stage}`} loading="lazy" className="h-24 w-20 shrink-0 rounded-md object-cover sm:w-24" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold leading-snug text-slate-800">{projects.find((project) => project.id === ph.projectId)?.name ?? ph.projectId}</p>
+                  <p className="mt-1 text-[11px] text-slate-600">{ph.stage} &middot; {ph.location}</p>
+                  <p className="mt-1 flex items-start gap-1 text-[11px] font-medium tabular-nums text-navy-700"><MapPinned size={12} className="mt-0.5 shrink-0" /><span>Lat {ph.lat.toFixed(5)}, Lng {ph.lng.toFixed(5)}</span></p>
+                  <p className="mt-1 text-[10px] text-slate-500">{formatDateTime(ph.capturedAt || ph.date)}</p>
+                  {ph.dataUrl && <span className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">
+                    {ph.locationSource === 'CAPTURED' ? 'Device photo / GPS captured' : 'Device photo / manual location'}
+                  </span>}
                 </div>
               </button>
             ))}
           </div>
+          {recentPhotos.length === 0 && <p className="text-xs text-slate-500">No site photos available for the selected projects.</p>}
         </CardContent>
       </Card>
       </>
       )}
+
+      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setPhotoId(null)}>
+        {selectedPhoto && (
+          <DialogContent title={selectedPhotoProject?.name ?? selectedPhoto.projectId} description={`${selectedPhoto.stage} - ${formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)}`} size="lg">
+            <img src={photoSrc(selectedPhoto)} alt={selectedPhoto.description || selectedPhoto.stage} className="max-h-[50vh] w-full rounded-lg bg-slate-100 object-contain" />
+            <div className="mt-3 space-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
+              <p className="font-semibold text-slate-800">{selectedPhoto.location}</p>
+              <p className="tabular-nums">Latitude {selectedPhoto.lat.toFixed(6)} &middot; Longitude {selectedPhoto.lng.toFixed(6)}</p>
+              <p>{selectedPhoto.description}</p>
+              <p>Uploaded by {selectedPhoto.uploadedBy}</p>
+              <p>{selectedPhoto.dataUrl ? (selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.') : 'Illustrative construction photo and demo coordinates; not live evidence from this site.'}</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPhotoId(null)}>Close</Button>
+              {photoProjectTab && <Button onClick={() => { setPhotoId(null); navigate(`/projects/${selectedPhoto.projectId}?${new URLSearchParams({ tab: photoProjectTab.value })}`); }}>View project {photoProjectTab.label.toLowerCase()} <ArrowRight size={13} /></Button>}
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
 
       <Dialog open={!!decisionId} onOpenChange={(v) => !v && setDecisionId(null)}>
         {activeDecision && (
