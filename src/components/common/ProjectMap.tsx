@@ -71,17 +71,30 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
     markersRef.current = projects.map((p) => {
       const color = STATUS_HEX[p.status] ?? '#64748b';
       const pulse = p.status === 'DELAYED' || p.status === 'AT_RISK';
-      const icon = L.divIcon({
+      const makeIcon = () => {
+        const selected = marker?.isPopupOpen() ?? false;
+        const size = selected ? 44 : Math.min(38, 22 + Math.max(0, map.getZoom() - STATEWIDE_ZOOM) * 4);
+        return L.divIcon({
         className: '',
         html: `
-          <div style="position: relative; width: 22px; height: 22px;">
+          <div style="position: relative; width: ${size}px; height: ${size}px;">
             ${pulse ? `<span style="position:absolute; inset:0; border-radius:9999px; background:${color}; opacity:0.35; animation: proj-pulse 1.8s ease-out infinite;"></span>` : ''}
             <span style="position:absolute; inset:5px; border-radius:9999px; background:${color}; border:2px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.35);"></span>
           </div>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+        popupAnchor: [0, -size / 2],
       });
-      const marker = L.marker([p.siteLat, p.siteLng], { icon }).addTo(map);
+      };
+      const marker = L.marker([p.siteLat, p.siteLng], { title: p.name }).addTo(map);
+      const updateIcon = () => {
+        marker.setIcon(makeIcon());
+        marker.setZIndexOffset(marker.isPopupOpen() ? 2000 : 0);
+      };
+      updateIcon();
+      map.on('zoomend', updateIcon);
+      marker.on('remove', () => map.off('zoomend', updateIcon));
+      marker.on('popupclose', updateIcon);
       const popupId = `view-project-${p.id}`;
       const statusLabel = p.status.replace('_', ' ');
       marker.bindPopup(`
@@ -100,6 +113,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
         </div>
       `);
       marker.on('popupopen', () => {
+        updateIcon();
         document.getElementById(popupId)?.addEventListener('click', () => navigateRef.current(`/projects/${p.id}`));
       });
       return marker;

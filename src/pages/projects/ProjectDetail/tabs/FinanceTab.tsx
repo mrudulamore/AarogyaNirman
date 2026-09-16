@@ -1,3 +1,5 @@
+import { RABillSubmission } from './RABillSubmission';
+import { BillEvidence } from './BillEvidence';
 import { FundDisbursalReports } from '../../../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -5,8 +7,8 @@ import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
 import type { Project, BillStatus } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
-import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td, Input } from '../../../../components/ui/primitives';
-import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
+import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
+import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { KpiCard } from '../../../../components/common/KpiCard';
 import { formatCurrency, formatCurrencyFull, formatDate } from '../../../../lib/utils';
 
@@ -28,7 +30,6 @@ export function FinanceTab({ project }: { project: Project }) {
   const measurements = useStore((s) => s.measurements).filter((m) => m.projectId === project.id);
   const changeOrders = useStore((s) => s.changeOrders).filter((c) => c.projectId === project.id);
   const currentUser = useStore((s) => s.currentUser);
-  const submitBill = useStore((s) => s.submitBill);
   const verifyBillSite = useStore((s) => s.verifyBillSite);
   const verifyBillQuality = useStore((s) => s.verifyBillQuality);
   const approveBill = useStore((s) => s.approveBill);
@@ -38,7 +39,6 @@ export function FinanceTab({ project }: { project: Project }) {
 
   const [submitOpen, setSubmitOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [form, setForm] = useState({ periodFrom: '', periodTo: '', grossAmount: 2000000 });
 
   const active = bills.find((b) => b.id === detailId);
   const activeMeasurements = measurements.filter((m) => m.billId === detailId);
@@ -124,21 +124,6 @@ export function FinanceTab({ project }: { project: Project }) {
     });
     return Array.from(byMonth.entries()).sort(([a], [b]) => (a < b ? -1 : 1)).slice(-8).map(([month, v]) => ({ month, ...v }));
   }, [bills]);
-
-  function submit() {
-    const gross = form.grossAmount;
-    const deductions = Math.round(gross * 0.02);
-    const gst = Math.round(gross * 0.18);
-    const retention = Math.round(gross * 0.05);
-    submitBill({
-      billNumber: `RA/${project.district.slice(0, 3).toUpperCase()}/${100 + bills.length + 1}`,
-      contractorId: project.contractorId, projectId: project.id, periodFrom: form.periodFrom || new Date().toISOString().slice(0, 10),
-      periodTo: form.periodTo || new Date().toISOString().slice(0, 10), grossAmount: gross, deductions, gst, retention, penalty: 0,
-      netPayable: gross - deductions + gst - retention,
-    });
-    toast.success('RA Bill submitted for verification and approval.');
-    setSubmitOpen(false);
-  }
 
   return (
     <div className="space-y-4">
@@ -242,7 +227,7 @@ export function FinanceTab({ project }: { project: Project }) {
       <Card>
         <CardHeader>
           <CardTitle>Bills</CardTitle>
-          <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} /> Submit RA Bill</Button>
+          {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} /> Submit RA Bill</Button>}
         </CardHeader>
         <Table>
           <THead><Tr><Th>Bill No.</Th><Th>Type</Th><Th>Period</Th><Th>Claimed</Th><Th>Certified</Th><Th>Paid</Th><Th>Status</Th><Th>Pending With</Th><Th>Ageing</Th><Th /></Tr></THead>
@@ -263,11 +248,11 @@ export function FinanceTab({ project }: { project: Project }) {
                   <Td className="text-[11px] text-slate-500">{PENDING_WITH[b.status] ?? '—'}</Td>
                   <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`}</Td>
                   <Td className="space-x-1.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    {b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { verifyBillSite(b.id); toast.success('Site-verified.'); }}>Site Verify</Button>}
-                    {b.status === 'SITE_VERIFIED' && <Button size="sm" variant="outline" onClick={() => { verifyBillQuality(b.id); toast.success('Quality-verified.'); }}>Quality Verify</Button>}
-                    {b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { approveBill(b.id); toast.success('Bill approved.'); }}>Approve</Button>}
-                    {b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => { markBillPaid(b.id); toast.success('Payment released. Financial progress updated.'); }}>Mark Paid</Button>}
-                    {['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status) && <Button size="sm" variant="destructive" onClick={() => { rejectBill(b.id, 'Discrepancy in measurement'); toast.error('Bill returned.'); }}>Return</Button>}
+                    {currentUser?.role === 'DEPUTY_ENGINEER' && b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { verifyBillSite(b.id); toast.success('Site-verified.'); }}>Site Verify</Button>}
+                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'SITE_VERIFIED' && <Button size="sm" variant="outline" onClick={() => { verifyBillQuality(b.id); toast.success('Quality-verified.'); }}>Quality Verify</Button>}
+                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { approveBill(b.id); toast.success('Bill approved.'); }}>Approve</Button>}
+                    {currentUser?.role === 'COMMISSIONER' && b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => { markBillPaid(b.id); toast.success('Payment released. Financial progress updated.'); }}>Mark Paid</Button>}
+                    {['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER'].includes(currentUser?.role ?? '') && ['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status) && <Button size="sm" variant="destructive" onClick={() => { rejectBill(b.id, 'Discrepancy in measurement'); toast.error('Bill returned.'); }}>Return</Button>}
                   </Td>
                 </Tr>
               );
@@ -296,22 +281,7 @@ export function FinanceTab({ project }: { project: Project }) {
         </Card>
       )}
 
-      <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
-        <DialogContent title="Submit RA Bill" description={project.name}>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><p className="mb-1 text-xs font-medium text-slate-600">Period From</p><Input type="date" value={form.periodFrom} onChange={(e) => setForm({ ...form, periodFrom: e.target.value })} /></div>
-              <div><p className="mb-1 text-xs font-medium text-slate-600">Period To</p><Input type="date" value={form.periodTo} onChange={(e) => setForm({ ...form, periodTo: e.target.value })} /></div>
-            </div>
-            <div><p className="mb-1 text-xs font-medium text-slate-600">Gross Amount (₹)</p><Input type="number" value={form.grossAmount} onChange={(e) => setForm({ ...form, grossAmount: +e.target.value })} /></div>
-            <p className="text-[11px] text-slate-400">Deductions (2%), GST (18%) and retention (5%) will be computed automatically.</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSubmitOpen(false)}>Cancel</Button>
-            <Button onClick={submit}>Submit Bill</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {submitOpen && currentUser?.role === 'CONTRACTOR' && <RABillSubmission project={project} onClose={() => setSubmitOpen(false)} />}
 
       <Dialog open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)}>
         {active && (
@@ -326,6 +296,14 @@ export function FinanceTab({ project }: { project: Project }) {
               <Row label="Site Verified By" value={active.siteVerifiedBy ?? '—'} />
               <Row label="Quality Verified By" value={active.qualityVerifiedBy ?? '—'} />
             </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+              <Row label="Work-order reference" value={active.workOrderReference ?? 'Not recorded'} />
+              <Row label="Bill date" value={formatDate(active.invoiceDate)} />
+              <Row label="Measurement reference" value={active.measurementBookId ?? 'Not recorded'} />
+              <Row label="Previous bill reference" value={active.previousBillReference || 'First bill / not recorded'} />
+            </div>
+            {active.workDescription && <p className="mt-3 text-xs text-slate-600">{active.workDescription}</p>}
+            <BillEvidence attachments={active.attachments} />
             <p className="mt-4 mb-2 text-xs font-semibold text-slate-600">Measurement Book Extract</p>
             <Table>
               <THead><Tr><Th>Work Item</Th><Th>Unit</Th><Th>Previous</Th><Th>Current</Th><Th>Total</Th><Th>Rate</Th><Th>Amount</Th><Th /></Tr></THead>
@@ -334,7 +312,7 @@ export function FinanceTab({ project }: { project: Project }) {
                   <Tr key={m.id}>
                     <Td>{m.workItem}</Td><Td>{m.unit}</Td><Td>{m.previousQty}</Td><Td>{m.currentQty}</Td><Td>{m.totalQty}</Td>
                     <Td>{formatCurrencyFull(m.rate)}</Td><Td>{formatCurrencyFull(m.amount)}</Td>
-                    <Td>{m.verified ? <StatusBadge status="APPROVED" label="Verified" /> : <Button size="sm" variant="outline" onClick={() => verifyMeasurement(m.id, currentUser?.name ?? 'Engineer')}><FileCheck2 size={12} /> Verify</Button>}</Td>
+                    <Td>{m.verified ? <StatusBadge status="APPROVED" label="Verified" /> : currentUser?.role === 'DEPUTY_ENGINEER' ? <Button size="sm" variant="outline" onClick={() => verifyMeasurement(m.id, currentUser?.name ?? 'Engineer')}><FileCheck2 size={12} /> Verify</Button> : <span>Pending verification</span>}</Td>
                   </Tr>
                 ))}
                 {activeMeasurements.length === 0 && <Tr><Td className="py-4 text-center text-slate-400"><span>No linked measurement entries.</span></Td></Tr>}

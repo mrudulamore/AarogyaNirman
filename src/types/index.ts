@@ -337,6 +337,14 @@ export interface AttendanceRecord {
 
 export type BillStatus = 'DRAFT' | 'SUBMITTED' | 'SITE_VERIFIED' | 'QUALITY_VERIFIED' | 'APPROVED' | 'REJECTED' | 'PAID';
 
+export interface BillAttachment {
+  id: string;
+  category: 'SIGNED_BILL' | 'MEASUREMENT' | 'SUPPORTING';
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface Bill {
   id: string;
   billNumber: string;
@@ -357,6 +365,13 @@ export interface Bill {
   approvedBy?: string;
   paidDate?: string;
   measurementBookId?: string;
+  invoiceDate?: string;
+  workOrderReference?: string;
+  workDescription?: string;
+  previousBillReference?: string;
+  declarationAccepted?: boolean;
+  submittedById?: string;
+  attachments?: BillAttachment[];
 }
 
 export interface MeasurementEntry {

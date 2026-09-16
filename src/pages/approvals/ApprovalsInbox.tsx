@@ -1,3 +1,4 @@
+import { BillEvidence } from '../projects/ProjectDetail/tabs/BillEvidence';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,7 @@ export function ApprovalsInbox() {
   const { t } = useTranslation();
   const { projects, projectIds } = useProjectScope();
   const allApprovals = useStore((s) => s.approvals);
+  const bills = useStore((s) => s.bills);
   const decideApproval = useStore((s) => s.decideApproval);
   const currentUser = useStore((s) => s.currentUser);
   const [statusFilter, setStatusFilter] = useState('PENDING');
@@ -27,11 +29,12 @@ export function ApprovalsInbox() {
   const myPending = approvals.filter((a) => a.status === 'PENDING' && a.chain[a.currentStepIndex] === currentUser?.role);
   const filtered = statusFilter === 'ALL' ? approvals : approvals.filter((a) => a.status === statusFilter);
   const active = approvals.find((a) => a.id === detailId);
-  const canDecide = !!active && !!currentUser && (currentUser.role === active.chain[active.currentStepIndex] || currentUser.role === 'COMMISSIONER');
+  const canDecide = !!active && !!currentUser && (currentUser.role === active.chain[active.currentStepIndex] || (!active.relatedBillId && currentUser.role === 'COMMISSIONER'));
 
   function act(decision: 'APPROVED' | 'REJECTED' | 'SENT_BACK' | 'CLARIFICATION_REQUESTED') {
     if (!active) return;
-    decideApproval(active.id, decision, comment || `${decision.replace('_', ' ')} by reviewing officer.`);
+    try { decideApproval(active.id, decision, comment || `${decision.replace('_', ' ')} by reviewing officer.`); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to record decision.'); return; }
     toast[decision === 'APPROVED' ? 'success' : decision === 'REJECTED' ? 'error' : 'info'](`Request ${decision.replace('_', ' ').toLowerCase()}.`);
     setComment(''); setDetailId(null);
   }
@@ -87,6 +90,7 @@ export function ApprovalsInbox() {
                 </span>
               ))}
             </div>
+            <div>{active.relatedBillId && <BillEvidence attachments={bills.find((bill) => bill.id === active.relatedBillId)?.attachments} />}</div>
             <p className="mb-2 mt-4 text-xs font-semibold text-slate-600">Approval History &amp; Audit Trail</p>
             <div className="space-y-2">
               {active.history.length === 0 && <p className="text-xs text-slate-400">No decisions recorded yet.</p>}

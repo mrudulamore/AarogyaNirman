@@ -4,6 +4,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
 import { ROLE_NAV } from '../components/layout/navConfig';
+import { computeProjectScope } from '../lib/scope';
+import { validateBillSubmission } from '../lib/billSubmission';
+import { readBillFile } from '../lib/billAttachments';
 import type {
   FundInstallment, Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
   Contractor, Worker, AttendanceRecord, Bill, MeasurementEntry, BoqItem, Material, MaterialTest,
@@ -123,7 +126,7 @@ interface StoreState {
   markAttendance: (workerId: string, projectId: string, method: 'QR' | 'MANUAL') => void;
 
   // bills / finance
-  submitBill: (b: Omit<Bill, 'id' | 'status' | 'submittedDate'>) => Bill;
+  submitBill: (b: Omit<Bill, 'id' | 'status' | 'submittedDate'>) => Promise<Bill>;
   verifyBillSite: (id: string) => void;
   verifyBillQuality: (id: string) => void;
   approveBill: (id: string) => void;
@@ -488,31 +491,52 @@ export const useStore = create<StoreState>()(
         get().logAction(`Marked attendance via ${method}`, project?.name);
       },
 
-      submitBill: (b) => {
-        const bill: Bill = { ...b, id: nid('BIL'), status: 'SUBMITTED', submittedDate: new Date().toISOString().slice(0, 10) };
-        set((s) => ({ bills: [bill, ...s.bills] }));
+      submitBill: async (b) => {
+        const validate = () => {
+          const state = get();
+          validateBillSubmission(b, state.currentUser, state.projects.find((p) => p.id === b.projectId), computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds, state.bills);
+        };
+        validate();
+        const submitterId = get().currentUser!.id;
+        for (const attachment of b.attachments!) {
+          const file = await readBillFile(attachment.id);
+          if (file.size !== attachment.size || file.type !== attachment.mimeType) throw new Error('The attached evidence does not match the submitted file details.');
+        }
+        validate();
+        if (get().currentUser!.id !== submitterId) throw new Error('Your account changed. Reopen the bill form.');
+        const bill: Bill = { ...b, billNumber: b.billNumber.trim(), submittedById: submitterId, id: nid('BIL'), status: 'SUBMITTED', submittedDate: todayDate() };
         const project = get().projects.find((p) => p.id === b.projectId);
-        get().logAction(`Submitted RA Bill ${bill.billNumber}`, project?.name);
-        get().createApproval({
-          type: 'RA_BILL', projectId: b.projectId, amount: bill.netPayable, submittedBy: get().currentUser?.name ?? 'Contractor',
-          submittedDate: bill.submittedDate, documents: ['Measurement Book Extract', 'RA Bill Form'], comments: `RA Bill ${bill.billNumber}`,
+        const approval: ApprovalRequest = {
+          id: nid('APR'), status: 'PENDING', currentStepIndex: 0, history: [],
+          type: 'RA_BILL', projectId: b.projectId, amount: bill.netPayable, submittedBy: get().currentUser!.name,
+          submittedDate: bill.submittedDate, documents: bill.attachments!.map((file) => file.name), comments: `RA Bill ${bill.billNumber}; MB ${bill.measurementBookId}`,
           chain: ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER'], relatedBillId: bill.id,
-        });
+        };
+        const previous = { bills: get().bills, approvals: get().approvals };
+        try { set((s) => ({ bills: [bill, ...s.bills], approvals: [approval, ...s.approvals] })); }
+        catch { try { set(previous); } catch { /* In-memory state is restored even if persistence is full. */ } throw new Error('The bill could not be saved. Free device storage and try again.'); }
+        try { get().logAction(`Submitted RA Bill ${bill.billNumber}`, project?.name); } catch { /* The bill and approval have already been saved. */ }
         return bill;
       },
       verifyBillSite: (id) => {
+        assertBillReviewer(get(), id, ['DEPUTY_ENGINEER']);
+        if (get().bills.find((b) => b.id === id)?.status !== 'SUBMITTED') return;
         set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'SITE_VERIFIED', siteVerifiedBy: get().currentUser?.name } : b)) }));
         const b = get().bills.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === b?.projectId);
         get().logAction(`Site-verified bill ${b?.billNumber}`, project?.name);
       },
       verifyBillQuality: (id) => {
+        assertBillReviewer(get(), id, ['EXECUTIVE_ENGINEER']);
+        if (get().bills.find((b) => b.id === id)?.status !== 'SITE_VERIFIED') return;
         set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'QUALITY_VERIFIED', qualityVerifiedBy: get().currentUser?.name } : b)) }));
         const b = get().bills.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === b?.projectId);
         get().logAction(`Quality-verified bill ${b?.billNumber}`, project?.name);
       },
       approveBill: (id) => {
+        assertBillReviewer(get(), id, ['EXECUTIVE_ENGINEER']);
+        if (get().bills.find((b) => b.id === id)?.status !== 'QUALITY_VERIFIED') return;
         set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'APPROVED', approvedBy: get().currentUser?.name } : b)) }));
         const b = get().bills.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === b?.projectId);
@@ -520,13 +544,16 @@ export const useStore = create<StoreState>()(
         get().pushNotification({ message: `Bill ${b?.billNumber} approved and pending payment.`, type: 'INFO', projectId: b?.projectId, targetRoles: ['COMMISSIONER'] });
       },
       rejectBill: (id, reason) => {
+        assertBillReviewer(get(), id, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER']);
         set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'REJECTED' } : b)) }));
         const b = get().bills.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === b?.projectId);
         get().logAction(`Rejected bill ${b?.billNumber}: ${reason}`, project?.name);
       },
       markBillPaid: (id) => {
+        assertBillReviewer(get(), id, ['COMMISSIONER']);
         const b = get().bills.find((x) => x.id === id);
+        if (b?.status !== 'APPROVED') return;
         set((s) => ({ bills: s.bills.map((x) => (x.id === id ? { ...x, status: 'PAID', paidDate: new Date().toISOString().slice(0, 10) } : x)) }));
         if (b) {
           const project = get().projects.find((p) => p.id === b.projectId);
@@ -541,7 +568,12 @@ export const useStore = create<StoreState>()(
           get().pushNotification({ message: `Payment of ₹${b.netPayable.toLocaleString('en-IN')} released for ${b.billNumber}.`, type: 'INFO', projectId: b.projectId, targetRoles: ['CONTRACTOR', 'COMMISSIONER'] });
         }
       },
-      verifyMeasurement: (id, by) => set((s) => ({ measurements: s.measurements.map((m) => (m.id === id ? { ...m, verified: true, verifiedBy: by } : m)) })),
+      verifyMeasurement: (id, by) => {
+        const state = get();
+        const measurement = state.measurements.find((m) => m.id === id);
+        if (!state.currentUser || !['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER'].includes(state.currentUser.role) || !measurement || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(measurement.projectId)) throw new Error('Only an assigned engineer can verify measurements.');
+        set((s) => ({ measurements: s.measurements.map((m) => (m.id === id ? { ...m, verified: true, verifiedBy: by } : m)) }));
+      },
 
       createApproval: (a) => {
         const req: ApprovalRequest = { ...a, id: nid('APR'), status: 'PENDING', currentStepIndex: 0, history: [] };
@@ -551,6 +583,10 @@ export const useStore = create<StoreState>()(
         const req = get().approvals.find((a) => a.id === id);
         if (!req) return;
         const u = get().currentUser;
+        if (req.relatedBillId) {
+          assertBillReviewer(get(), req.relatedBillId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER']);
+          if (req.status !== 'PENDING' || u?.role !== req.chain[req.currentStepIndex]) throw new Error('This bill is not awaiting your approval step.');
+        }
         const entry = { step: req.chain[req.currentStepIndex], approver: u?.name ?? 'Officer', designation: u?.designation ?? '', timestamp: new Date().toISOString(), decision, comment };
         let nextIndex = req.currentStepIndex;
         let status: ApprovalStatus = req.status;
@@ -679,4 +715,11 @@ export const useStore = create<StoreState>()(
 
 function buildPassItems() {
   return [{ id: `chk-${Date.now()}`, requirement: 'Re-inspection of rectified work', measurement: 'Within tolerance', standard: 'Applicable IS Standard', result: 'PASS' as const, evidence: 'Photo & instrument reading logged', remarks: 'Corrective action verified and accepted.' }];
+}
+
+function assertBillReviewer(state: StoreState, billId: string, roles: Role[]) {
+  const bill = state.bills.find((item) => item.id === billId);
+  if (!state.currentUser || !roles.includes(state.currentUser.role) || !bill || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(bill.projectId)) {
+    throw new Error('This action requires an authorized reviewer for this project.');
+  }
 }
