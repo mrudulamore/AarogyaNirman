@@ -42,7 +42,6 @@ export function DocumentsTab({ project }: { project: Project }) {
         { label: 'File Size', value: `${(d.sizeKb / 1024).toFixed(2)} MB` },
       ],
     });
-    toast.success('Document downloaded.');
   }
 
   return (

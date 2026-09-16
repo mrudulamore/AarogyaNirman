@@ -268,7 +268,6 @@ export function ReportsCenter() {
       kpis, sections,
       filename: `${report.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`,
     });
-    toast.success(`${report.name} downloaded.`);
   }
 
   return (
