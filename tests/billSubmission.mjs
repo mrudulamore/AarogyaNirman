@@ -24,7 +24,10 @@ try {
   const { useStore } = await server.ssrLoadModule('/src/store/useStore.ts');
   const { saveBillFiles } = await server.ssrLoadModule('/src/lib/billAttachments.ts');
   const state = () => useStore.getState();
-  const project = state().projects[0];
+  state().login('CONTRACTOR');
+  const project = state().projects.find(p => state().currentUser.assignedProjectIds.includes(p.id) && p.contractorId === state().currentUser.contractorId);
+  assert.ok(project);
+  useStore.setState({ boqItems: [...state().boqItems, { id: 'BOQ-TEST', projectId: project.id, item: 'Concrete', unit: 'm3', rate: 1000, plannedQty: 100, executedQty: 0, totalAmount: 100000 }] });
   const file = new Blob(['%PDF-1.7\nBill evidence'], { type: 'application/pdf' });
   evidence.set('signed', file);
   evidence.set('measurement', file);
@@ -34,6 +37,7 @@ try {
     workOrderReference: 'WO-100', measurementBookId: 'MB-1 pages 10-12', workDescription: 'BOQ 1: concrete work',
     grossAmount: 1000, gst: 180, deductions: 20, retention: 50, penalty: 0, netPayable: 1110,
     declarationAccepted: true,
+    measurementLines: [{ boqItemId: 'BOQ-TEST', quantity: 1, location: 'Foundation A', measurementReference: 'MB-TEST-1' }],
     attachments: [{ id: 'signed', name: 'bill.pdf', category: 'SIGNED_BILL', mimeType: file.type, size: file.size },
       { id: 'measurement', name: 'measurement.pdf', category: 'MEASUREMENT', mimeType: file.type, size: file.size }],
   };
@@ -72,15 +76,27 @@ try {
   assert.throws(() => state().markBillPaid(saved.id), /authorized reviewer/);
   assert.throws(() => state().decideApproval(approval.id, 'APPROVED', 'Self approval'), /authorized reviewer/);
   state().login('DEPUTY_ENGINEER', project.siteEngineerId);
+  assert.throws(() => state().decideApproval(approval.id, 'APPROVED', 'Measurements checked'), /Verify each measurement/);
+  for (const m of state().measurements.filter(m => m.billId === saved.id)) state().verifyMeasurement(m.id, 'Ignored client identity');
   state().decideApproval(approval.id, 'APPROVED', 'Measurements checked');
   assert.equal(state().bills.find((item) => item.id === saved.id).status, 'SITE_VERIFIED');
   state().login('EXECUTIVE_ENGINEER', project.executiveEngineerId);
   state().decideApproval(approval.id, 'APPROVED', 'Quality checked');
   assert.equal(state().bills.find((item) => item.id === saved.id).status, 'APPROVED');
   state().login('COMMISSIONER');
-  const spent = state().projects.find((item) => item.id === project.id).amountSpent;
+
   state().decideApproval(approval.id, 'APPROVED', 'Payment authorized');
+  assert.equal(state().bills.find(b => b.id === saved.id).status, 'APPROVED');
+  assert.throws(() => state().markBillPaid(saved.id), /bank or treasury/);
+  state().login('EXECUTIVE_ENGINEER', project.executiveEngineerId);
+  await state().submitControl({ projectId: project.id, kind: 'PAYMENT', category: 'PAYMENT', reference: 'BANK-TEST-1', fields: { billId: saved.id, transactionDate: '2026-02-02', accountingHead: 'Hospital works', amount: String(saved.netPayable) }, attachments: [bill.attachments[0]] });
+  const payment = state().controlRecords.at(-1);
+  await assert.rejects(() => state().reviewControl(payment.id, true, 'Self review'), /authorized/);
+  state().login('COMMISSIONER');
+  await state().reviewControl(payment.id, true, 'Bank reference reconciled');
   state().markBillPaid(saved.id);
-  assert.equal(state().projects.find((item) => item.id === project.id).amountSpent, spent + saved.netPayable);
+  assert.equal(state().bills.find(b => b.id === saved.id).status, 'PAID');
+  assert.equal(state().projects.find(p => p.id === project.id).amountSpent, saved.netPayable);
+  await assert.rejects(() => state().reviewControl(payment.id, true, 'Repeat'), /independent reviewer/);
   console.log('RA bill tests passed: roles, scope, mandatory proof, dates, amounts, duplicate submission, missing files, file signature, reviewer chain and payment idempotency.');
 } finally { await server.close(); }

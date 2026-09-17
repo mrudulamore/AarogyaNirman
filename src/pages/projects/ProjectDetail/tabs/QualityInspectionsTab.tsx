@@ -371,7 +371,7 @@ export function InspectionsTab({ project }: { project: Project }) {
             <DialogFooter>
               <Button variant="outline" onClick={() => setChecklistId(null)}>{uiText("Cancel")}</Button>
               {active.isReinspection ? (
-                <Button variant="success" onClick={() => { passReinspection(active.id); toast.success(uiText('Re-inspection PASSED. Defect closed and project progress updated.')); setChecklistId(null); }}>
+                <Button variant="success" onClick={() => { try {  passReinspection(active.id, items, comments); toast.success(uiText('Re-inspection PASSED. Defect closed and project progress updated.')); setChecklistId(null);  } catch (error) { toast.error(uiText((error as Error).message)); } }}>
                   <ShieldCheck size={14} />{uiText(" Confirm PASS")}</Button>
               ) : (
                 <Button onClick={submit}><ShieldAlert size={14} />{uiText(" Submit Result")}</Button>

@@ -1,6 +1,7 @@
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
 import { Card, Button, EmptyState } from '../../components/ui/primitives';
@@ -14,7 +15,8 @@ export function NotificationsCenter() {
   useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const notifications = useStore((s) => s.notifications);
+  const { projectIds } = useProjectScope();
+  const notifications = useStore((s) => s.notifications).filter(n => !n.projectId || projectIds.has(n.projectId));
   const currentUser = useStore((s) => s.currentUser);
   const markNotificationRead = useStore((s) => s.markNotificationRead);
   const markAllNotificationsRead = useStore((s) => s.markAllNotificationsRead);

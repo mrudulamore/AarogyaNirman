@@ -254,7 +254,7 @@ export function Dashboard() {
   // The native app is built for field roles: Deputy/Junior Engineers and Contractors land
   // straight on the Field app (capture, progress, defects) instead of the desktop-oriented
   // command-centre dashboard. The website itself is unaffected — same code, different shell.
-  if (Capacitor.isNativePlatform() && currentUser && FIELD_ROLES.includes(currentUser.role)) return <FieldHome />;
+  if (currentUser?.role === 'CONTRACTOR' || (Capacitor.isNativePlatform() && currentUser && FIELD_ROLES.includes(currentUser.role))) return <FieldHome key={currentUser.id} />;
 
   return (
     <div>

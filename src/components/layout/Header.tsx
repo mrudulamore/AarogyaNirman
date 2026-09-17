@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, Search, Bell, LogOut, ChevronDown, UserCog } from 'lucide-react';
+import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { Avatar } from '../ui/forms';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/overlays';
@@ -15,7 +16,8 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const logout = useStore((s) => s.logout);
-  const notifications = useStore((s) => s.notifications);
+  const { projectIds } = useProjectScope();
+  const notifications = useStore((s) => s.notifications).filter(n => !n.projectId || projectIds.has(n.projectId));
   const markRead = useStore((s) => s.markNotificationRead);
   const markAllRead = useStore((s) => s.markAllNotificationsRead);
   const [q, setQ] = useState('');

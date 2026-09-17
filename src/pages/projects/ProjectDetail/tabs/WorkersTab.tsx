@@ -48,7 +48,7 @@ export function WorkersTab({ project }: { project: Project }) {
                 <Td><StatusBadge status={w.safetyTrainingStatus} /></Td>
                 <Td>
                   {w.attendanceStatus !== 'PRESENT' && (
-                    <Button size="sm" variant="outline" onClick={() => { markAttendance(w.id, project.id, 'QR'); toast.success(uiMessage("Attendance marked for {{0}} via QR check-in.", [w.name])); }}>
+                    <Button size="sm" variant="outline" onClick={() => { try {  markAttendance(w.id, project.id, 'QR'); toast.success(uiMessage("Attendance marked for {{0}} via QR check-in.", [w.name]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>
                       <QrCode size={12} />{uiText(" Check-in")}</Button>
                   )}
                 </Td>

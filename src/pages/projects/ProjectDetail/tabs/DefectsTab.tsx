@@ -175,8 +175,8 @@ export function DefectsTab({ project }: { project: Project }) {
             {(active.status === 'ASSIGNED' || active.status === 'IN_PROGRESS') && !readOnly && (
               <div className="mt-4"><Button onClick={() => setCorrectiveOpen(true)}><Wrench size={13} />{uiText(" Upload Corrective Action")}</Button></div>
             )}
-            {active.status === 'FIXED' && !isContractor && !readOnly && <div className="mt-4"><Button variant="outline" onClick={() => { updateDefectStatus(active.id, 'IN_PROGRESS'); toast.info(uiText('Awaiting re-inspection from Quality module.')); }}>{uiText("Awaiting Re-inspection")}</Button></div>}
-            {(active.status === 'FIXED' || active.status === 'REINSPECTION') && !isContractor && !readOnly && <div className="mt-4"><Button variant="success" onClick={() => { closeDefect(active.id); toast.success(uiText('Defect closed.')); setDetailId(null); }}><CheckCircle2 size={13} />{uiText(" Close Defect")}</Button></div>}
+            {active.status === 'FIXED' && !isContractor && !readOnly && <div className="mt-4"><Button variant="outline" onClick={() => { try {  updateDefectStatus(active.id, 'IN_PROGRESS'); toast.info(uiText('Awaiting re-inspection from Quality module.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Awaiting Re-inspection")}</Button></div>}
+            {(active.status === 'FIXED' || active.status === 'REINSPECTION') && !isContractor && !readOnly && <div className="mt-4"><Button variant="success" onClick={() => { try {  closeDefect(active.id); toast.success(uiText('Defect closed.')); setDetailId(null);  } catch (error) { toast.error(uiText((error as Error).message)); } }}><CheckCircle2 size={13} />{uiText(" Close Defect")}</Button></div>}
           </DialogContent>
         )}
       </Dialog>
@@ -191,11 +191,11 @@ export function DefectsTab({ project }: { project: Project }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCorrectiveOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => {
+            <Button onClick={() => { try { 
               if (active) addCorrectiveAction(active.id, notes || 'Rectification completed as per inspection remarks.', Math.floor(Math.random() * 99999));
               toast.success(uiText('Corrective action submitted. Ready for re-inspection.'));
               setCorrectiveOpen(false); setNotes('');
-            }}>{uiText("Submit")}</Button>
+             } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Submit")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

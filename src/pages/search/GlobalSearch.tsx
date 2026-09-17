@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Search as SearchIcon } from 'lucide-react';
+import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle, StatusBadge } from '../../components/ui/primitives';
@@ -16,14 +17,14 @@ export function GlobalSearch() {
   const [q, setQ] = useState(params.get('q') ?? '');
   const currentUser = useStore((s) => s.currentUser);
   const canSeeWorkers = currentUser?.role === 'DEPUTY_ENGINEER';
-  const projects = useStore((s) => s.projects);
-  const contractors = useStore((s) => s.contractors);
-  const workers = useStore((s) => s.workers);
-  const users = useStore((s) => s.users);
-  const bills = useStore((s) => s.bills);
-  const inspections = useStore((s) => s.inspections);
-  const defects = useStore((s) => s.defects);
-  const documents = useStore((s) => s.documents);
+  const { projects, projectIds } = useProjectScope();
+  const contractors = useStore((s) => s.contractors).filter(c => projects.some(p => p.contractorId === c.id));
+  const workers = useStore((s) => s.workers).filter(r => projectIds.has(r.projectId));
+  const users = useStore((s) => s.users).filter(u => projects.some(p => [p.siteEngineerId, p.executiveEngineerId, p.projectManagerId, p.ownerDirectorId].includes(u.id)));
+  const bills = useStore((s) => s.bills).filter(r => projectIds.has(r.projectId));
+  const inspections = useStore((s) => s.inspections).filter(r => projectIds.has(r.projectId));
+  const defects = useStore((s) => s.defects).filter(r => projectIds.has(r.projectId));
+  const documents = useStore((s) => s.documents).filter(r => projectIds.has(r.projectId));
 
   const query = (params.get('q') ?? '').toLowerCase();
 

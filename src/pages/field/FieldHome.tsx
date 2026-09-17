@@ -28,17 +28,14 @@ export function FieldHome() {
   const createDefect = useStore((s) => s.createDefect);
   const markAttendance = useStore((s) => s.markAttendance);
 
-  // A field worker deals with 1-2 nearby sites in practice, not their firm/circle's full
-  // statewide portfolio — narrow the already role-scoped project list down to whichever zone
-  // their primary/first assigned site is in.
-  const homeDivision = scopedProjects[0]?.division;
-  const myProjects = homeDivision ? scopedProjects.filter((p) => p.division === homeDivision) : scopedProjects;
+  const myProjects = scopedProjects;
+  const isContractor = currentUser?.role === 'CONTRACTOR';
 
   const [projectId, setProjectId] = useState(myProjects[0]?.id ?? '');
   const project = myProjects.find((p) => p.id === projectId) ?? myProjects[0];
 
   const [action, setAction] = useState<null | 'progress' | 'photo' | 'defect' | 'inspection' | 'attendance' | 'emergency'>(null);
-  const [progressPct, setProgressPct] = useState(project?.physicalProgress ?? 0);
+  const [progressPct, setProgressPct] = useState(project?.reportedProgress ?? 0);
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
   const [capturing, setCapturing] = useState(false);
@@ -98,12 +95,12 @@ export function FieldHome() {
   return (
     <div className="mx-auto max-w-md space-y-4 pb-10">
       <div>
-        <p className="text-xs text-slate-400">{uiText("Field Engineer App")}</p>
-        <Select value={projectId} onValueChange={setProjectId}>
+        <p className="text-xs text-slate-400">{uiText(isContractor ? 'Contractor Dashboard' : 'Field Engineer App')}</p>
+        <Select value={projectId} onValueChange={id => { setProjectId(id); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setCapturedPhoto(null); setAction(null); }}>
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>{myProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
         </Select>
-        {myProjects.length > 1 && <p className="mt-1 text-[10.5px] text-slate-400">{myProjects.length}{uiText(" sites in ")}{uiText(homeDivision)}</p>}
+        {myProjects.length > 1 && <p className="mt-1 text-[10.5px] text-slate-400">{myProjects.length} {uiText("Assigned hospitals")}</p>}
       </div>
 
       <Card>
@@ -119,11 +116,17 @@ export function FieldHome() {
 
       <div className="grid grid-cols-2 gap-3">
         <ActionButton icon={ClipboardList} label={uiText("Submit Progress")} onClick={() => setAction('progress')} />
+        {isContractor ? <>
+          <ActionButton icon={ClipboardList} label={uiText('Submit RA Bill')} onClick={() => navigate(`/projects/${project.id}?tab=finance&action=submit-bill`)} />
+          <ActionButton icon={ClipboardList} label={uiText('Add Monthly Report')} onClick={() => navigate(`/projects/${project.id}?tab=monthly`)} />
+          <ActionButton icon={ClipboardList} label={uiText('Submit Documents')} onClick={() => navigate(`/projects/${project.id}?tab=controls&kind=DOCUMENT`)} />
+        </> : <>
         <ActionButton icon={CameraIcon} label={uiText("Upload Site Photo")} onClick={() => setAction('photo')} />
         <ActionButton icon={AlertTriangle} label={uiText("Report Defect")} onClick={() => setAction('defect')} tone="amber" />
         <ActionButton icon={ShieldCheck} label={uiText("Start Inspection")} onClick={() => navigate(`/projects/${project.id}?tab=inspections`)} />
         <ActionButton icon={QrCode} label={uiText("Mark Attendance")} onClick={() => setAction('attendance')} />
         <ActionButton icon={Siren} label={uiText("Emergency Alert")} onClick={() => setAction('emergency')} tone="red" />
+        </>}
       </div>
 
       <Section title={uiText("Pending Inspections")} onSeeAll={() => navigate(`/projects/${project.id}?tab=inspections`)}>
@@ -140,7 +143,7 @@ export function FieldHome() {
         ))}
       </Section>
 
-      <Section title={uiText("Today's Workforce")} onSeeAll={currentUser?.role === 'DEPUTY_ENGINEER' ? () => navigate('/workers') : undefined}>
+      <Section title={uiText("Today's Workforce")} onSeeAll={() => navigate('/workers')}>
         <Row primary={`${projectWorkers.filter((w) => w.attendanceStatus === 'PRESENT').length} present`} secondary={`of ${projectWorkers.length} assigned workers`} />
       </Section>
 
@@ -163,10 +166,10 @@ export function FieldHome() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAction(null)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => {
+            <Button onClick={() => { try { 
               addProgressReport({ projectId: project.id, date: new Date().toISOString().slice(0, 10), stage: 'Structure', progressPct, workersPresent: projectWorkers.filter((w) => w.attendanceStatus === 'PRESENT').length, weather: 'Clear', materialsReceived: 'None', materialsUsed: 'None', issues: remarks || 'None reported', photoIds: [], videoCount: 0, submittedBy: currentUser?.name ?? 'Deputy Engineer', location: `${project.taluka}, ${project.district}`, timestamp: new Date().toISOString() });
               closeAndToast('Progress submitted.');
-            }}>{uiText("Submit")}</Button>
+             } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Submit")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -230,7 +233,7 @@ export function FieldHome() {
             {projectWorkers.map((w) => (
               <div key={w.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-slate-50">
                 <span className="text-xs text-slate-700">{w.name}</span>
-                {w.attendanceStatus === 'PRESENT' ? <StatusBadge status="APPROVED" label={uiText("Present")} /> : <Button size="sm" variant="outline" onClick={() => { markAttendance(w.id, project.id, 'QR'); toast.success(uiMessage("{{0}} checked in.", [w.name])); }}><QrCode size={11} />{uiText(" Check-in")}</Button>}
+                {w.attendanceStatus === 'PRESENT' ? <StatusBadge status="APPROVED" label={uiText("Present")} /> : <Button size="sm" variant="outline" onClick={() => { try {  markAttendance(w.id, project.id, 'QR'); toast.success(uiMessage("{{0}} checked in.", [w.name]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}><QrCode size={11} />{uiText(" Check-in")}</Button>}
               </div>
             ))}
           </div>

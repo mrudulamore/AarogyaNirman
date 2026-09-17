@@ -14,7 +14,7 @@ function addExisting(o) {
 addExisting(existing);
 for (const section of ['roles', 'status']) for (const key of Object.keys(existing[section])) known.add(normalize(key));
 // Identifiers and example addresses are never interface translations.
-const retained = new Set(['billNumber', 'grossAmount', 'invoiceDate', 'measurementBookId', 'periodFrom', 'periodTo', 'workOrderReference', 'hcms-maharashtra-store-v5', 'you@maharashtra.gov.in']);
+const retained = new Set(['quantityDelta', 'scheduleDays', 'liabilityMonths', 'billNumber', 'grossAmount', 'invoiceDate', 'measurementBookId', 'periodFrom', 'periodTo', 'workOrderReference', 'hcms-maharashtra-store-v5', 'you@maharashtra.gov.in']);
 const missing = new Map();
 function walk(dir) { return fs.readdirSync(dir, { withFileTypes: true }).flatMap(f => f.isDirectory() ? walk(path.join(dir, f.name)) : [path.join(dir, f.name)]); }
 for (const file of walk('src').filter(f => /\.(ts|tsx)$/.test(f) && !/seed|i18n/.test(f))) {

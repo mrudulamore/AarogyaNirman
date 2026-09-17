@@ -7,6 +7,7 @@ import { Card, CardContent } from '../../../../components/ui/primitives';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { photoSrc, formatDate, cn } from '../../../../lib/utils';
+import { activeControls } from '../../../../lib/projectControls';
 import { isMilestoneDelivered } from '../../../../lib/milestones';
 
 type StepState = 'DONE' | 'ACTIVE' | 'PENDING';
@@ -20,6 +21,8 @@ export function TimelineTab({ project }: { project: Project }) {
   const handoverSteps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id);
   const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id);
+  const controls = useStore();
+  const contract = activeControls(controls, project.id).find(r => r.kind === 'CONTRACT');
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -54,7 +57,7 @@ export function TimelineTab({ project }: { project: Project }) {
     { label: 'RA Bills & Payments', date: undefined, state: project.amountSpent > 0 ? (project.status === 'COMPLETED' ? 'DONE' : 'ACTIVE') : 'PENDING', description: 'Running Account (RA) bills raised by the contractor against certified physical progress, verified and released as per the payment schedule.', photoStages: [] },
     { label: 'Completion', date: project.actualCompletionDate, state: project.actualCompletionDate ? 'DONE' : project.physicalProgress >= 90 ? 'ACTIVE' : 'PENDING', description: `Construction substantially complete at ${project.physicalProgress}% certified physical progress, with finishing and medical infrastructure fit-out underway or complete.`, photoStages: ['Finishing', 'Medical Infrastructure'] },
     { label: 'Handover', date: undefined, state: handoverComplete ? 'DONE' : handoverStarted ? 'ACTIVE' : 'PENDING', description: 'Facility handed over to the health department / hospital administration for operationalisation, including as-built drawings, O&M manuals and equipment commissioning records.', photoStages: ['Medical Infrastructure'] },
-    { label: 'Defect Liability Period', date: undefined, state: project.status === 'COMPLETED' ? 'ACTIVE' : 'PENDING', note: project.status === 'COMPLETED' ? '12-month defect liability period from handover.' : undefined, description: 'Contractor remains liable to rectify defects identified within the 12-month defect liability period following handover, at no additional cost to the Department.', photoStages: [] },
+    { label: 'Defect Liability Period', date: contract?.fields.liabilityEndDate, state: contract ? 'ACTIVE' : 'PENDING', note: contract ? `${contract.fields.liabilityMonths} ${uiText('months')} ? ${formatDate(contract.fields.commencementDate)} ? ${formatDate(contract.fields.liabilityEndDate)}` : uiText('Contract terms not yet verified'), description: uiText('Liability period and extensions follow the verified signed contract. Security release requires clearance of outstanding obligations.'), photoStages: [] },
   ];
 
   const activeStep = openIndex !== null ? steps[openIndex] : undefined;

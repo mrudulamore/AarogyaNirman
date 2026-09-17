@@ -32,6 +32,7 @@ export interface User {
   division?: string;
   district?: string;
   assignedProjectIds: string[];
+  contractorId?: string;
   avatarInitials: string;
   lastSiteVisit?: string;
   availability?: 'AVAILABLE' | 'ON_SITE' | 'ON_LEAVE' | 'UNAVAILABLE';
@@ -346,6 +347,7 @@ export interface BillAttachment {
 }
 
 export interface Bill {
+  measurementLines?: { boqItemId: string; quantity: number; location: string; measurementReference: string; variationId?: string }[];
   id: string;
   billNumber: string;
   contractorId: string;
@@ -375,6 +377,10 @@ export interface Bill {
 }
 
 export interface MeasurementEntry {
+  measurementReference?: string;
+  location?: string;
+  verifiedById?: string;
+  verifiedAt?: string;
   id: string;
   projectId: string;
   billId?: string;

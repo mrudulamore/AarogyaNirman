@@ -7,6 +7,8 @@ import { ROLE_NAV } from '../components/layout/navConfig';
 import { computeProjectScope } from '../lib/scope';
 import { validateBillSubmission } from '../lib/billSubmission';
 import { readBillFile } from '../lib/billAttachments';
+import { previousClaimedQuantity, validateBillMeasurements } from '../lib/billMeasurements';
+import { createControlActions, handoverGaps, activeControls, actualTransactions, validControl, type ControlActions, type ControlRecord } from '../lib/projectControls';
 import type {
   FundInstallment, Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
   Contractor, Worker, AttendanceRecord, Bill, MeasurementEntry, BoqItem, Material, MaterialTest,
@@ -20,7 +22,8 @@ const seed = generateMockData();
 let auditSeq = 0;
 const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toString(36)}`;
 
-interface StoreState {
+export interface StoreState extends ControlActions {
+  controlRecords: ControlRecord[];
   currentUser: User | null;
   users: User[];
   /** Which nav sections each role can see — seeded from ROLE_NAV, editable by Superadmin via
@@ -102,7 +105,7 @@ interface StoreState {
   scheduleInspection: (i: Omit<Inspection, 'id' | 'items' | 'score' | 'overallResult' | 'status' | 'isReinspection'> & { category: Inspection['category'] }) => Inspection;
   submitInspection: (id: string, items: Inspection['items'], result: InspectionResult, comments: string) => void;
   reinspect: (defectId: string) => Inspection;
-  passReinspection: (inspectionId: string) => void;
+  passReinspection: (inspectionId: string, items?: Inspection['items'], comments?: string) => void;
 
   // defects
   createDefect: (d: Omit<Defect, 'id' | 'status' | 'createdDate'>) => Defect;
@@ -171,12 +174,19 @@ export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
       currentUser: null,
+      controlRecords: [],
+      ...createControlActions(set, get),
       ...seed,
       rolePermissions: JSON.parse(JSON.stringify(ROLE_NAV)),
       fundInstallments: generateFundInstallments(seed.projects, todayDate()),
 
       login: (role, userId) => {
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
+        if (role === 'CONTRACTOR' && !user && !userId) {
+          const firm = get().contractors[0];
+          set({ currentUser: { ...get().users[0], id: `ACCOUNT-${firm.id}`, name: firm.contactPerson, role, contractorId: firm.id, assignedProjectIds: get().projects.filter(p => p.contractorId === firm.id).map(p => p.id) } });
+          return;
+        }
         set({ currentUser: user ?? { ...get().users[0], role } });
       },
       logout: () => set({ currentUser: null }),
@@ -216,19 +226,24 @@ export const useStore = create<StoreState>()(
         return project;
       },
       updateProject: (id, patch) => {
+        assertProjectAccess(get(), id);
+        if (['stage', 'status', 'workOrderValue', 'tenderAmount', 'sanctionedBudget', 'revisedEstimate', 'originalCompletionDate', 'plannedCompletionDate', 'amountSpent', 'amountReleased', 'financialProgress', 'physicalProgress'].some(key => Object.hasOwn(patch, key))) throw new Error('Use verified contract controls for financial, schedule and lifecycle changes.');
         const before = get().projects.find((p) => p.id === id);
         set((s) => ({ projects: s.projects.map((p) => (p.id === id ? { ...p, ...patch } : p)) }));
         if (before) get().logAction('Updated project details', before.name);
       },
 
       addProgressReport: (r) => {
+        assertProjectAccess(get(), r.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        if (!Number.isFinite(r.progressPct) || r.progressPct < 0 || r.progressPct > 100) throw new Error('Progress must be between 0 and 100.');
         const report: ProgressReport = { ...r, id: nid('PRG') };
         set((s) => ({ progressReports: [report, ...s.progressReports] }));
         const project = get().projects.find((p) => p.id === r.projectId);
-        get().updateProject(r.projectId, { physicalProgress: Math.max(project?.physicalProgress ?? 0, r.progressPct) });
+        get().updateProject(r.projectId, { reportedProgress: Math.max(project?.reportedProgress ?? 0, r.progressPct) });
         get().logAction(`Submitted daily progress report (${r.stage})`, project?.name);
       },
       addPhoto: (p) => {
+        assertProjectAccess(get(), p.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         const photo: SitePhoto = { ...p, id: nid('PHO') };
         set((s) => ({ photos: [photo, ...s.photos] }));
         const project = get().projects.find((pr) => pr.id === p.projectId);
@@ -285,31 +300,40 @@ export const useStore = create<StoreState>()(
       },
 
       raiseChangeOrder: (c) => {
+        assertProjectAccess(get(), c.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         set((s) => ({ changeOrders: [{ ...c, id: nid('CHG'), status: 'PENDING_APPROVAL' }, ...s.changeOrders] }));
         const project = get().projects.find((p) => p.id === c.projectId);
         get().logAction(`Raised change order: ${c.title}`, project?.name);
       },
       decideChangeOrder: (id, status) => {
+        const original = get().changeOrders.find(c => c.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['COMMISSIONER']);
+        if (original?.status !== 'PENDING_APPROVAL') throw new Error('This decision has already been recorded.');
+        if (status === 'APPROVED' && !activeControls(get(), original.projectId).some(r => r.kind === 'VARIATION' && r.reference === id)) throw new Error('Verify the signed variation in Contract controls using this record ID as the reference.');
         set((s) => ({ changeOrders: s.changeOrders.map((c) => (c.id === id ? { ...c, status, approvedBy: get().currentUser?.name, approvedDate: new Date().toISOString().slice(0, 10) } : c)) }));
         const c = get().changeOrders.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === c?.projectId);
         get().logAction(`${status === 'APPROVED' ? 'Approved' : 'Rejected'} change order: ${c?.title}`, project?.name);
       },
       raiseExtensionOfTime: (e) => {
+        assertProjectAccess(get(), e.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         set((s) => ({ extensionsOfTime: [{ ...e, id: nid('EOT'), status: 'PENDING' }, ...s.extensionsOfTime] }));
         const project = get().projects.find((p) => p.id === e.projectId);
         get().logAction(`Requested extension of time (${e.daysRequested} days)`, project?.name);
       },
       decideExtensionOfTime: (id, status, approvedDays) => {
+        const original = get().extensionsOfTime.find(e => e.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['COMMISSIONER']);
+        if (!original || !['PENDING', 'RECOMMENDED'].includes(original.status)) throw new Error('This decision has already been recorded.');
+        if (status === 'APPROVED' && !activeControls(get(), original.projectId).some(r => r.kind === 'EXTENSION' && r.reference === id && Number(r.fields.scheduleDays) === (approvedDays ?? original.daysRequested))) throw new Error('Verify the signed extension in Contract controls using this record ID as the reference.');
         set((s) => ({ extensionsOfTime: s.extensionsOfTime.map((e) => (e.id === id ? { ...e, status, approvedDays: status === 'APPROVED' ? (approvedDays ?? e.daysRequested) : undefined, approvedDate: new Date().toISOString().slice(0, 10) } : e)) }));
         const e = get().extensionsOfTime.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === e?.projectId);
         get().logAction(`${status === 'APPROVED' ? 'Approved' : 'Rejected'} extension of time`, project?.name);
-        if (status === 'APPROVED' && e && project) {
-          get().updateProject(project.id, { plannedCompletionDate: new Date(new Date(project.plannedCompletionDate).getTime() + (approvedDays ?? e.daysRequested) * 86400000).toISOString().slice(0, 10) });
-        }
+
       },
       raiseSiteIssue: (i) => {
+        assertProjectAccess(get(), i.projectId);
         set((s) => ({ siteIssues: [{ ...i, id: nid('ISS'), status: 'OPEN' }, ...s.siteIssues] }));
         const project = get().projects.find((p) => p.id === i.projectId);
         get().logAction(`Raised site issue: ${i.description}`, project?.name);
@@ -343,6 +367,13 @@ export const useStore = create<StoreState>()(
         return insp;
       },
       submitInspection: (id, items, result, comments) => {
+        const original = get().inspections.find(i => i.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER']);
+        if (original?.status === 'COMPLETED') throw new Error('Completed inspections are immutable. Create a reinspection.');
+        if (result === 'PASS') {
+          if (!items.length || items.some(i => i.result !== 'PASS')) throw new Error('Every checklist item must pass.');
+          requireQualityProof(get(), original!.projectId, id);
+        }
         const passCount = items.filter((it) => it.result === 'PASS').length;
         const score = items.length ? Math.round((passCount / items.length) * 100) : 0;
         set((s) => ({
@@ -377,21 +408,26 @@ export const useStore = create<StoreState>()(
         get().logAction(`Started re-inspection for defect ${defectId}`, project?.name);
         return insp;
       },
-      passReinspection: (inspectionId) => {
+      passReinspection: (inspectionId, checkedItems, comments) => {
         const insp = get().inspections.find((i) => i.id === inspectionId);
         if (!insp) return;
-        const items = buildPassItems();
+        assertProjectAccess(get(), insp.projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER']);
+        if (!insp.isReinspection || insp.status === 'COMPLETED') throw new Error('Only an open reinspection may be certified.');
+        requireQualityProof(get(), insp.projectId, inspectionId);
+        const items = checkedItems ?? insp.items;
+        if (!items.length || items.some(i => i.result !== 'PASS') || !comments?.trim()) throw new Error('Complete every checklist item and enter reinspection findings.');
         set((s) => ({
-          inspections: s.inspections.map((i) => (i.id === inspectionId ? { ...i, items, score: 100, overallResult: 'PASS', status: 'COMPLETED', completedDate: new Date().toISOString().slice(0, 10) } : i)),
+          inspections: s.inspections.map((i) => (i.id === inspectionId ? { ...i, items, comments, score: 100, overallResult: 'PASS', status: 'COMPLETED', completedDate: new Date().toISOString().slice(0, 10) } : i)),
         }));
-        const defect = get().defects.find((d) => d.sourceInspectionId === insp.parentInspectionId && d.status === 'REINSPECTION');
+        const proof = activeControls(get(), insp.projectId).find(r => r.kind === 'QUALITY' && r.fields.inspectionId === insp.id && r.fields.result === 'PASS');
+        const defect = get().defects.find(d => d.id === proof?.fields.defectId && d.sourceInspectionId === insp.parentInspectionId && d.status === 'REINSPECTION');
         if (defect) {
           set((s) => ({ defects: s.defects.map((d) => (d.id === defect.id ? { ...d, status: 'CLOSED', closedDate: new Date().toISOString().slice(0, 10) } : d)) }));
         }
         const project = get().projects.find((p) => p.id === insp.projectId);
-        get().updateProject(insp.projectId, { physicalProgress: Math.min(100, (project?.physicalProgress ?? 0) + 2), qualityScore: Math.min(100, (project?.qualityScore ?? 0) + 5) });
+        // Quality closure does not invent certified progress or a quality score.
         get().logAction(`Re-inspection PASSED — defect resolved`, project?.name, 'FAIL', 'PASS');
-        get().pushNotification({ message: `Re-inspection PASSED at ${project?.name}. Defect closed and project progress updated.`, type: 'INFO', projectId: insp.projectId, targetRoles: ['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'] });
+        get().pushNotification({ message: `Re-inspection PASSED at ${project?.name}. Defect closed with verified evidence.`, type: 'INFO', projectId: insp.projectId, targetRoles: ['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'] });
       },
 
       requestAppointment: (a) => {
@@ -429,6 +465,7 @@ export const useStore = create<StoreState>()(
       },
 
       createDefect: (d) => {
+        assertProjectAccess(get(), d.projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         const defect: Defect = { ...d, id: nid('DEF'), status: 'OPEN', createdDate: new Date().toISOString().slice(0, 10) };
         set((s) => ({ defects: [defect, ...s.defects] }));
         return defect;
@@ -447,12 +484,16 @@ export const useStore = create<StoreState>()(
         get().logAction(`Contractor acknowledged defect ${id}`, project?.name);
       },
       updateDefectStatus: (id, status) => {
+        const original = get().defects.find(d => d.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER']);
+        if (status === 'CLOSED') { get().closeDefect(id); return; }
         set((s) => ({ defects: s.defects.map((d) => (d.id === id ? { ...d, status } : d)) }));
         const d = get().defects.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === d?.projectId);
         get().logAction(`Updated defect ${id} status to ${status.replace('_', ' ')}`, project?.name);
       },
       addCorrectiveAction: (id, notes, photoSeed) => {
+        assertProjectAccess(get(), get().defects.find(d => d.id === id)?.projectId ?? '', ['CONTRACTOR']);
         set((s) => ({ defects: s.defects.map((d) => (d.id === id ? { ...d, status: 'FIXED', correctiveActionNotes: notes, correctiveActionPhotoSeed: photoSeed } : d)) }));
         const d = get().defects.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === d?.projectId);
@@ -460,7 +501,11 @@ export const useStore = create<StoreState>()(
         get().pushNotification({ message: `Corrective action submitted for defect ${id} — ready for re-inspection.`, type: 'INFO', projectId: d?.projectId, targetRoles: ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER'] });
       },
       closeDefect: (id) => {
-        set((s) => ({ defects: s.defects.map((d) => (d.id === id ? { ...d, status: 'CLOSED', closedDate: new Date().toISOString().slice(0, 10), reinspectionPhotoSeed: d.reinspectionPhotoSeed ?? d.imageSeed * 11 + 5 } : d)) }));
+        const original = get().defects.find(d => d.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER']);
+        const proof = activeControls(get(), original!.projectId).find(r => r.kind === 'QUALITY' && r.fields.defectId === id && r.fields.result === 'PASS');
+        if (!original?.correctiveActionNotes?.trim() || !proof) throw new Error('Corrective action and independently verified reinspection evidence are required.');
+        set((s) => ({ defects: s.defects.map((d) => (d.id === id ? { ...d, status: 'CLOSED', closedDate: new Date().toISOString().slice(0, 10) } : d)) }));
         const d = get().defects.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === d?.projectId);
         get().logAction(`Closed defect ${id}`, project?.name);
@@ -476,11 +521,15 @@ export const useStore = create<StoreState>()(
         get().logAction('Assigned contractor to project', project?.name);
       },
       addWorker: (w) => {
+        assertProjectAccess(get(), w.projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         set((s) => ({ workers: [{ ...w, id: nid('WRK') }, ...s.workers] }));
         const project = get().projects.find((p) => p.id === w.projectId);
         get().logAction(`Added worker ${w.name} (${w.role})`, project?.name);
       },
       markAttendance: (workerId, projectId, method) => {
+        assertProjectAccess(get(), projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'SUPERADMIN']);
+        if (!get().workers.some(w => w.id === workerId && w.projectId === projectId)) throw new Error('Worker does not belong to this hospital.');
+        if (get().attendance.some(a => a.workerId === workerId && a.date === todayDate())) return;
         const now = new Date();
         const rec: AttendanceRecord = {
           id: nid('ATT'), workerId, projectId, date: now.toISOString().slice(0, 10),
@@ -495,6 +544,7 @@ export const useStore = create<StoreState>()(
         const validate = () => {
           const state = get();
           validateBillSubmission(b, state.currentUser, state.projects.find((p) => p.id === b.projectId), computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds, state.bills);
+          validateBillMeasurements(state, b);
         };
         validate();
         const submitterId = get().currentUser!.id;
@@ -512,14 +562,21 @@ export const useStore = create<StoreState>()(
           submittedDate: bill.submittedDate, documents: bill.attachments!.map((file) => file.name), comments: `RA Bill ${bill.billNumber}; MB ${bill.measurementBookId}`,
           chain: ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER'], relatedBillId: bill.id,
         };
-        const previous = { bills: get().bills, approvals: get().approvals };
-        try { set((s) => ({ bills: [bill, ...s.bills], approvals: [approval, ...s.approvals] })); }
+        const measurementRows: MeasurementEntry[] = bill.measurementLines!.map(line => {
+          const item = get().boqItems.find(b => b.id === line.boqItemId)!;
+          const previousQty = previousClaimedQuantity(get(), bill.projectId, item.id);
+          return { id: nid('MEA'), projectId: bill.projectId, billId: bill.id, boqItemId: item.id, workItem: item.item, unit: item.unit, previousQty, currentQty: line.quantity, totalQty: previousQty + line.quantity, rate: item.rate, amount: Math.round(line.quantity * item.rate * 100) / 100, verified: false, location: line.location, measurementReference: line.measurementReference };
+        });
+        const previous = { bills: get().bills, approvals: get().approvals, measurements: get().measurements };
+        try { set((s) => ({ bills: [bill, ...s.bills], approvals: [approval, ...s.approvals], measurements: [...s.measurements, ...measurementRows] })); }
         catch { try { set(previous); } catch { /* In-memory state is restored even if persistence is full. */ } throw new Error('The bill could not be saved. Free device storage and try again.'); }
         try { get().logAction(`Submitted RA Bill ${bill.billNumber}`, project?.name); } catch { /* The bill and approval have already been saved. */ }
         return bill;
       },
       verifyBillSite: (id) => {
         assertBillReviewer(get(), id, ['DEPUTY_ENGINEER']);
+        const rows = get().measurements.filter(m => m.billId === id);
+        if (!rows.length || rows.some(m => !m.verified)) throw new Error('Verify each measurement line before site certification.');
         if (get().bills.find((b) => b.id === id)?.status !== 'SUBMITTED') return;
         set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'SITE_VERIFIED', siteVerifiedBy: get().currentUser?.name } : b)) }));
         const b = get().bills.find((x) => x.id === id);
@@ -553,26 +610,20 @@ export const useStore = create<StoreState>()(
       markBillPaid: (id) => {
         assertBillReviewer(get(), id, ['COMMISSIONER']);
         const b = get().bills.find((x) => x.id === id);
-        if (b?.status !== 'APPROVED') return;
-        set((s) => ({ bills: s.bills.map((x) => (x.id === id ? { ...x, status: 'PAID', paidDate: new Date().toISOString().slice(0, 10) } : x)) }));
-        if (b) {
-          const project = get().projects.find((p) => p.id === b.projectId);
-          if (project) {
-            const newSpent = project.amountSpent + b.netPayable;
-            get().updateProject(project.id, {
-              amountSpent: newSpent,
-              financialProgress: Math.min(100, Math.round((newSpent / project.sanctionedBudget) * 100)),
-            });
-          }
-          get().logAction(`Payment released for bill ${b.billNumber}`, project?.name);
-          get().pushNotification({ message: `Payment of ₹${b.netPayable.toLocaleString('en-IN')} released for ${b.billNumber}.`, type: 'INFO', projectId: b.projectId, targetRoles: ['CONTRACTOR', 'COMMISSIONER'] });
+        if (b && b.status !== 'PAID') {
+          const paid = actualTransactions(get(), b.projectId).filter(t => t.kind === 'PAYMENT' && t.fields.billId === id).reduce((n, t) => n + Number(t.fields.amount), 0);
+          if (paid + 0.005 < b.netPayable) throw new Error('Record and independently verify the bank or treasury payment in Contract controls first.');
         }
+        // Verified transaction reconciliation applies paid status atomically.
       },
       verifyMeasurement: (id, by) => {
         const state = get();
         const measurement = state.measurements.find((m) => m.id === id);
         if (!state.currentUser || !['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER'].includes(state.currentUser.role) || !measurement || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(measurement.projectId)) throw new Error('Only an assigned engineer can verify measurements.');
-        set((s) => ({ measurements: s.measurements.map((m) => (m.id === id ? { ...m, verified: true, verifiedBy: by } : m)) }));
+        const bill = state.bills.find(b => b.id === measurement.billId);
+        if (bill?.submittedById === state.currentUser.id || (bill && bill.status !== 'SUBMITTED')) throw new Error('Only an independent engineer can verify a submitted measurement.');
+        set((s) => ({ measurements: s.measurements.map((m) => (m.id === id ? { ...m, verified: true, verifiedBy: state.currentUser!.name, verifiedById: state.currentUser!.id, verifiedAt: new Date().toISOString() } : m)) }));
+        void by;
       },
 
       createApproval: (a) => {
@@ -586,6 +637,10 @@ export const useStore = create<StoreState>()(
         if (req.relatedBillId) {
           assertBillReviewer(get(), req.relatedBillId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER']);
           if (req.status !== 'PENDING' || u?.role !== req.chain[req.currentStepIndex]) throw new Error('This bill is not awaiting your approval step.');
+          if (decision === 'APPROVED' && u.role === 'DEPUTY_ENGINEER') {
+            const rows = get().measurements.filter(m => m.billId === req.relatedBillId);
+            if (!rows.length || rows.some(m => !m.verified)) throw new Error('Verify each measurement line before site certification.');
+          }
         }
         const entry = { step: req.chain[req.currentStepIndex], approver: u?.name ?? 'Officer', designation: u?.designation ?? '', timestamp: new Date().toISOString(), decision, comment };
         let nextIndex = req.currentStepIndex;
@@ -609,7 +664,7 @@ export const useStore = create<StoreState>()(
             const stepJustDone = req.chain[req.currentStepIndex];
             if (stepJustDone === 'DEPUTY_ENGINEER') get().verifyBillSite(bill.id);
             else if (stepJustDone === 'EXECUTIVE_ENGINEER') { get().verifyBillQuality(bill.id); get().approveBill(bill.id); }
-            else if (stepJustDone === 'COMMISSIONER') get().markBillPaid(bill.id);
+            // Final approval authorizes payment; bank/treasury reconciliation records settlement.
           } else if (bill && decision === 'REJECTED') {
             get().rejectBill(bill.id, comment);
           }
@@ -647,6 +702,7 @@ export const useStore = create<StoreState>()(
       updateRiskStatus: (id, status) => set((s) => ({ risks: s.risks.map((r) => (r.id === id ? { ...r, status } : r)) })),
 
       uploadDocument: (d) => {
+        assertProjectAccess(get(), d.projectId);
         set((s) => ({ documents: [{ ...d, id: nid('DOC'), uploadDate: new Date().toISOString().slice(0, 10), version: 1, approvalStatus: 'PENDING' }, ...s.documents] }));
         const project = get().projects.find((p) => p.id === d.projectId);
         get().logAction(`Uploaded document — ${d.name}`, project?.name);
@@ -659,12 +715,20 @@ export const useStore = create<StoreState>()(
       },
 
       updateCommissioningItem: (id, status, remarks) => {
+        const original = get().commissioning.find(c => c.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['EXECUTIVE_ENGINEER', 'DEPUTY_ENGINEER']);
+        if (status === 'READY' && !activeControls(get(), original!.projectId).some(r => r.kind === 'CERTIFICATE' && r.category === 'Commissioning acceptance' && validControl(r))) throw new Error('Verify the commissioning acceptance certificate first.');
         set((s) => ({ commissioning: s.commissioning.map((c) => (c.id === id ? { ...c, status, remarks, updatedDate: new Date().toISOString().slice(0, 10) } : c)) }));
         const item = get().commissioning.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === item?.projectId);
         get().logAction(`Updated commissioning item "${item?.item}" to ${status.replace('_', ' ')}`, project?.name);
       },
       advanceHandoverStep: (id) => {
+        const original = get().handoverSteps.find(h => h.id === id);
+        assertProjectAccess(get(), original?.projectId ?? '', ['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON']);
+        if (!original || original.status === 'COMPLETED') return;
+        if (get().handoverSteps.some(h => h.projectId === original.projectId && h.order < original.order && h.status !== 'COMPLETED')) throw new Error('Complete the preceding handover step first.');
+        if (!activeControls(get(), original.projectId).some(r => r.kind === 'CERTIFICATE' && r.category === 'Health authority acceptance' && validControl(r))) throw new Error('Verified receiving-authority acceptance is required.');
         set((s) => ({ handoverSteps: s.handoverSteps.map((h) => (h.id === id ? { ...h, status: 'COMPLETED', date: new Date().toISOString().slice(0, 10) } : h)) }));
         const step = get().handoverSteps.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === step?.projectId);
@@ -679,10 +743,10 @@ export const useStore = create<StoreState>()(
         }
       },
       completeHandoverAndOperationalize: (projectId) => {
-        set((s) => ({
-          handoverSteps: s.handoverSteps.map((h) => (h.projectId === projectId ? { ...h, status: 'COMPLETED', date: h.date ?? new Date().toISOString().slice(0, 10) } : h)),
-        }));
-        get().updateProject(projectId, { status: 'COMPLETED', stage: 'OPERATIONAL', physicalProgress: 100, financialProgress: 100, actualCompletionDate: new Date().toISOString().slice(0, 10) });
+        assertProjectAccess(get(), projectId, ['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON']);
+        const gaps = handoverGaps(get(), projectId);
+        if (gaps.length) throw new Error(`Handover blocked: ${gaps.join(', ')}`);
+        set(s => ({ projects: s.projects.map(p => p.id === projectId ? { ...p, status: 'COMPLETED', stage: 'OPERATIONAL', actualCompletionDate: todayDate() } : p) }));
         const project = get().projects.find((p) => p.id === projectId);
         get().logAction('Hospital marked OPERATIONAL — handover complete', project?.name);
         get().pushNotification({ message: `${project?.name} is now OPERATIONAL. Handover complete.`, type: 'INFO', projectId, targetRoles: ['COMMISSIONER', 'CIVIL_SURGEON', 'MEDICAL_OFFICER'] });
@@ -703,7 +767,7 @@ export const useStore = create<StoreState>()(
       name: 'hcms-maharashtra-store-v5',
       merge: (persisted, current) => {
         const saved = persisted as Partial<StoreState> | undefined;
-        return { ...current, ...saved, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+        return { ...current, ...saved, currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;
@@ -713,8 +777,13 @@ export const useStore = create<StoreState>()(
   ),
 );
 
-function buildPassItems() {
-  return [{ id: `chk-${Date.now()}`, requirement: 'Re-inspection of rectified work', measurement: 'Within tolerance', standard: 'Applicable IS Standard', result: 'PASS' as const, evidence: 'Photo & instrument reading logged', remarks: 'Corrective action verified and accepted.' }];
+export function assertProjectAccess(state: StoreState, projectId: string, roles?: Role[]) {
+  if (!state.currentUser || (roles && !roles.includes(state.currentUser.role)) || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(projectId)) throw new Error('This action requires an assigned, authorized user.');
+  return state.currentUser;
+}
+
+function requireQualityProof(state: StoreState, projectId: string, inspectionId: string) {
+  if (!activeControls(state, projectId).some(r => r.kind === 'QUALITY' && r.fields.inspectionId === inspectionId && r.fields.result === 'PASS')) throw new Error('Verify traceable quality evidence in Contract controls before passing this inspection.');
 }
 
 function assertBillReviewer(state: StoreState, billId: string, roles: Role[]) {

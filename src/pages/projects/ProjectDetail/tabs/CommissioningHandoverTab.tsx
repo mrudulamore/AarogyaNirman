@@ -1,3 +1,4 @@
+import { activeControls, validControl, handoverGaps } from '../../../../lib/projectControls';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { toast } from 'sonner';
 import { Check, Circle, Clock, PartyPopper } from 'lucide-react';
@@ -28,7 +29,7 @@ export function CommissioningTab({ project }: { project: Project }) {
                 {(['READY', 'PENDING', 'NOT_READY'] as const).map((st) => (
                   <button
                     key={st}
-                    onClick={() => { updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(uiMessage("{{0}} marked ready.", [item.item])); }}
+                    onClick={() => { try {  updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(uiMessage("{{0}} marked ready.", [item.item]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}
                     className={cn('rounded px-2 py-0.5 text-[10px] font-medium', item.status === st ? 'bg-navy-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
                   >
                     {uiText(st.replace('_', ' '))}
@@ -49,10 +50,12 @@ export function HandoverTab({ project }: { project: Project }) {
   const steps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id).sort((a, b) => a.order - b.order);
   const commissioning = useStore((s) => s.commissioning).filter((c) => c.projectId === project.id);
   const defects = useStore((s) => s.defects).filter((d) => d.projectId === project.id);
-  const documents = useStore((s) => s.documents).filter((d) => d.projectId === project.id);
+  const controlState = useStore();
+  const certificates = activeControls(controlState, project.id).filter(r => r.kind === 'CERTIFICATE' && validControl(r));
+  const gaps = handoverGaps(controlState, project.id);
   const advanceHandoverStep = useStore((s) => s.advanceHandoverStep);
   const completeHandoverAndOperationalize = useStore((s) => s.completeHandoverAndOperationalize);
-  const readOnly = currentUser?.role !== 'EXECUTIVE_ENGINEER' && currentUser?.role !== 'DEPUTY_ENGINEER';
+  const readOnly = !['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'].includes(currentUser?.role ?? '');
 
   const allComplete = steps.every((s) => s.status === 'COMPLETED');
   const nextPendingIndex = steps.findIndex((s) => s.status !== 'COMPLETED');
@@ -60,8 +63,8 @@ export function HandoverTab({ project }: { project: Project }) {
   const commissioningReady = commissioning.filter((c) => c.status === 'READY').length;
   const openDefects = defects.filter((d) => d.status !== 'CLOSED').length;
   const criticalDefects = defects.filter((d) => d.severity === 'CRITICAL' && d.status !== 'CLOSED').length;
-  const completionCertDoc = documents.find((d) => d.type === 'Completion Certificate' && d.approvalStatus === 'APPROVED');
-  const asBuiltDoc = documents.find((d) => d.type === 'Drawings' && d.approvalStatus === 'APPROVED');
+  const completionCertDoc = certificates.find(r => r.category === 'Completion certificate');
+  const asBuiltDoc = certificates.find(r => r.category === 'As-built drawings');
   const readinessComponents = [
     { label: 'Handover Steps', done: steps.length > 0 && stepsComplete === steps.length, pct: steps.length ? (stepsComplete / steps.length) * 100 : 0 },
     { label: 'Commissioning', done: commissioning.length > 0 && commissioningReady === commissioning.length, pct: commissioning.length ? (commissioningReady / commissioning.length) * 100 : 0 },
@@ -111,7 +114,7 @@ export function HandoverTab({ project }: { project: Project }) {
                   </div>
                   <p className="mt-0.5 text-[11px] text-slate-400">{uiText("Responsible: ")}{uiText(s.responsible)} {uiText(s.date && `· Completed ${formatDate(s.date)}`)}</p>
                   {!readOnly && i === nextPendingIndex && (
-                    <Button size="sm" className="mt-2" onClick={() => { advanceHandoverStep(s.id); toast.success(uiMessage("{{0}} marked complete.", [s.step])); }}>
+                    <Button size="sm" className="mt-2" onClick={() => { try {  advanceHandoverStep(s.id); toast.success(uiMessage("{{0}} marked complete.", [s.step]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>
                       <Check size={12} />{uiText(" Mark Step Complete")}</Button>
                   )}
                 </div>
@@ -123,7 +126,7 @@ export function HandoverTab({ project }: { project: Project }) {
             <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-center">
               <PartyPopper className="mx-auto mb-2 text-emerald-600" size={22} />
               <p className="text-sm font-semibold text-emerald-800">{uiText("All handover steps complete.")}</p>
-              <Button variant="success" className="mt-3" onClick={() => { completeHandoverAndOperationalize(project.id); toast.success(uiText('Hospital is now OPERATIONAL.')); }}>{uiText("Complete Handover — Mark Hospital Operational")}</Button>
+              <p className="text-xs text-amber-700">{gaps.map(g => uiText(g)).join(", ")}</p><Button disabled={gaps.length > 0} variant="success" className="mt-3" onClick={() => { try {  completeHandoverAndOperationalize(project.id); toast.success(uiText('Hospital is now OPERATIONAL.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Complete Handover — Mark Hospital Operational")}</Button>
             </div>
           )}
           {project.status === 'COMPLETED' && (

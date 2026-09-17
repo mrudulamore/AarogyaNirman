@@ -4834,5 +4834,725 @@
   "Commissioning and handover readiness by project.": [
     "परियोजनावार संचालन आरंभ और हस्तांतरण की तैयारी।",
     "प्रकल्पनिहाय कार्यप्रवर्तन व हस्तांतरणाची तयारी."
+  ],
+  "Contract controls": [
+    "अनुबंध नियंत्रण",
+    "करार नियंत्रण"
+  ],
+  "Contractor Dashboard": [
+    "ठेकेदार डैशबोर्ड",
+    "कंत्राटदार डॅशबोर्ड"
+  ],
+  "Assigned hospitals": [
+    "आवंटित अस्पताल",
+    "नेमून दिलेली रुग्णालये"
+  ],
+  "Add Monthly Report": [
+    "मासिक रिपोर्ट जोड़ें",
+    "मासिक अहवाल जोडा"
+  ],
+  "Submit Documents": [
+    "दस्तावेज़ जमा करें",
+    "कागदपत्रे सादर करा"
+  ],
+  "Monthly reports": [
+    "मासिक रिपोर्ट",
+    "मासिक अहवाल"
+  ],
+  "Monthly report": [
+    "मासिक रिपोर्ट",
+    "मासिक अहवाल"
+  ],
+  "Approval readiness": [
+    "अनुमोदन की तैयारी",
+    "मंजुरीची तयारी"
+  ],
+  "Work-order prerequisites remaining": [
+    "कार्यादेश की शेष पूर्वशर्तें",
+    "कार्यादेशाच्या उर्वरित पूर्वअटी"
+  ],
+  "Handover requirements remaining": [
+    "हस्तांतरण की शेष आवश्यकताएँ",
+    "हस्तांतरणाच्या उर्वरित आवश्यकता"
+  ],
+  "Issue Work Order": [
+    "कार्यादेश जारी करें",
+    "कार्यादेश जारी करा"
+  ],
+  "Verified receipts": [
+    "सत्यापित प्राप्तियाँ",
+    "पडताळलेल्या जमा रकमा"
+  ],
+  "Verified payments": [
+    "सत्यापित भुगतान",
+    "पडताळलेली देयके"
+  ],
+  "Verified payment count": [
+    "सत्यापित भुगतानों की संख्या",
+    "पडताळलेल्या देयकांची संख्या"
+  ],
+  "Record verified payment": [
+    "सत्यापित भुगतान दर्ज करें",
+    "पडताळलेले देयक नोंदवा"
+  ],
+  "Submit supporting record": [
+    "सहायक अभिलेख जमा करें",
+    "पूरक नोंद सादर करा"
+  ],
+  "Record type": [
+    "अभिलेख का प्रकार",
+    "नोंदीचा प्रकार"
+  ],
+  "Document / transaction reference": [
+    "दस्तावेज़ / लेनदेन संदर्भ",
+    "दस्तऐवज / व्यवहार संदर्भ"
+  ],
+  "Supersedes verified version (optional)": [
+    "प्रतिस्थापित सत्यापित संस्करण (वैकल्पिक)",
+    "बदलण्यात येणारी पडताळलेली आवृत्ती (ऐच्छिक)"
+  ],
+  "No records submitted yet.": [
+    "अभी कोई अभिलेख जमा नहीं हुआ।",
+    "अद्याप कोणतीही नोंद सादर केलेली नाही."
+  ],
+  "Decision notes": [
+    "निर्णय संबंधी टिप्पणियाँ",
+    "निर्णयाच्या नोंदी"
+  ],
+  "Renewal due within 30 days": [
+    "30 दिनों में नवीनीकरण आवश्यक",
+    "30 दिवसांत नूतनीकरण आवश्यक"
+  ],
+  "Expired certificate — not ready": [
+    "प्रमाणपत्र की वैधता समाप्त — तैयार नहीं",
+    "प्रमाणपत्राची मुदत संपली — तयार नाही"
+  ],
+  "Superseded — retained for audit": [
+    "प्रतिस्थापित — लेखापरीक्षा हेतु सुरक्षित",
+    "बदललेली आवृत्ती — लेखापरीक्षणासाठी जतन"
+  ],
+  "View details and evidence": [
+    "विवरण और प्रमाण देखें",
+    "तपशील आणि पुरावे पहा"
+  ],
+  "Certificate register": [
+    "प्रमाणपत्र रजिस्टर",
+    "प्रमाणपत्र नोंदवही"
+  ],
+  "Procurement file": [
+    "खरीद प्रक्रिया फ़ाइल",
+    "खरेदी प्रक्रिया फाइल"
+  ],
+  "Contract variation": [
+    "अनुबंध परिवर्तन",
+    "करारातील बदल"
+  ],
+  "Contract terms": [
+    "अनुबंध की शर्तें",
+    "कराराच्या अटी"
+  ],
+  "Quality evidence": [
+    "गुणवत्ता प्रमाण",
+    "गुणवत्तेचे पुरावे"
+  ],
+  "Government receipt": [
+    "सरकारी निधि प्राप्ति",
+    "शासकीय निधी प्राप्ती"
+  ],
+  "Contractor payment": [
+    "ठेकेदार भुगतान",
+    "कंत्राटदाराला देयक"
+  ],
+  "Transaction reversal": [
+    "लेनदेन निरस्तीकरण",
+    "व्यवहार रद्द नोंद"
+  ],
+  "Security release": [
+    "प्रतिभूति वापसी",
+    "सुरक्षा ठेव परतावा"
+  ],
+  "Approving authority": [
+    "अनुमोदन प्राधिकारी",
+    "मंजुरी प्राधिकारी"
+  ],
+  "Issue date": [
+    "जारी करने की तारीख",
+    "जारी केल्याची तारीख"
+  ],
+  "Expiry date": [
+    "वैधता समाप्ति तारीख",
+    "मुदत समाप्ती तारीख"
+  ],
+  "Applicability": [
+    "प्रयोज्यता",
+    "लागू असणे"
+  ],
+  "Reason / conditions": [
+    "कारण / शर्तें",
+    "कारण / अटी"
+  ],
+  "Portal / source reference": [
+    "पोर्टल / स्रोत संदर्भ",
+    "पोर्टल / स्रोत संदर्भ"
+  ],
+  "Contract clause": [
+    "अनुबंध की धारा",
+    "करारातील कलम"
+  ],
+  "Additional quantity": [
+    "अतिरिक्त मात्रा",
+    "अतिरिक्त परिमाण"
+  ],
+  "Approved rate": [
+    "स्वीकृत दर",
+    "मंजूर दर"
+  ],
+  "Schedule impact (days)": [
+    "समय-सारणी पर प्रभाव (दिन)",
+    "वेळापत्रकावरील परिणाम (दिवस)"
+  ],
+  "Hindrance reference": [
+    "बाधा का संदर्भ",
+    "अडथळ्याचा संदर्भ"
+  ],
+  "Liability commencement": [
+    "दायित्व की शुरुआत",
+    "दायित्वाचा प्रारंभ"
+  ],
+  "Contract liability months": [
+    "अनुबंध दायित्व अवधि (माह)",
+    "करार दायित्व कालावधी (महिने)"
+  ],
+  "Contract liability end date": [
+    "अनुबंध दायित्व समाप्ति तारीख",
+    "करार दायित्व समाप्ती तारीख"
+  ],
+  "Linked defect": [
+    "संबंधित दोष",
+    "संबंधित दोष"
+  ],
+  "Approved test plan": [
+    "स्वीकृत परीक्षण योजना",
+    "मंजूर चाचणी योजना"
+  ],
+  "Sample reference": [
+    "नमूना संदर्भ",
+    "नमुना संदर्भ"
+  ],
+  "Laboratory / testing agency": [
+    "प्रयोगशाला / परीक्षण संस्था",
+    "प्रयोगशाळा / चाचणी संस्था"
+  ],
+  "Standard and version": [
+    "मानक और संस्करण",
+    "मानक आणि आवृत्ती"
+  ],
+  "Drawing and revision": [
+    "रेखाचित्र और संशोधन",
+    "रेखाचित्र आणि सुधारित आवृत्ती"
+  ],
+  "Transaction date": [
+    "लेनदेन की तारीख",
+    "व्यवहाराची तारीख"
+  ],
+  "Accounting head": [
+    "लेखा शीर्ष",
+    "लेखाशीर्ष"
+  ],
+  "Approved bill": [
+    "स्वीकृत बिल",
+    "मंजूर देयक"
+  ],
+  "Original transaction": [
+    "मूल लेनदेन",
+    "मूळ व्यवहार"
+  ],
+  "Verified contract": [
+    "सत्यापित अनुबंध",
+    "पडताळलेला करार"
+  ],
+  "Reporting month": [
+    "रिपोर्ट का महीना",
+    "अहवालाचा महिना"
+  ],
+  "Reported progress (%)": [
+    "सूचित प्रगति (%)",
+    "नोंदवलेली प्रगती (%)"
+  ],
+  "Work completed this month": [
+    "इस माह पूरा कार्य",
+    "या महिन्यात पूर्ण झालेले काम"
+  ],
+  "Monthly workforce summary": [
+    "मासिक कार्यबल सारांश",
+    "मासिक मनुष्यबळ सारांश"
+  ],
+  "Issues and delays": [
+    "समस्याएँ और विलंब",
+    "समस्या आणि विलंब"
+  ],
+  "Next month plan": [
+    "अगले माह की योजना",
+    "पुढील महिन्याचे नियोजन"
+  ],
+  "APPLICABLE": [
+    "लागू",
+    "लागू"
+  ],
+  "NOT_APPLICABLE": [
+    "लागू नहीं",
+    "लागू नाही"
+  ],
+  "Building / occupancy": [
+    "भवन / अधिभोग",
+    "इमारत / वापर परवानगी"
+  ],
+  "Fire approval": [
+    "अग्निशमन स्वीकृति",
+    "अग्निशमन मंजुरी"
+  ],
+  "Electrical safety": [
+    "विद्युत सुरक्षा",
+    "विद्युत सुरक्षितता"
+  ],
+  "Lift permission": [
+    "लिफ्ट अनुमति",
+    "लिफ्ट परवानगी"
+  ],
+  "MPCB consent / BMW": [
+    "MPCB सहमति / जैव चिकित्सा अपशिष्ट",
+    "MPCB संमती / जैववैद्यकीय कचरा"
+  ],
+  "AERB licence": [
+    "AERB लाइसेंस",
+    "AERB परवाना"
+  ],
+  "Completion certificate": [
+    "पूर्णता प्रमाणपत्र",
+    "पूर्णत्व प्रमाणपत्र"
+  ],
+  "As-built drawings": [
+    "निर्माणोपरांत रेखाचित्र",
+    "प्रत्यक्ष बांधकामाची रेखाचित्रे"
+  ],
+  "Commissioning acceptance": [
+    "संचालन परीक्षण स्वीकृति",
+    "कार्यान्वयन चाचणी स्वीकृती"
+  ],
+  "Health authority acceptance": [
+    "स्वास्थ्य प्राधिकारी की स्वीकृति",
+    "आरोग्य प्राधिकरणाची स्वीकृती"
+  ],
+  "Land / site possession": [
+    "भूमि / स्थल का कब्जा",
+    "जमीन / स्थळाचा ताबा"
+  ],
+  "Administrative approval": [
+    "प्रशासकीय स्वीकृति",
+    "प्रशासकीय मान्यता"
+  ],
+  "Expenditure sanction": [
+    "व्यय स्वीकृति",
+    "खर्चास मंजुरी"
+  ],
+  "Technical sanction": [
+    "तकनीकी स्वीकृति",
+    "तांत्रिक मंजुरी"
+  ],
+  "Approved drawings / estimate": [
+    "स्वीकृत रेखाचित्र / प्राक्कलन",
+    "मंजूर रेखाचित्रे / अंदाजपत्रक"
+  ],
+  "Budget availability": [
+    "बजट उपलब्धता",
+    "निधी उपलब्धता"
+  ],
+  "Tender publication / corrigenda": [
+    "निविदा प्रकाशन / शुद्धिपत्र",
+    "निविदा प्रकाशन / शुद्धिपत्रके"
+  ],
+  "Bidder eligibility": [
+    "बोलीदाता पात्रता",
+    "निविदादार पात्रता"
+  ],
+  "Evaluation minutes": [
+    "मूल्यांकन कार्यवृत्त",
+    "मूल्यमापन इतिवृत्त"
+  ],
+  "Conflict declarations": [
+    "हित-संघर्ष घोषणाएँ",
+    "हितसंबंध संघर्ष घोषणापत्रे"
+  ],
+  "Award approval": [
+    "निविदा आवंटन स्वीकृति",
+    "निविदा प्रदान मंजुरी"
+  ],
+  "Performance security": [
+    "निष्पादन प्रतिभूति",
+    "कामगिरी हमी"
+  ],
+  "Insurance": [
+    "बीमा",
+    "विमा"
+  ],
+  "Insufficient approved budget": [
+    "स्वीकृत बजट अपर्याप्त",
+    "मंजूर निधी अपुरा"
+  ],
+  "Unresolved failed inspections": [
+    "विफल निरीक्षणों का समाधान शेष",
+    "अयशस्वी तपासण्यांचे निराकरण बाकी"
+  ],
+  "Contract terms not yet verified": [
+    "अनुबंध की शर्तें अभी सत्यापित नहीं",
+    "कराराच्या अटी अद्याप पडताळलेल्या नाहीत"
+  ],
+  "months": [
+    "महीने",
+    "महिने"
+  ],
+  "Measured BOQ lines": [
+    "मापित BOQ मदें",
+    "मोजमाप केलेल्या BOQ बाबी"
+  ],
+  "BOQ item": [
+    "BOQ मद",
+    "BOQ बाब"
+  ],
+  "Previous quantity": [
+    "पिछली मात्रा",
+    "मागील परिमाण"
+  ],
+  "Current quantity": [
+    "वर्तमान मात्रा",
+    "सध्याचे परिमाण"
+  ],
+  "Cumulative quantity": [
+    "संचयी मात्रा",
+    "एकूण परिमाण"
+  ],
+  "Work location": [
+    "कार्य स्थल",
+    "कामाचे ठिकाण"
+  ],
+  "Measurement reference / pages": [
+    "माप संदर्भ / पृष्ठ",
+    "मोजमाप संदर्भ / पाने"
+  ],
+  "Approved variation": [
+    "स्वीकृत परिवर्तन",
+    "मंजूर बदल"
+  ],
+  "Add measurement line": [
+    "माप की मद जोड़ें",
+    "मोजमापाची बाब जोडा"
+  ],
+  "Remove line": [
+    "मद हटाएँ",
+    "बाब काढा"
+  ],
+  "Select": [
+    "चुनें",
+    "निवडा"
+  ],
+  "Verified ledger totals exclude legacy demo balances. Evidence is stored on this device.": [
+    "सत्यापित खाते के योग में पुराने उदाहरण शेष शामिल नहीं हैं। प्रमाण इस उपकरण पर सुरक्षित हैं।",
+    "पडताळलेल्या खात्याच्या एकूण रकमेत जुन्या उदाहरणातील शिल्लक समाविष्ट नाही. पुरावे या उपकरणावर साठवले आहेत."
+  ],
+  "Track government receipts and contractor payments separately using verified transactions and reversals.": [
+    "सत्यापित लेनदेन और निरस्तीकरण से सरकारी प्राप्तियाँ और ठेकेदार भुगतान अलग देखें।",
+    "पडताळलेले व्यवहार आणि रद्द नोंदी वापरून शासकीय प्राप्ती व कंत्राटदार देयके स्वतंत्रपणे पहा."
+  ],
+  "Liability period and extensions follow the verified signed contract. Security release requires clearance of outstanding obligations.": [
+    "दायित्व अवधि और विस्तार सत्यापित हस्ताक्षरित अनुबंध अनुसार हैं। प्रतिभूति वापसी हेतु शेष दायित्वों का निपटारा आवश्यक है।",
+    "दायित्व कालावधी व मुदतवाढ पडताळलेल्या स्वाक्षरीयुक्त करारानुसार आहेत. सुरक्षा ठेव परताव्यापूर्वी उर्वरित दायित्वे पूर्ण करणे आवश्यक आहे."
+  ],
+  "A newer version has already been approved.": [
+    "नया संस्करण पहले ही स्वीकृत है।",
+    "नवीन आवृत्ती आधीच मंजूर आहे."
+  ],
+  "A reference and uploaded evidence are required.": [
+    "संदर्भ और अपलोड किया प्रमाण आवश्यक है।",
+    "संदर्भ आणि अपलोड केलेला पुरावा आवश्यक आहे."
+  ],
+  "A report already exists for this month.": [
+    "इस माह की रिपोर्ट पहले से है।",
+    "या महिन्याचा अहवाल आधीच आहे."
+  ],
+  "A work order cannot be issued twice or retroactively.": [
+    "कार्यादेश दोबारा या पूर्व प्रभाव से जारी नहीं हो सकता।",
+    "कार्यादेश पुन्हा किंवा पूर्वलक्षी प्रभावाने जारी करता येत नाही."
+  ],
+  "Add at least one distinct BOQ measurement line.": [
+    "कम से कम एक अलग BOQ माप मद जोड़ें।",
+    "किमान एक स्वतंत्र BOQ मोजमाप बाब जोडा."
+  ],
+  "An independent reviewer and decision notes are required.": [
+    "स्वतंत्र समीक्षक और निर्णय टिप्पणियाँ आवश्यक हैं।",
+    "स्वतंत्र पडताळणीकर्ता आणि निर्णय नोंदी आवश्यक आहेत."
+  ],
+  "Attach up to six distinct evidence files.": [
+    "अधिकतम छह अलग प्रमाण फ़ाइलें संलग्न करें।",
+    "जास्तीत जास्त सहा स्वतंत्र पुरावा फाइल जोडा."
+  ],
+  "Certificate dates are inconsistent.": [
+    "प्रमाणपत्र की तारीखें असंगत हैं।",
+    "प्रमाणपत्राच्या तारखा विसंगत आहेत."
+  ],
+  "Complete every checklist item and enter reinspection findings.": [
+    "सभी जाँच मदें पूरी करें और पुनर्निरीक्षण निष्कर्ष दर्ज करें।",
+    "प्रत्येक तपासणी बाब पूर्ण करा आणि पुनर्तपासणीचे निष्कर्ष नोंदवा."
+  ],
+  "Complete the preceding handover step first.": [
+    "पहले पिछला हस्तांतरण चरण पूरा करें।",
+    "आधी हस्तांतरणाचा मागील टप्पा पूर्ण करा."
+  ],
+  "Completed inspections are immutable. Create a reinspection.": [
+    "पूर्ण निरीक्षण बदले नहीं जा सकते। पुनर्निरीक्षण बनाएँ।",
+    "पूर्ण झालेल्या तपासण्या बदलता येत नाहीत. पुनर्तपासणी तयार करा."
+  ],
+  "Corrective action and independently verified reinspection evidence are required.": [
+    "सुधारात्मक कार्य और स्वतंत्र रूप से सत्यापित पुनर्निरीक्षण प्रमाण आवश्यक हैं।",
+    "सुधारणात्मक कृती आणि स्वतंत्रपणे पडताळलेला पुनर्तपासणी पुरावा आवश्यक आहे."
+  ],
+  "Create a reinspection instead of overwriting a failed result.": [
+    "विफल परिणाम बदलने के बजाय पुनर्निरीक्षण बनाएँ।",
+    "अयशस्वी निकाल बदलण्याऐवजी पुनर्तपासणी तयार करा."
+  ],
+  "Cumulative measured quantity exceeds the authorized BOQ quantity.": [
+    "संचयी माप मात्रा अधिकृत BOQ मात्रा से अधिक है।",
+    "एकूण मोजलेले परिमाण अधिकृत BOQ परिमाणापेक्षा जास्त आहे."
+  ],
+  "Each line needs a valid BOQ item, positive quantity, location and measurement reference.": [
+    "प्रत्येक मद में वैध BOQ मद, धनात्मक मात्रा, स्थान और माप संदर्भ आवश्यक है।",
+    "प्रत्येक ओळीत वैध BOQ बाब, धन परिमाण, ठिकाण व मोजमाप संदर्भ आवश्यक आहे."
+  ],
+  "Enter a positive transaction amount.": [
+    "धनात्मक लेनदेन राशि दर्ज करें।",
+    "धन व्यवहार रक्कम नोंदवा."
+  ],
+  "Enter signed contract terms, liability commencement, duration and end date.": [
+    "हस्ताक्षरित अनुबंध शर्तें, दायित्व प्रारंभ, अवधि और समाप्ति तारीख दर्ज करें।",
+    "स्वाक्षरीयुक्त कराराच्या अटी, दायित्व प्रारंभ, कालावधी व समाप्ती तारीख नोंदवा."
+  ],
+  "Enter the available approved budget.": [
+    "उपलब्ध स्वीकृत बजट दर्ज करें।",
+    "उपलब्ध मंजूर निधी नोंदवा."
+  ],
+  "Enter valid calendar dates.": [
+    "वैध तारीखें दर्ज करें।",
+    "वैध तारखा नोंदवा."
+  ],
+  "Every checklist item must pass.": [
+    "जाँच की प्रत्येक मद सफल होनी चाहिए।",
+    "तपासणीतील प्रत्येक बाब उत्तीर्ण असावी."
+  ],
+  "Evidence file metadata does not match.": [
+    "प्रमाण फ़ाइल का विवरण मेल नहीं खाता।",
+    "पुरावा फाइलचा तपशील जुळत नाही."
+  ],
+  "Gross work value must match the measured BOQ lines.": [
+    "सकल कार्य मूल्य मापित BOQ मदों से मेल खाना चाहिए।",
+    "एकूण कामाचे मूल्य मोजलेल्या BOQ बाबींशी जुळले पाहिजे."
+  ],
+  "Invalid record type.": [
+    "अमान्य अभिलेख प्रकार।",
+    "अवैध नोंद प्रकार."
+  ],
+  "Link the approved variation for quantities above the original BOQ.": [
+    "मूल BOQ से अधिक मात्रा के लिए स्वीकृत परिवर्तन जोड़ें।",
+    "मूळ BOQ पेक्षा जास्त परिमाणासाठी मंजूर बदल जोडा."
+  ],
+  "Link the current verified version before submitting a replacement.": [
+    "प्रतिस्थापन जमा करने से पहले वर्तमान सत्यापित संस्करण जोड़ें।",
+    "बदली आवृत्ती सादर करण्यापूर्वी सध्याची पडताळलेली आवृत्ती जोडा."
+  ],
+  "Link the defect and its corrective-action record for reinspection.": [
+    "पुनर्निरीक्षण हेतु दोष और सुधारात्मक कार्य की नोंद जोड़ें।",
+    "पुनर्तपासणीसाठी दोष व त्यावरील सुधारणात्मक कृतीची नोंद जोडा."
+  ],
+  "Link the inspection, approved test plan, sample, laboratory, drawing and standard versions.": [
+    "निरीक्षण, स्वीकृत परीक्षण योजना, नमूना, प्रयोगशाला, रेखाचित्र और मानक संस्करण जोड़ें।",
+    "तपासणी, मंजूर चाचणी योजना, नमुना, प्रयोगशाळा, रेखाचित्र व मानक आवृत्ती जोडा."
+  ],
+  "Only an independent engineer can verify a submitted measurement.": [
+    "जमा किए माप का सत्यापन केवल स्वतंत्र अभियंता कर सकता है।",
+    "सादर केलेले मोजमाप केवळ स्वतंत्र अभियंता पडताळू शकतो."
+  ],
+  "Only an open reinspection may be certified.": [
+    "केवल लंबित पुनर्निरीक्षण प्रमाणित किया जा सकता है।",
+    "केवळ प्रलंबित पुनर्तपासणी प्रमाणित करता येते."
+  ],
+  "Only contractors can submit monthly reports.": [
+    "केवल ठेकेदार मासिक रिपोर्ट जमा कर सकते हैं।",
+    "केवळ कंत्राटदार मासिक अहवाल सादर करू शकतात."
+  ],
+  "Only finance reviewers can record transactions.": [
+    "केवल वित्त समीक्षक लेनदेन दर्ज कर सकते हैं।",
+    "केवळ वित्त पडताळणीकर्ते व्यवहार नोंदवू शकतात."
+  ],
+  "Only the current verified version may be superseded.": [
+    "केवल वर्तमान सत्यापित संस्करण प्रतिस्थापित हो सकता है।",
+    "केवळ सध्याची पडताळलेली आवृत्ती बदलता येते."
+  ],
+  "Payment exceeds the remaining approved bill amount.": [
+    "भुगतान शेष स्वीकृत बिल राशि से अधिक है।",
+    "देयक उर्वरित मंजूर बिल रकमेपेक्षा जास्त आहे."
+  ],
+  "Payment requires an approved bill.": [
+    "भुगतान हेतु स्वीकृत बिल आवश्यक है।",
+    "देयकासाठी मंजूर बिल आवश्यक आहे."
+  ],
+  "Progress must be between 0 and 100.": [
+    "प्रगति 0 से 100 के बीच होनी चाहिए।",
+    "प्रगती 0 ते 100 दरम्यान असावी."
+  ],
+  "Provide a valid month, progress, work summary and next-month plan.": [
+    "वैध माह, प्रगति, कार्य सारांश और अगले माह की योजना दें।",
+    "वैध महिना, प्रगती, कामाचा सारांश व पुढील महिन्याचे नियोजन द्या."
+  ],
+  "Provide a valid transaction date and accounting head.": [
+    "वैध लेनदेन तारीख और लेखा शीर्ष दें।",
+    "वैध व्यवहार तारीख आणि लेखाशीर्ष द्या."
+  ],
+  "Provide certificate dates or a supported not-applicable reason.": [
+    "प्रमाणपत्र की तारीखें या प्रमाण सहित लागू न होने का कारण दें।",
+    "प्रमाणपत्राच्या तारखा किंवा पुराव्यासह लागू नसण्याचे कारण द्या."
+  ],
+  "Provide extension days and the hindrance reference.": [
+    "विस्तार के दिन और बाधा का संदर्भ दें।",
+    "मुदतवाढीचे दिवस व अडथळ्याचा संदर्भ द्या."
+  ],
+  "Provide the authority, issue date, version and source reference.": [
+    "प्राधिकारी, जारी तारीख, संस्करण और स्रोत संदर्भ दें।",
+    "प्राधिकारी, जारी तारीख, आवृत्ती व स्रोत संदर्भ द्या."
+  ],
+  "Provide the contract clause, cause, authority and schedule impact.": [
+    "अनुबंध धारा, कारण, प्राधिकारी और समय-सारणी पर प्रभाव दें।",
+    "करार कलम, कारण, प्राधिकारी व वेळापत्रकावरील परिणाम द्या."
+  ],
+  "Read-only role.": [
+    "केवल देखने की भूमिका।",
+    "केवळ वाचनाची भूमिका."
+  ],
+  "Record and independently verify the bank or treasury payment in Contract controls first.": [
+    "पहले अनुबंध नियंत्रण में बैंक या कोषागार भुगतान दर्ज करके स्वतंत्र सत्यापन कराएँ।",
+    "प्रथम करार नियंत्रणात बँक किंवा कोषागार देयक नोंदवून स्वतंत्र पडताळणी करा."
+  ],
+  "Record not found.": [
+    "अभिलेख नहीं मिला।",
+    "नोंद सापडली नाही."
+  ],
+  "Security and insurance expiry dates are required.": [
+    "प्रतिभूति और बीमा की समाप्ति तारीखें आवश्यक हैं।",
+    "हमी व विम्याच्या मुदत समाप्ती तारखा आवश्यक आहेत."
+  ],
+  "Security cannot be released before liability expiry and clearance of outstanding obligations.": [
+    "दायित्व समाप्ति और शेष दायित्वों के निपटारे से पहले प्रतिभूति वापस नहीं हो सकती।",
+    "दायित्व मुदत संपण्यापूर्वी व उर्वरित दायित्वे पूर्ण होण्यापूर्वी सुरक्षा ठेव परत करता येत नाही."
+  ],
+  "Select a BOQ item, positive additional quantity and its approved rate.": [
+    "BOQ मद, धनात्मक अतिरिक्त मात्रा और उसकी स्वीकृत दर चुनें।",
+    "BOQ बाब, धन अतिरिक्त परिमाण आणि त्याचा मंजूर दर निवडा."
+  ],
+  "Select an unreversed transaction and give a reason.": [
+    "ऐसा लेनदेन चुनें जो निरस्त नहीं हुआ और कारण दें।",
+    "रद्द न झालेला व्यवहार निवडा आणि कारण द्या."
+  ],
+  "Specify the certificate authority and applicability.": [
+    "प्रमाणपत्र प्राधिकारी और प्रयोज्यता बताएँ।",
+    "प्रमाणपत्र प्राधिकारी व लागू असणे नमूद करा."
+  ],
+  "The account or record changed. Refresh and retry.": [
+    "खाता या अभिलेख बदल गया। ताज़ा करके पुनः प्रयास करें।",
+    "खाते किंवा नोंद बदलली आहे. पृष्ठ ताजे करून पुन्हा प्रयत्न करा."
+  ],
+  "The defect must belong to this inspection.": [
+    "दोष इस निरीक्षण से संबंधित होना चाहिए।",
+    "दोष या तपासणीशी संबंधित असावा."
+  ],
+  "This action requires an assigned, authorized user.": [
+    "इस कार्य हेतु आवंटित अधिकृत उपयोगकर्ता आवश्यक है।",
+    "या कृतीसाठी नेमलेला अधिकृत वापरकर्ता आवश्यक आहे."
+  ],
+  "This decision has already been recorded.": [
+    "यह निर्णय पहले ही दर्ज है।",
+    "हा निर्णय आधीच नोंदवला आहे."
+  ],
+  "This reference already exists.": [
+    "यह संदर्भ पहले से है।",
+    "हा संदर्भ आधीच आहे."
+  ],
+  "This transaction has already been reversed.": [
+    "यह लेनदेन पहले ही निरस्त है।",
+    "हा व्यवहार आधीच रद्द केला आहे."
+  ],
+  "This transaction reference is already recorded.": [
+    "यह लेनदेन संदर्भ पहले ही दर्ज है।",
+    "हा व्यवहार संदर्भ आधीच नोंदवला आहे."
+  ],
+  "This work location and measurement reference have already been claimed.": [
+    "इस कार्य स्थल और माप संदर्भ का दावा पहले हो चुका है।",
+    "या कामाच्या ठिकाणाचा व मोजमाप संदर्भाचा दावा आधीच केला आहे."
+  ],
+  "Transactions and contract adjustments cannot be overwritten.": [
+    "लेनदेन और अनुबंध समायोजन बदले नहीं जा सकते।",
+    "व्यवहार आणि करारातील समायोजन पुसून बदलता येत नाहीत."
+  ],
+  "Use verified contract controls for financial, schedule and lifecycle changes.": [
+    "वित्तीय, समय-सारणी और जीवनचक्र बदलाव हेतु सत्यापित अनुबंध नियंत्रण उपयोग करें।",
+    "आर्थिक, वेळापत्रक व प्रकल्प टप्प्यांतील बदलांसाठी पडताळलेले करार नियंत्रण वापरा."
+  ],
+  "Verified receiving-authority acceptance is required.": [
+    "प्राप्तकर्ता प्राधिकारी की सत्यापित स्वीकृति आवश्यक है।",
+    "स्वीकारणाऱ्या प्राधिकरणाची पडताळलेली स्वीकृती आवश्यक आहे."
+  ],
+  "Verify each measurement line before site certification.": [
+    "स्थल प्रमाणन से पहले प्रत्येक माप मद सत्यापित करें।",
+    "स्थळ प्रमाणनापूर्वी प्रत्येक मोजमाप बाब पडताळा."
+  ],
+  "Verify the commissioning acceptance certificate first.": [
+    "पहले संचालन परीक्षण स्वीकृति प्रमाणपत्र सत्यापित करें।",
+    "प्रथम कार्यान्वयन चाचणी स्वीकृती प्रमाणपत्र पडताळा."
+  ],
+  "Verify the signed extension in Contract controls using this record ID as the reference.": [
+    "इस अभिलेख ID को संदर्भ बनाकर अनुबंध नियंत्रण में हस्ताक्षरित विस्तार सत्यापित करें।",
+    "या नोंदीचा ID संदर्भ म्हणून वापरून करार नियंत्रणात स्वाक्षरीयुक्त मुदतवाढ पडताळा."
+  ],
+  "Verify the signed variation in Contract controls using this record ID as the reference.": [
+    "इस अभिलेख ID को संदर्भ बनाकर अनुबंध नियंत्रण में हस्ताक्षरित परिवर्तन सत्यापित करें।",
+    "या नोंदीचा ID संदर्भ म्हणून वापरून करार नियंत्रणात स्वाक्षरीयुक्त बदल पडताळा."
+  ],
+  "Verify traceable quality evidence in Contract controls before passing this inspection.": [
+    "निरीक्षण सफल घोषित करने से पहले अनुबंध नियंत्रण में संबंधित गुणवत्ता प्रमाण सत्यापित करें।",
+    "तपासणी उत्तीर्ण करण्यापूर्वी करार नियंत्रणात संबंधित गुणवत्तेचा मागोवा घेता येणारा पुरावा पडताळा."
+  ],
+  "Worker does not belong to this hospital.": [
+    "कर्मी इस अस्पताल से संबंधित नहीं है।",
+    "कामगार या रुग्णालयाशी संबंधित नाही."
+  ],
+  "Your account changed. Reopen the form.": [
+    "आपका खाता बदल गया। फ़ॉर्म दोबारा खोलें।",
+    "तुमचे खाते बदलले. अर्ज पुन्हा उघडा."
+  ],
+  "Explain the signed amendment to the liability terms.": [
+    "दायित्व शर्तों में हस्ताक्षरित संशोधन बताएँ।",
+    "दायित्व अटींमधील स्वाक्षरीयुक्त सुधारणा स्पष्ट करा."
+  ],
+  "Select the verified contract, release authority and clearance details.": [
+    "सत्यापित अनुबंध, वापसी प्राधिकारी और निपटारे का विवरण चुनें।",
+    "पडताळलेला करार, परतावा प्राधिकारी व दायित्वपूर्तीचे तपशील निवडा."
+  ],
+  "Document type and version are required.": [
+    "दस्तावेज़ प्रकार और संस्करण आवश्यक हैं।",
+    "दस्तऐवज प्रकार व आवृत्ती आवश्यक आहे."
+  ],
+  "Use PDF, JPEG or PNG evidence up to 5 MB.": [
+    "अधिकतम 5 MB के PDF, JPEG या PNG प्रमाण उपयोग करें।",
+    "5 MB पर्यंतचा PDF, JPEG किंवा PNG पुरावा वापरा."
+  ],
+  "Security release has already been verified.": [
+    "प्रतिभूति वापसी पहले ही सत्यापित है।",
+    "सुरक्षा ठेव परतावा आधीच पडताळला आहे."
   ]
 }

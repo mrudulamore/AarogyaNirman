@@ -9,12 +9,16 @@ import { PageHeader } from '../../components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Avatar } from '../../components/ui/forms';
+import { useProjectScope } from '../../lib/scope';
+
 
 export function WorkersList() {
-  useUiLanguage();
+  const language = useUiLanguage();
   const { t } = useTranslation();
-  const workers = useStore((s) => s.workers);
-  const projects = useStore((s) => s.projects);
+  const { projects, projectIds } = useProjectScope();
+  const workers = useStore((s) => s.workers).filter(w => projectIds.has(w.projectId));
+  const user = useStore(s => s.currentUser);
+  const canAttend = !!user && ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'SUPERADMIN'].includes(user.role);
   const attendance = useStore((s) => s.attendance);
   const markAttendance = useStore((s) => s.markAttendance);
   const [projectFilter, setProjectFilter] = useState('ALL');
@@ -29,11 +33,11 @@ export function WorkersList() {
     const days = [...Array(7)].map((_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const key = d.toISOString().slice(0, 10);
-      const count = attendance.filter((a) => a.date === key).length;
-      return { day: d.toLocaleDateString('en-IN', { weekday: 'short' }), count };
+      const count = new Set(attendance.filter((a) => a.date === key && projectIds.has(a.projectId) && (projectFilter === 'ALL' || a.projectId === projectFilter)).map(a => a.workerId)).size;
+      return { day: d.toLocaleDateString(language === 'hi' ? 'hi-IN' : language === 'mr' ? 'mr-IN' : 'en-IN', { weekday: 'short' }), count };
     });
     return days;
-  }, [attendance]);
+  }, [attendance, projectIds, projectFilter, language]);
 
   return (
     <div>
@@ -65,7 +69,16 @@ export function WorkersList() {
         <SelectContent><SelectItem value="ALL">{uiText("All Projects")}</SelectItem>{projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
       </Select></div>
 
-      <Card>
+      <div className="space-y-3 md:hidden">
+        {filtered.map(w => <Card key={w.id}><CardContent className="space-y-2 p-4">
+          <div className="flex items-center gap-3"><Avatar name={w.name} /><div><p className="font-semibold">{w.name}</p><p className="text-xs text-slate-500">{uiText(w.role)} · {uiText(w.skillLevel)}</p></div></div>
+          <p className="text-sm text-navy-700">{projects.find(p => p.id === w.projectId)?.name}</p>
+          <div className="flex flex-wrap gap-2"><StatusBadge status={w.attendanceStatus} /><StatusBadge status={w.safetyTrainingStatus} label={`${uiText('Safety Training')}: ${uiText(w.safetyTrainingStatus)}`} /><span className="text-xs">{uiText(w.shift)}</span></div>
+          {canAttend && w.attendanceStatus !== 'PRESENT' && <Button className="w-full" onClick={() => { try { markAttendance(w.id, w.projectId, 'MANUAL'); } catch (e) { toast.error(uiText((e as Error).message)); } }}>{uiText('Check-in')}</Button>}
+        </CardContent></Card>)}
+      </div>
+      {!filtered.length && <p className="p-4 text-sm text-slate-500">{uiText('No workers assigned to this project.')}</p>}
+      <Card className="hidden md:block">
         <Table>
           <THead><Tr><Th>{uiText("Worker")}</Th><Th>{uiText("Role")}</Th><Th>{uiText("Project")}</Th><Th>{uiText("Skill")}</Th><Th>{uiText("Shift")}</Th><Th>{uiText("Attendance")}</Th><Th>{uiText("Safety Training")}</Th><Th /></Tr></THead>
           <TBody>
@@ -78,7 +91,7 @@ export function WorkersList() {
                 <Td>{uiText(w.shift)}</Td>
                 <Td><StatusBadge status={w.attendanceStatus === 'PRESENT' ? 'APPROVED' : w.attendanceStatus === 'ABSENT' ? 'OPEN' : 'PENDING'} label={uiText(w.attendanceStatus.replace('_', ' '))} /></Td>
                 <Td><StatusBadge status={w.safetyTrainingStatus} /></Td>
-                <Td>{w.attendanceStatus !== 'PRESENT' && <Button size="sm" variant="outline" onClick={() => { markAttendance(w.id, w.projectId, 'QR'); toast.success(uiMessage("{{0}} checked in.", [w.name])); }}><QrCode size={12} />{uiText(" Check-in")}</Button>}</Td>
+                <Td>{canAttend && w.attendanceStatus !== 'PRESENT' && <Button size="sm" variant="outline" onClick={() => { try {  markAttendance(w.id, w.projectId, 'MANUAL'); toast.success(uiMessage("{{0}} checked in.", [w.name]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}><QrCode size={12} />{uiText(" Check-in")}</Button>}</Td>
               </Tr>
             ))}
           </TBody>

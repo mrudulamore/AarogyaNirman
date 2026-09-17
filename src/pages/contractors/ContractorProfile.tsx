@@ -2,6 +2,7 @@ import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, Clock, ShieldAlert, ShieldCheck, TrendingDown, Wallet, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
@@ -14,12 +15,12 @@ export function ContractorProfile() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const contractors = useStore((s) => s.contractors);
-  const projects = useStore((s) => s.projects);
-  const defects = useStore((s) => s.defects);
-  const bills = useStore((s) => s.bills);
+  const { projects, projectIds } = useProjectScope();
+  const defects = useStore((s) => s.defects).filter(r => projectIds.has(r.projectId));
+  const bills = useStore((s) => s.bills).filter(r => projectIds.has(r.projectId));
   const contractorPocs = useStore((s) => s.contractorPocs);
 
-  const contractor = contractors.find((c) => c.id === id);
+  const contractor = contractors.find((c) => c.id === id && projects.some(p => p.contractorId === c.id));
   const companyPocs = contractorPocs.filter((poc) => poc.contractorId === id);
 
   // When arrived at via a project's Team/Overview tab (?from=<projectId>), remember it so the

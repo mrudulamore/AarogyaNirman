@@ -77,8 +77,8 @@ export function GovernanceTab({ project }: { project: Project }) {
                   <Td className="whitespace-nowrap">
                     {c.status === 'PENDING_APPROVAL' && canApprove && (
                       <div className="flex gap-1.5">
-                        <Button size="sm" variant="success" onClick={() => { decideChangeOrder(c.id, 'APPROVED'); toast.success(uiText('Change order approved.')); }}>{uiText("Approve")}</Button>
-                        <Button size="sm" variant="destructive" onClick={() => { decideChangeOrder(c.id, 'REJECTED'); toast.error(uiText('Change order rejected.')); }}>{uiText("Reject")}</Button>
+                        <Button size="sm" variant="success" onClick={() => { try {  decideChangeOrder(c.id, 'APPROVED'); toast.success(uiText('Change order approved.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Approve")}</Button>
+                        <Button size="sm" variant="destructive" onClick={() => { try {  decideChangeOrder(c.id, 'REJECTED'); toast.error(uiText('Change order rejected.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Reject")}</Button>
                       </div>
                     )}
                   </Td>

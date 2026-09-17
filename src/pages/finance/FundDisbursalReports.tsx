@@ -2,7 +2,8 @@ import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import type { Project } from '../../types';
 import { useStore } from '../../store/useStore';
-import { buildFundReport, buildContractorFundReport, todayDate } from '../../lib/fundDisbursal';
+import { todayDate } from '../../lib/fundDisbursal';
+import { verifiedFundReports } from '../../lib/verifiedFundReports';
 import { downloadPdfReport, type PdfSection } from '../../lib/pdf';
 import { formatCurrency } from '../../lib/utils';
 import { Card, CardHeader, CardTitle, CardContent, Button, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
@@ -14,34 +15,31 @@ type ReportKind = keyof typeof titles;
 
 export function FundDisbursalReports({ projects, scopeLabel }: { projects: Project[]; scopeLabel: string }) {
   useUiLanguage();
-  const installments = useStore((s) => s.fundInstallments);
-  const bills = useStore((s) => s.bills);
-  const contractors = useStore((s) => s.contractors);
+  const state = useStore();
   const user = useStore((s) => s.currentUser);
   const [projectId, setProjectId] = useState('ALL');
   const [asOf, setAsOf] = useState(todayDate);
   const [kind, setKind] = useState<ReportKind>('government');
   const selected = projectId === 'ALL' ? projects : projects.filter((p) => p.id === projectId);
-  const government = buildFundReport(selected, installments, asOf);
-  const contractor = buildContractorFundReport(selected, bills, contractors, asOf);
+  const { government, contractor } = verifiedFundReports(state, selected, asOf);
   const valid = !!asOf && asOf <= todayDate();
   const sections = kind === 'government' ? [government.summary, government.details]
     : kind === 'contractor' ? [contractor.summary, contractor.details, ...(contractor.missing.rows.length ? [contractor.missing] : [])]
     : [government.roadmap, contractor.roadmap];
   function exportPdf() {
-    downloadPdfReport({ title: titles[kind], subtitle: `As of ${asOf} | Prototype data; funding plans are illustrative.`,
+    downloadPdfReport({ title: titles[kind], subtitle: `As of ${asOf} | Verified transactions recorded in this prototype.`,
       scopeLine: selected.length === 1 ? selected[0].name : scopeLabel,
       generatedBy: user?.name ?? 'System', kpis: kind === 'contractor' ? contractor.kpis : government.kpis,
       sections: [...sections, { heading: 'Report basis', columns: ['Notes'], rows: [
-        ['Government installments and targets are illustrative demo data, not an approved disbursal schedule.'],
-        ['Contractor payment counts represent paid bills, not individual bank transfer installments.'],
-        ['Paid bills without payment dates are excluded. Pending bill workflow statuses are current; payment target dates are not recorded.'],
+        ['Only independently verified receipt and payment transactions are included.'],
+        ['Contractor payment counts represent verified payment transactions.'],
+        ['Reversed transactions are excluded as of the selected date. Legacy paid labels are not payment evidence.'],
       ] }], filename: `${kind}_fund_report_${asOf}.pdf` });
   }
   return <Card className="my-4">
     <CardHeader><CardTitle>{uiText("Fund Disbursal Reports")}</CardTitle></CardHeader>
     <CardContent className="space-y-4">
-      <p className="text-xs text-slate-500">{uiText("Track government receipts and contractor payments separately. Government installment entries and release conditions are illustrative demo data reconciled to the prototype totals.")}</p>
+      <p className="text-xs text-slate-500">{uiText("Track government receipts and contractor payments separately using verified transactions and reversals.")}</p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs font-medium text-slate-600">{uiText("Project")}<select className="h-9 rounded-md border border-slate-300 bg-white px-2" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="ALL">{uiText("All projects in scope")}</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

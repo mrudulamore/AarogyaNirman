@@ -3,6 +3,7 @@ import { RABillSubmission } from './RABillSubmission';
 import { BillEvidence } from './BillEvidence';
 import { FundDisbursalReports } from '../../../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
@@ -36,10 +37,12 @@ export function FinanceTab({ project }: { project: Project }) {
   const verifyBillQuality = useStore((s) => s.verifyBillQuality);
   const approveBill = useStore((s) => s.approveBill);
   const rejectBill = useStore((s) => s.rejectBill);
-  const markBillPaid = useStore((s) => s.markBillPaid);
+  
   const verifyMeasurement = useStore((s) => s.verifyMeasurement);
 
-  const [submitOpen, setSubmitOpen] = useState(false);
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const [submitOpen, setSubmitOpen] = useState(params.get('action') === 'submit-bill' && currentUser?.role === 'CONTRACTOR');
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const active = bills.find((b) => b.id === detailId);
@@ -249,10 +252,10 @@ export function FinanceTab({ project }: { project: Project }) {
                   <Td className="text-[11px] text-slate-500">{uiText(PENDING_WITH[b.status] ?? '—')}</Td>
                   <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{uiText(['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`)}</Td>
                   <Td className="space-x-1.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    {currentUser?.role === 'DEPUTY_ENGINEER' && b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { verifyBillSite(b.id); toast.success(uiText('Site-verified.')); }}>{uiText("Site Verify")}</Button>}
+                    {currentUser?.role === 'DEPUTY_ENGINEER' && b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { try {  verifyBillSite(b.id); toast.success(uiText('Site-verified.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Site Verify")}</Button>}
                     {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'SITE_VERIFIED' && <Button size="sm" variant="outline" onClick={() => { verifyBillQuality(b.id); toast.success(uiText('Quality-verified.')); }}>{uiText("Quality Verify")}</Button>}
-                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { approveBill(b.id); toast.success(uiText('Bill approved.')); }}>{uiText("Approve")}</Button>}
-                    {currentUser?.role === 'COMMISSIONER' && b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => { markBillPaid(b.id); toast.success(uiText('Payment released. Financial progress updated.')); }}>{uiText("Mark Paid")}</Button>}
+                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { try {  approveBill(b.id); toast.success(uiText('Bill approved.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Approve")}</Button>}
+                    {currentUser?.role === 'COMMISSIONER' && b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => navigate(`/projects/${project.id}?tab=controls&kind=PAYMENT`)}>{uiText('Record verified payment')}</Button>}
                     {['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER'].includes(currentUser?.role ?? '') && ['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status) && <Button size="sm" variant="destructive" onClick={() => { rejectBill(b.id, 'Discrepancy in measurement'); toast.error(uiText('Bill returned.')); }}>{uiText("Return")}</Button>}
                   </Td>
                 </Tr>
@@ -313,7 +316,7 @@ export function FinanceTab({ project }: { project: Project }) {
                   <Tr key={m.id}>
                     <Td>{uiText(m.workItem)}</Td><Td>{uiText(m.unit)}</Td><Td>{m.previousQty}</Td><Td>{m.currentQty}</Td><Td>{m.totalQty}</Td>
                     <Td>{uiText(formatCurrencyFull(m.rate))}</Td><Td>{uiText(formatCurrencyFull(m.amount))}</Td>
-                    <Td>{m.verified ? <StatusBadge status="APPROVED" label={uiText("Verified")} /> : currentUser?.role === 'DEPUTY_ENGINEER' ? <Button size="sm" variant="outline" onClick={() => verifyMeasurement(m.id, currentUser?.name ?? 'Engineer')}><FileCheck2 size={12} />{uiText(" Verify")}</Button> : <span>{uiText("Pending verification")}</span>}</Td>
+                    <Td>{m.verified ? <StatusBadge status="APPROVED" label={uiText("Verified")} /> : currentUser?.role === 'DEPUTY_ENGINEER' ? <Button size="sm" variant="outline" onClick={() => { try { verifyMeasurement(m.id, currentUser?.name ?? 'Engineer'); } catch (error) { toast.error(uiText((error as Error).message)); } }}><FileCheck2 size={12} />{uiText(" Verify")}</Button> : <span>{uiText("Pending verification")}</span>}</Td>
                   </Tr>
                 ))}
                 {activeMeasurements.length === 0 && <Tr><Td className="py-4 text-center text-slate-400"><span>{uiText("No linked measurement entries.")}</span></Td></Tr>}

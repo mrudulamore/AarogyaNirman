@@ -88,7 +88,7 @@ export function SafetyCommissioningTab({ project }: { project: Project }) {
                   {(['READY', 'PENDING', 'NOT_READY'] as const).map((st) => (
                     <button
                       key={st}
-                      onClick={() => { updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(uiMessage("{{0}} marked ready.", [item.item])); }}
+                      onClick={() => { try {  updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(uiMessage("{{0}} marked ready.", [item.item]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}
                       className={cn('rounded px-2 py-0.5 text-[10px] font-medium', item.status === st ? 'bg-navy-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
                     >
                       {uiText(st.replace('_', ' '))}

@@ -5,7 +5,7 @@ import { Building2, Calendar, Wallet, HardHat, UserRound, AlertOctagon, Edit3, S
 import { useStore } from '../../../store/useStore';
 import { useProjectScope } from '../../../lib/scope';
 import { Breadcrumbs } from '../../../components/layout/Breadcrumbs';
-import { Card, CardContent, ProgressBar, StatusBadge, Button, Input, Textarea } from '../../../components/ui/primitives';
+import { Card, CardContent, ProgressBar, StatusBadge, Button, Textarea } from '../../../components/ui/primitives';
 import { Tabs, TabsContent } from '../../../components/ui/tabs';
 import { ProjectNavigation } from './ProjectNavigation';
 import { Dialog, DialogContent, DialogFooter } from '../../../components/ui/overlays';
@@ -36,6 +36,7 @@ import { SafetyCommissioningTab } from './tabs/SafetyCommissioningTab';
 import { HandoverTab } from './tabs/CommissioningHandoverTab';
 import { AuditTab } from './tabs/AuditTab';
 import { tabsForRole } from '../../../lib/projectTabAccess';
+import { ContractControlsTab } from './tabs/ContractControlsTab';
 
 export function ProjectDetail() {
   useUiLanguage();
@@ -50,7 +51,7 @@ export function ProjectDetail() {
   const updateProject = useStore((s) => s.updateProject);
   const { projectIds } = useProjectScope();
   const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ description: '', plannedCompletionDate: '' });
+  const [editForm, setEditForm] = useState({ description: '' });
 
   const project = projects.find((p) => p.id === id);
   const visibleTabs = tabsForRole(currentUser?.role);
@@ -103,7 +104,7 @@ export function ProjectDetail() {
               </div>
             </div>
             {canEditProject && (
-              <Button variant="outline" size="sm" onClick={() => { setEditForm({ description: project.description, plannedCompletionDate: project.plannedCompletionDate }); setEditOpen(true); }}><Edit3 size={13} />{uiText(" Edit")}</Button>
+              <Button variant="outline" size="sm" onClick={() => { setEditForm({ description: project.description }); setEditOpen(true); }}><Edit3 size={13} />{uiText(" Edit")}</Button>
             )}
           </div>
 
@@ -175,6 +176,8 @@ export function ProjectDetail() {
         <TabsContent value="documents"><DocumentsTab project={project} /></TabsContent>
         <TabsContent value="handover"><HandoverTab project={project} /></TabsContent>
         <TabsContent value="audit"><AuditTab project={project} /></TabsContent>
+        <TabsContent value="controls"><ContractControlsTab key={project.id} project={project} /></TabsContent>
+        <TabsContent value="monthly"><ContractControlsTab key={project.id + '-monthly'} project={project} monthly /></TabsContent>
       </Tabs>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -184,14 +187,11 @@ export function ProjectDetail() {
               <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Description")}</p>
               <Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={4} />
             </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Planned Completion Date")}</p>
-              <Input type="date" value={editForm.plannedCompletionDate} onChange={(e) => setEditForm({ ...editForm, plannedCompletionDate: e.target.value })} />
-            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => { updateProject(project.id, editForm); toast.success(uiText('Project updated.')); setEditOpen(false); }}>{uiText("Save Changes")}</Button>
+            <Button onClick={() => { try {  updateProject(project.id, editForm); toast.success(uiText('Project updated.')); setEditOpen(false);  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

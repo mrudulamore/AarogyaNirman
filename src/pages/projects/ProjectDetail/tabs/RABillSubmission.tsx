@@ -1,14 +1,16 @@
 import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { BillAttachment, Project } from '../../../../types';
+import type { Bill, BillAttachment, Project } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { useProjectScope } from '../../../../lib/scope';
 import { todayDate } from '../../../../lib/fundDisbursal';
 import { saveBillFiles } from '../../../../lib/billAttachments';
 import { validateBillSubmission } from '../../../../lib/billSubmission';
 import { formatCurrencyFull } from '../../../../lib/utils';
-import { Button, Input, Textarea } from '../../../../components/ui/primitives';
+import { Button, Input, Textarea, NativeSelect } from '../../../../components/ui/primitives';
+import { previousClaimedQuantity, validateBillMeasurements } from '../../../../lib/billMeasurements';
+import { activeControls } from '../../../../lib/projectControls';
 import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
 
 const INITIAL = { billNumber: '', invoiceDate: todayDate(), periodFrom: '', periodTo: '', workOrderReference: '', measurementBookId: '', workDescription: '', previousBillReference: '', grossAmount: '', gst: '0', deductions: '0', retention: '0', penalty: '0' };
@@ -25,6 +27,14 @@ export function RABillSubmission({ project, onClose }: { project: Project; onClo
   const [files, setFiles] = useState<Partial<Record<BillAttachment['category'], File[]>>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [lines, setLines] = useState<NonNullable<Bill['measurementLines']>>([]);
+  const boq = useStore(s => s.boqItems).filter(b => b.projectId === project.id);
+  const state = useStore();
+  const variations = activeControls(state, project.id).filter(r => r.kind === 'VARIATION');
+  function updateLines(next: NonNullable<Bill['measurementLines']>) {
+    setLines(next);
+    setForm(f => ({ ...f, grossAmount: next.reduce((n, l) => n + (boq.find(b => b.id === l.boqItemId)?.rate ?? 0) * l.quantity, 0).toFixed(2) }));
+  }
   const user = useStore((state) => state.currentUser);
   const bills = useStore((state) => state.bills);
   const submitBill = useStore((state) => state.submitBill);
@@ -40,9 +50,10 @@ export function RABillSubmission({ project, onClose }: { project: Project; onClo
     setBusy(true);
     try {
       const uploads = PROOF_FIELDS.flatMap(({ category }) => (files[category] ?? []).map((file) => ({ file, category })));
-      const bill = { ...form, ...numbers, netPayable, projectId: project.id, contractorId: project.contractorId, declarationAccepted: declaration,
+      const bill = { ...form, ...numbers, measurementLines: lines, netPayable, projectId: project.id, contractorId: project.contractorId, declarationAccepted: declaration,
         attachments: uploads.map(({ file, category }, index) => ({ id: `pending-${index}`, name: file.name, mimeType: file.type, size: file.size, category })) };
       validateBillSubmission(bill, user, project, projectIds, bills);
+      validateBillMeasurements(state, bill);
       const attachments = await saveBillFiles(uploads);
       await submitBill({ ...bill, attachments });
       toast.success(uiText('RA bill and supporting proof submitted for engineer verification.'));
@@ -65,6 +76,22 @@ export function RABillSubmission({ project, onClose }: { project: Project; onClo
           </div>
           <label className="block space-y-1 text-xs font-medium text-slate-600">{uiText("Previous RA bill / measurement reference (if applicable)")}<Input value={form.previousBillReference} onChange={(event) => set('previousBillReference', event.target.value)} /></label>
           <label className="block space-y-1 text-xs font-medium text-slate-600">{uiText("Work executed and BOQ item references *")}<Textarea required rows={3} value={form.workDescription} onChange={(event) => set('workDescription', event.target.value)} /></label>
+          <section className="space-y-3 rounded border p-3"><h3 className="font-semibold">{uiText('Measured BOQ lines')}</h3>
+            {lines.map((line, index) => {
+              const item = boq.find(b => b.id === line.boqItemId);
+              const previous = item ? previousClaimedQuantity(state, project.id, item.id) : 0;
+              const change = (patch: Partial<typeof line>) => updateLines(lines.map((l, i) => i === index ? { ...l, ...patch } : l));
+              return <div key={index} className="space-y-2 rounded bg-slate-50 p-3">
+                <label className="block text-xs">{uiText('BOQ item')}<NativeSelect required value={line.boqItemId} onChange={e => change({ boqItemId: e.target.value })}><option value="">{uiText('Select')}</option>{boq.map(b => <option key={b.id} value={b.id}>{b.item} ({b.unit})</option>)}</NativeSelect></label>
+                <div className="grid grid-cols-2 gap-2"><label className="text-xs">{uiText('Current quantity')}<Input type="number" min="0.000001" step="any" required value={line.quantity} onChange={e => change({ quantity: Number(e.target.value) })} /></label><label className="text-xs">{uiText('Work location')}<Input required value={line.location} onChange={e => change({ location: e.target.value })} /></label></div>
+                <label className="block text-xs">{uiText('Measurement reference / pages')}<Input required value={line.measurementReference} onChange={e => change({ measurementReference: e.target.value })} /></label>
+                <p className="text-xs">{uiText('Previous quantity')}: {previous} · {uiText('Cumulative quantity')}: {previous + line.quantity} · {uiText('Approved rate')}: {item?.rate ?? 0}</p>
+                <label className="block text-xs">{uiText('Approved variation')}<NativeSelect value={line.variationId ?? ''} onChange={e => change({ variationId: e.target.value || undefined })}><option value="">{uiText('None')}</option>{variations.filter(v => v.fields.boqItemId === line.boqItemId).map(v => <option key={v.id} value={v.id}>{v.reference}</option>)}</NativeSelect></label>
+                <Button type="button" variant="ghost" onClick={() => updateLines(lines.filter((_, i) => i !== index))}>{uiText('Remove line')}</Button>
+              </div>;
+            })}
+            <Button type="button" variant="outline" onClick={() => updateLines([...lines, { boqItemId: '', quantity: 0, location: '', measurementReference: '' }])}>{uiText('Add measurement line')}</Button>
+          </section>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {([['grossAmount', 'Current work value before tax'], ['gst', 'GST amount'], ['deductions', 'Other deductions / advance recovery'], ['retention', 'Retention / security deduction'], ['penalty', 'Other recoveries / penalty']] as const).map(([key, label]) => <label key={key} className="space-y-1 text-xs font-medium text-slate-600">{uiText(label)}{uiText(" (INR) *")}<Input required type="number" min="0" step="0.01" value={form[key]} onChange={(event) => set(key, event.target.value)} /></label>)}
           </div>

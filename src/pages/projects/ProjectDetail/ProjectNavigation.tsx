@@ -19,7 +19,7 @@ const SECTION_ICONS = {
 };
 
 const SECTION_GROUPS = [
-  { label: 'Overview', keys: ['overview', 'governance'] },
+  { label: 'Overview', keys: ['overview', 'governance', 'controls', 'monthly'] },
   { label: 'Schedule', keys: ['timeline', 'tender', 'milestones'] },
   { label: 'Work & Materials', keys: ['boq', 'materials', 'progress'] },
   { label: 'Evidence', keys: ['photos', 'field evidence'] },

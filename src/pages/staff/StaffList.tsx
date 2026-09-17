@@ -1,3 +1,4 @@
+import { useProjectScope } from '../../lib/scope';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +18,10 @@ export function StaffList() {
   useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const users = useStore((s) => s.users);
-  const projects = useStore((s) => s.projects);
+  const { projects, projectIds } = useProjectScope();
+  const currentUser = useStore(s => s.currentUser);
+  const restricted = ['CONTRACTOR', 'EXECUTIVE_ENGINEER', 'DEPUTY_ENGINEER', 'PROJECT_MANAGER'].includes(currentUser?.role ?? '');
+  const users = useStore(s => s.users).filter(u => !restricted || u.id === currentUser?.id || u.assignedProjectIds.some(id => projectIds.has(id)) || projects.some(p => [p.executiveEngineerId, p.siteEngineerId, p.projectManagerId].includes(u.id)));
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -46,7 +49,7 @@ export function StaffList() {
                 <Td>{uiText(u.designation)}</Td>
                 <Td className="max-w-[180px] truncate">{uiText(u.department)}</Td>
                 <Td>{uiText(u.district)}</Td>
-                <Td>{u.assignedProjectIds.length}</Td>
+                <Td>{u.assignedProjectIds.filter(id => projectIds.has(id)).length}</Td>
                 <Td><StatusBadge status={u.availability === 'AVAILABLE' ? 'APPROVED' : u.availability === 'ON_SITE' ? 'ACTIVE' : 'PENDING'} label={uiText(u.availability?.replace('_', ' '))} /></Td>
                 <Td>{uiText(formatDate(u.lastSiteVisit))}</Td>
               </Tr>
