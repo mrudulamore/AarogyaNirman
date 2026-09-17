@@ -1,4 +1,4 @@
-import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { FundDisbursalReports } from '../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -272,7 +272,6 @@ export function ReportsCenter() {
       kpis, sections,
       filename: `${report.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`,
     });
-    toast.success(uiMessage("{{0}} downloaded.", [report.name]));
   }
 
   return (

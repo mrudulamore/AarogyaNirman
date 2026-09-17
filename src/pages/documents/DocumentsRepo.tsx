@@ -67,7 +67,6 @@ export function DocumentsRepo() {
         { label: 'File Size', value: `${(d.sizeKb / 1024).toFixed(2)} MB` },
       ],
     });
-    toast.success(uiText('Document record downloaded.'));
   }
 
   return (

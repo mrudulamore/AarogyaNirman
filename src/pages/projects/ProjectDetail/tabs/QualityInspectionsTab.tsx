@@ -112,7 +112,6 @@ export function QualityTab({ project }: { project: Project }) {
                           { label: 'Status', value: r.status }, { label: 'Observations', value: r.observations },
                         ],
                       });
-                      toast.success(uiText('Quality report downloaded.'));
                     }}><Download size={12} /></Button>
                   </Td>
                 </Tr>
