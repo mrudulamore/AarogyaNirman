@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GanttChart } from 'lucide-react';
@@ -14,6 +15,7 @@ const STATUS_HEX: Record<string, string> = { ON_TRACK: '#3b82f6', AT_RISK: '#f59
  * completion date, so a Project Manager can see their whole schedule at a glance instead of
  * opening each project individually. */
 export function PortfolioTimeline() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { projects, scopeLabel } = useProjectScope();
 
@@ -55,23 +57,23 @@ export function PortfolioTimeline() {
   return (
     <div>
       <PageHeader
-        title="Portfolio Timeline"
-        description={`Schedule rollup across your managed portfolio — ${scopeLabel}`}
+        title={uiText("Portfolio Timeline")}
+        description={uiMessage("Schedule rollup across your managed portfolio — {{0}}", [scopeLabel])}
       />
 
       {rows.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-white py-16 text-center">
           <GanttChart className="mx-auto mb-2 text-slate-300" size={28} />
-          <p className="text-sm font-medium text-slate-600">No projects with schedule dates in your portfolio.</p>
+          <p className="text-sm font-medium text-slate-600">{uiText("No projects with schedule dates in your portfolio.")}</p>
         </div>
       ) : (
         <Card>
           <CardContent className="p-5">
             <div className="mb-3 flex items-center gap-4 text-[11px] text-slate-500">
               {Object.entries({ ON_TRACK: 'On Track', AT_RISK: 'At Risk', DELAYED: 'Delayed', COMPLETED: 'Completed' }).map(([k, label]) => (
-                <span key={k} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_HEX[k] }} />{label}</span>
+                <span key={k} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_HEX[k] }} />{uiText(label)}</span>
               ))}
-              <span className="ml-auto flex items-center gap-1.5"><span className="h-2.5 w-0.5 bg-navy-700" /> Today</span>
+              <span className="ml-auto flex items-center gap-1.5"><span className="h-2.5 w-0.5 bg-navy-700" />{uiText(" Today")}</span>
             </div>
 
             <div className="overflow-x-auto">
@@ -79,7 +81,7 @@ export function PortfolioTimeline() {
                 {/* Axis */}
                 <div className="relative ml-44 h-6 border-b border-slate-200 text-[10px] text-slate-400">
                   {axisTicks.map((tick, i) => (
-                    <span key={i} className="absolute -translate-x-1/2" style={{ left: `${tick.pct}%` }}>{tick.label}</span>
+                    <span key={i} className="absolute -translate-x-1/2" style={{ left: `${tick.pct}%` }}>{uiText(tick.label)}</span>
                   ))}
                 </div>
 
@@ -99,7 +101,7 @@ export function PortfolioTimeline() {
                         <button
                           onClick={() => navigate(`/projects/${p.id}?tab=timeline`)}
                           className="w-44 shrink-0 truncate pr-3 text-left text-xs font-medium text-slate-700 hover:text-navy-700 hover:underline"
-                          title={p.name}
+                          title={uiText(p.name)}
                         >
                           {p.name}
                         </button>
@@ -107,7 +109,7 @@ export function PortfolioTimeline() {
                           <div
                             className="absolute inset-y-0 rounded"
                             style={{ left: `${left}%`, width: `${width}%`, background: `${color}33`, border: `1px solid ${color}66` }}
-                            title={`${formatDate(p.startDate)} → ${formatDate(p.actualCompletionDate ?? p.plannedCompletionDate)}`}
+                            title={uiMessage("{{0}} → {{1}}", [formatDate(p.startDate), formatDate(p.actualCompletionDate ?? p.plannedCompletionDate)])}
                           >
                             <div className="h-full rounded" style={{ width: `${p.physicalProgress}%`, background: color }} />
                           </div>

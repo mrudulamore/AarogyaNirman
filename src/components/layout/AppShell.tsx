@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { uiText } from '../../i18n/ui';
 import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useStore } from '../../store/useStore';
@@ -29,7 +30,7 @@ export function AppShell() {
 
   useEffect(() => {
     if (currentUser && !allowed) {
-      toast.error("You don't have access to that section for your role.");
+      toast.error(uiText("You don't have access to that section for your role."));
       navigate('/dashboard', { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

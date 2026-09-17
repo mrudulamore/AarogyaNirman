@@ -1,30 +1,34 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import i18n from '../i18n';
+
+export const currentLocale = () => `${i18n.resolvedLanguage || 'en'}-IN`;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
-  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)} Cr`;
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)} L`;
-  return `₹${amount.toLocaleString('en-IN')}`;
+export function formatCurrency(amount: number, language = i18n.resolvedLanguage || 'en'): string {
+  const english = language === 'en';
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)} ${english ? 'Cr' : language === 'mr' ? 'कोटी' : 'करोड़'}`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)} ${english ? 'L' : 'लाख'}`;
+  return `₹${amount.toLocaleString(currentLocale())}`;
 }
 
 export function formatCurrencyFull(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN')}`;
+  return `₹${amount.toLocaleString(currentLocale())}`;
 }
 
-export function formatDate(dateStr?: string): string {
+export function formatDate(dateStr?: string, locale = currentLocale()): string {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDateTime(dateStr?: string): string {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
-  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(currentLocale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function daysBetween(a: string, b: string): number {

@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { FundDisbursalReports } from '../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -9,7 +10,7 @@ import { PageHeader } from '../../components/layout/Breadcrumbs';
 import { Card, CardContent, Button } from '../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { ALL_DISTRICTS } from '../../lib/constants';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency as localizedCurrency } from '../../lib/utils';
 import { downloadPdfReport, type PdfKpi, type PdfSection } from '../../lib/pdf';
 import type { Project } from '../../types';
 
@@ -26,6 +27,8 @@ interface BuildCtx {
 }
 
 const store = useStore; // referenced inside build() via getState() to avoid re-rendering churn
+// The legacy PDF renderer uses Helvetica; keep its content in its supported language.
+const formatCurrency = (amount: number) => localizedCurrency(amount, 'en');
 
 const REPORTS: ReportDef[] = [
   {
@@ -239,6 +242,7 @@ function avg(nums: number[]): number { return nums.length ? Math.round(nums.redu
 function sum(nums: number[]): number { return nums.reduce((a, b) => a + b, 0); }
 
 export function ReportsCenter() {
+  useUiLanguage();
   const { t } = useTranslation();
   const { projects: scopedProjects, scopeLabel } = useProjectScope();
   const currentUser = useStore((s) => s.currentUser);
@@ -257,7 +261,7 @@ export function ReportsCenter() {
   function exportReport(report: ReportDef) {
     const { kpis, sections } = report.build({ projects, inRange });
     if (sections.every((s) => s.rows.length === 0)) {
-      toast.warning('No records match the selected filters — nothing to export.');
+      toast.warning(uiText('No records match the selected filters — nothing to export.'));
       return;
     }
     downloadPdfReport({
@@ -268,30 +272,30 @@ export function ReportsCenter() {
       kpis, sections,
       filename: `${report.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`,
     });
-    toast.success(`${report.name} downloaded.`);
+    toast.success(uiMessage("{{0}} downloaded.", [report.name]));
   }
 
   return (
     <div>
-      <PageHeader title={t('pages.reports.title')} description={t('pages.reports.desc')} />
+      <PageHeader title={uiText(t('pages.reports.title'))} description={uiText(t('pages.reports.desc'))} />
 
       <FundDisbursalReports projects={scopedProjects} scopeLabel={scopeLabel} />
 
       <Card className="mb-4">
         <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
           <div>
-            <p className="mb-1 text-[11px] font-medium text-slate-500">District</p>
+            <p className="mb-1 text-[11px] font-medium text-slate-500">{uiText("District")}</p>
             <Select value={district} onValueChange={setDistrict}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="ALL">All Districts (within your jurisdiction)</SelectItem>{ALL_DISTRICTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <SelectContent><SelectItem value="ALL">{uiText("All Districts (within your jurisdiction)")}</SelectItem>{ALL_DISTRICTS.map((d) => <SelectItem key={d} value={d}>{uiText(d)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium text-slate-500">From Date</p>
+            <p className="mb-1 text-[11px] font-medium text-slate-500">{uiText("From Date")}</p>
             <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" />
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium text-slate-500">To Date</p>
+            <p className="mb-1 text-[11px] font-medium text-slate-500">{uiText("To Date")}</p>
             <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" />
           </div>
         </CardContent>
@@ -304,13 +308,13 @@ export function ReportsCenter() {
               <div className="flex items-start gap-2.5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-navy-50 text-navy-700"><FileBarChart size={16} /></div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{r.name}</p>
-                  <p className="mt-0.5 text-[11.5px] text-slate-400">{r.desc}</p>
+                  <p className="text-sm font-semibold text-slate-800">{uiText(r.name)}</p>
+                  <p className="mt-0.5 text-[11.5px] text-slate-400">{uiText(r.desc)}</p>
                 </div>
               </div>
               <div className="mt-3 flex justify-between">
-                <span className="text-[10.5px] text-slate-400">{district === 'ALL' ? 'Statewide' : district} · {projects.length} projects in scope</span>
-                <Button size="sm" variant="outline" onClick={() => exportReport(r)}><Download size={12} /> Export PDF</Button>
+                <span className="text-[10.5px] text-slate-400">{uiText(district === 'ALL' ? 'Statewide' : district)} · {projects.length}{uiText(" projects in scope")}</span>
+                <Button size="sm" variant="outline" onClick={() => exportReport(r)}><Download size={12} />{uiText(" Export PDF")}</Button>
               </div>
             </CardContent>
           </Card>

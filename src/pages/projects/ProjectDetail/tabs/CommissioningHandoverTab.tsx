@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { toast } from 'sonner';
 import { Check, Circle, Clock, PartyPopper } from 'lucide-react';
 import type { Project } from '../../../../types';
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge } from '.
 import { cn, formatDate } from '../../../../lib/utils';
 
 export function CommissioningTab({ project }: { project: Project }) {
+  useUiLanguage();
   const items = useStore((s) => s.commissioning).filter((c) => c.projectId === project.id);
   const updateCommissioningItem = useStore((s) => s.updateCommissioningItem);
   const readyCount = items.filter((i) => i.status === 'READY').length;
@@ -13,12 +15,12 @@ export function CommissioningTab({ project }: { project: Project }) {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Commissioning Readiness — {readyCount}/{items.length} Ready</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{uiText("Commissioning Readiness — ")}{readyCount}/{items.length}{uiText(" Ready")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <div key={item.id} className="rounded-md border border-slate-200 p-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-700">{item.item}</p>
+                <p className="text-xs font-semibold text-slate-700">{uiText(item.item)}</p>
                 <StatusBadge status={item.status} />
               </div>
               <p className="mt-1 text-[10.5px] text-slate-400">{item.remarks}</p>
@@ -26,10 +28,10 @@ export function CommissioningTab({ project }: { project: Project }) {
                 {(['READY', 'PENDING', 'NOT_READY'] as const).map((st) => (
                   <button
                     key={st}
-                    onClick={() => { updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(`${item.item} marked ready.`); }}
+                    onClick={() => { updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(uiMessage("{{0}} marked ready.", [item.item])); }}
                     className={cn('rounded px-2 py-0.5 text-[10px] font-medium', item.status === st ? 'bg-navy-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
                   >
-                    {st.replace('_', ' ')}
+                    {uiText(st.replace('_', ' '))}
                   </button>
                 ))}
               </div>
@@ -42,6 +44,7 @@ export function CommissioningTab({ project }: { project: Project }) {
 }
 
 export function HandoverTab({ project }: { project: Project }) {
+  useUiLanguage();
   const currentUser = useStore((s) => s.currentUser);
   const steps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id).sort((a, b) => a.order - b.order);
   const commissioning = useStore((s) => s.commissioning).filter((c) => c.projectId === project.id);
@@ -71,26 +74,25 @@ export function HandoverTab({ project }: { project: Project }) {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Handover Readiness — {readinessPct}%</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{uiText("Handover Readiness — ")}{readinessPct}%</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {readinessComponents.map((c) => (
               <div key={c.label} className={cn('rounded-md border p-3', c.done ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50')}>
-                <p className={cn('text-[10.5px] font-semibold uppercase tracking-wide', c.done ? 'text-emerald-700' : 'text-amber-700')}>{c.label}</p>
-                <p className={cn('mt-1 text-lg font-bold', c.done ? 'text-emerald-800' : 'text-amber-800')}>{c.done ? 'Ready' : 'Pending'}</p>
+                <p className={cn('text-[10.5px] font-semibold uppercase tracking-wide', c.done ? 'text-emerald-700' : 'text-amber-700')}>{uiText(c.label)}</p>
+                <p className={cn('mt-1 text-lg font-bold', c.done ? 'text-emerald-800' : 'text-amber-800')}>{uiText(c.done ? 'Ready' : 'Pending')}</p>
               </div>
             ))}
           </div>
           {(openDefects > 0 || criticalDefects > 0) && (
             <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
-              {openDefects} open defect{openDefects === 1 ? '' : 's'} remaining{criticalDefects > 0 ? ` (${criticalDefects} critical)` : ''} — must be closed before handover.
-            </p>
+              {openDefects}{uiText(" open defect")}{uiText(openDefects === 1 ? '' : 's')}{uiText(" remaining")}{uiText(criticalDefects > 0 ? ` (${criticalDefects} critical)` : '')}{uiText(" — must be closed before handover.")}</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Handover Workflow</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{uiText("Handover Workflow")}</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-0">
             {steps.map((s, i) => (
@@ -104,14 +106,13 @@ export function HandoverTab({ project }: { project: Project }) {
                 </div>
                 <div className="flex-1 pb-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-800">{s.step}</p>
+                    <p className="text-sm font-semibold text-slate-800">{uiText(s.step)}</p>
                     <StatusBadge status={s.status} />
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-400">Responsible: {s.responsible} {s.date && `· Completed ${formatDate(s.date)}`}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">{uiText("Responsible: ")}{uiText(s.responsible)} {uiText(s.date && `· Completed ${formatDate(s.date)}`)}</p>
                   {!readOnly && i === nextPendingIndex && (
-                    <Button size="sm" className="mt-2" onClick={() => { advanceHandoverStep(s.id); toast.success(`${s.step} marked complete.`); }}>
-                      <Check size={12} /> Mark Step Complete
-                    </Button>
+                    <Button size="sm" className="mt-2" onClick={() => { advanceHandoverStep(s.id); toast.success(uiMessage("{{0}} marked complete.", [s.step])); }}>
+                      <Check size={12} />{uiText(" Mark Step Complete")}</Button>
                   )}
                 </div>
               </div>
@@ -121,15 +122,12 @@ export function HandoverTab({ project }: { project: Project }) {
           {!readOnly && allComplete && project.status !== 'COMPLETED' && (
             <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-center">
               <PartyPopper className="mx-auto mb-2 text-emerald-600" size={22} />
-              <p className="text-sm font-semibold text-emerald-800">All handover steps complete.</p>
-              <Button variant="success" className="mt-3" onClick={() => { completeHandoverAndOperationalize(project.id); toast.success('Hospital is now OPERATIONAL.'); }}>
-                Complete Handover — Mark Hospital Operational
-              </Button>
+              <p className="text-sm font-semibold text-emerald-800">{uiText("All handover steps complete.")}</p>
+              <Button variant="success" className="mt-3" onClick={() => { completeHandoverAndOperationalize(project.id); toast.success(uiText('Hospital is now OPERATIONAL.')); }}>{uiText("Complete Handover — Mark Hospital Operational")}</Button>
             </div>
           )}
           {project.status === 'COMPLETED' && (
-            <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-center text-sm font-semibold text-emerald-800">
-              This hospital is OPERATIONAL. Handover complete on {formatDate(project.actualCompletionDate)}.
+            <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-center text-sm font-semibold text-emerald-800">{uiText("This hospital is OPERATIONAL. Handover complete on ")}{uiText(formatDate(project.actualCompletionDate))}.
             </div>
           )}
         </CardContent>

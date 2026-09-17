@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
@@ -33,6 +34,7 @@ const DIVISION_ANCHORS: Record<string, { lat: number; lng: number }> = {
 export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
   projects: Project[]; focusDivision?: string | null; onDivisionSelect?: (division: string | null) => void;
 }) {
+  const language = useUiLanguage();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -96,7 +98,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
       marker.on('remove', () => map.off('zoomend', updateIcon));
       marker.on('popupclose', updateIcon);
       const popupId = `view-project-${p.id}`;
-      const statusLabel = p.status.replace('_', ' ');
+      const statusLabel = uiText(p.status);
       marker.bindPopup(`
         <div style="font-family: system-ui, sans-serif; min-width: 210px;">
           <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
@@ -106,10 +108,10 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
           <p style="font-size: 12.5px; font-weight: 600; color: #1e293b; margin: 0 0 4px;">${escapeHtml(p.name)}</p>
           <p style="font-size: 11px; color: #64748b; margin: 0 0 8px;">${escapeHtml(p.taluka)}, ${escapeHtml(p.district)}</p>
           <div style="background:#f8fafc; border-radius:6px; padding:6px 8px; margin-bottom:8px;">
-            <p style="font-size: 11px; color: #475569; margin: 0 0 2px; display:flex; justify-content:space-between;"><span>Physical Progress</span><strong>${p.physicalProgress}%</strong></p>
-            <p style="font-size: 11px; color: #475569; margin: 0; display:flex; justify-content:space-between;"><span>Sanctioned Budget</span><strong>${escapeHtml(formatCurrency(p.sanctionedBudget))}</strong></p>
+            <p style="font-size: 11px; color: #475569; margin: 0 0 2px; display:flex; justify-content:space-between;"><span>${escapeHtml(uiText('Physical Progress'))}</span><strong>${p.physicalProgress}%</strong></p>
+            <p style="font-size: 11px; color: #475569; margin: 0; display:flex; justify-content:space-between;"><span>${escapeHtml(uiText('Sanctioned Budget'))}</span><strong>${escapeHtml(formatCurrency(p.sanctionedBudget))}</strong></p>
           </div>
-          <button id="${popupId}" style="font-size: 11px; font-weight: 600; color: #1d4ed8; background: none; border: none; cursor: pointer; padding: 0;">View project &rarr;</button>
+          <button id="${popupId}" style="font-size: 11px; font-weight: 600; color: #1d4ed8; background: none; border: none; cursor: pointer; padding: 0;">${escapeHtml(uiText('View project'))} &rarr;</button>
         </div>
       `);
       marker.on('popupopen', () => {
@@ -118,7 +120,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
       });
       return marker;
     });
-  }, [projects]);
+  }, [projects, language]);
 
   // Zone/division markers — statewide "zone-wise quick view"; clicking one zooms into that zone.
   useEffect(() => {
@@ -173,13 +175,12 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
             onClick={resetToStatewide}
             className="absolute left-3 top-3 z-[1000] flex items-center gap-1.5 rounded-md border border-slate-200 bg-white/95 px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm hover:bg-white"
           >
-            <ArrowLeft size={13} /> All Maharashtra
-          </button>
+            <ArrowLeft size={13} />{uiText(" All Maharashtra")}</button>
         )}
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-500">
         {Object.entries({ ON_TRACK: 'On Track', AT_RISK: 'At Risk', DELAYED: 'Delayed', COMPLETED: 'Completed' }).map(([k, label]) => (
-          <span key={k} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_HEX[k] }} />{label}</span>
+          <span key={k} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_HEX[k] }} />{uiText(label)}</span>
         ))}
       </div>
     </div>

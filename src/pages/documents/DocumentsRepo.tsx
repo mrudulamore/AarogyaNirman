@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ const DOC_TYPES: DocumentType[] = ['DPR', 'Administrative Sanction', 'Technical 
 const PHASE_FILTERS = ['ALL', ...DOCUMENT_LIFECYCLE_PHASES.map((p) => p.phase)];
 
 export function DocumentsRepo() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { projects, projectIds } = useProjectScope();
@@ -59,62 +61,62 @@ export function DocumentsRepo() {
         { label: 'Lifecycle Phase', value: documentLifecyclePhase(d.type) },
         { label: 'Project', value: projects.find((p) => p.id === d.projectId)?.name ?? '—' },
         { label: 'Uploaded By', value: d.uploadedBy },
-        { label: 'Upload Date', value: formatDate(d.uploadDate) },
+        { label: 'Upload Date', value: formatDate(d.uploadDate, 'en-IN') },
         { label: 'Version', value: `v${d.version}` },
         { label: 'Approval Status', value: d.approvalStatus },
         { label: 'File Size', value: `${(d.sizeKb / 1024).toFixed(2)} MB` },
       ],
     });
-    toast.success('Document record downloaded.');
+    toast.success(uiText('Document record downloaded.'));
   }
 
   return (
     <div>
-      <PageHeader title={t('pages.documents.title')} description={t('pages.documents.desc', { count: documents.length })} />
+      <PageHeader title={uiText(t('pages.documents.title'))} description={uiText(t('pages.documents.desc', { count: documents.length }))} />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-2.5">
-          <Search size={13} className="text-slate-400" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search documents…" className="w-48 text-xs outline-none" />
+          <Search size={13} className="text-slate-400" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={uiText("Search documents…")} className="w-48 text-xs outline-none" />
         </div>
         <Select value={phaseFilter} onValueChange={setPhaseFilter}>
           <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-          <SelectContent>{PHASE_FILTERS.map((p) => <SelectItem key={p} value={p}>{p === 'ALL' ? 'All Lifecycle Phases' : p}</SelectItem>)}</SelectContent>
+          <SelectContent>{PHASE_FILTERS.map((p) => <SelectItem key={p} value={p}>{uiText(p === 'ALL' ? 'All Lifecycle Phases' : p)}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="ALL">All Types</SelectItem>{DOC_TYPES.map((tp) => <SelectItem key={tp} value={tp}>{tp}</SelectItem>)}</SelectContent>
+          <SelectContent><SelectItem value="ALL">{uiText("All Types")}</SelectItem>{DOC_TYPES.map((tp) => <SelectItem key={tp} value={tp}>{uiText(tp)}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="ALL">All Statuses</SelectItem><SelectItem value="APPROVED">Approved</SelectItem><SelectItem value="PENDING">Pending</SelectItem><SelectItem value="REJECTED">Rejected</SelectItem></SelectContent>
+          <SelectContent><SelectItem value="ALL">{uiText("All Statuses")}</SelectItem><SelectItem value="APPROVED">{uiText("Approved")}</SelectItem><SelectItem value="PENDING">{uiText("Pending")}</SelectItem><SelectItem value="REJECTED">{uiText("Rejected")}</SelectItem></SelectContent>
         </Select>
       </div>
 
-      {grouped.length === 0 && <p className="py-16 text-center text-sm text-slate-400">No documents match the selected filters.</p>}
+      {grouped.length === 0 && <p className="py-16 text-center text-sm text-slate-400">{uiText("No documents match the selected filters.")}</p>}
 
       <div className="space-y-4">
         {grouped.map(([phase, docs]) => (
           <Card key={phase}>
-            <CardHeader><CardTitle>{phase} <span className="ml-2 font-normal text-slate-400">{docs.length} document{docs.length === 1 ? '' : 's'}</span></CardTitle></CardHeader>
+            <CardHeader><CardTitle>{uiText(phase)} <span className="ml-2 font-normal text-slate-400">{docs.length}{uiText(" document")}{uiText(docs.length === 1 ? '' : 's')}</span></CardTitle></CardHeader>
             <Table>
-              <THead><Tr><Th>Document</Th><Th>Project</Th><Th>Type</Th><Th>Version</Th><Th>Uploaded By</Th><Th>Date</Th><Th>Status</Th><Th /></Tr></THead>
+              <THead><Tr><Th>{uiText("Document")}</Th><Th>{uiText("Project")}</Th><Th>{uiText("Type")}</Th><Th>{uiText("Version")}</Th><Th>{uiText("Uploaded By")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
               <TBody>
                 {docs.map((d) => (
                   <Tr key={d.id}>
                     <Td onClick={() => navigate(`/projects/${d.projectId}?tab=documents`)} className="flex max-w-[200px] cursor-pointer items-center gap-1.5 truncate font-medium text-slate-800"><FileText size={13} className="shrink-0 text-slate-400" />{d.name}</Td>
                     <Td className="max-w-[160px] truncate">{projects.find((p) => p.id === d.projectId)?.name}</Td>
-                    <Td>{d.type}</Td>
+                    <Td>{uiText(d.type)}</Td>
                     <Td>
                       <button onClick={() => setHistoryId(d.id)} className="inline-flex items-center gap-1 text-navy-700 hover:underline">
                         v{d.version} {d.version > 1 && <History size={11} />}
                       </button>
                     </Td>
-                    <Td>{d.uploadedBy}</Td>
-                    <Td>{formatDate(d.uploadDate)}</Td>
+                    <Td>{uiText(d.uploadedBy)}</Td>
+                    <Td>{uiText(formatDate(d.uploadDate))}</Td>
                     <Td><StatusBadge status={d.approvalStatus} /></Td>
                     <Td className="space-x-1.5 whitespace-nowrap">
                       <Button size="sm" variant="ghost" onClick={() => downloadRecord(d)}><Download size={12} /></Button>
-                      {d.approvalStatus === 'PENDING' && <Button size="sm" variant="outline" onClick={() => { setDocumentStatus(d.id, 'APPROVED'); toast.success('Document approved.'); }}><CheckCircle2 size={12} /></Button>}
+                      {d.approvalStatus === 'PENDING' && <Button size="sm" variant="outline" onClick={() => { setDocumentStatus(d.id, 'APPROVED'); toast.success(uiText('Document approved.')); }}><CheckCircle2 size={12} /></Button>}
                     </Td>
                   </Tr>
                 ))}
@@ -129,12 +131,12 @@ export function DocumentsRepo() {
           const d = documents.find((x) => x.id === historyId);
           if (!d) return null;
           return (
-            <DialogContent title="Version History" description={d.name}>
+            <DialogContent title={uiText("Version History")} description={uiText(d.name)}>
               <div className="space-y-2 text-xs">
                 {Array.from({ length: d.version }, (_, i) => d.version - i).map((v) => (
                   <div key={v} className="flex items-center justify-between rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
-                    <span className="font-medium text-slate-700">Version {v}{v === d.version ? ' (current)' : ''}</span>
-                    <span className="text-slate-400">{v === d.version ? formatDate(d.uploadDate) : 'Superseded — approved documents are never silently overwritten'}</span>
+                    <span className="font-medium text-slate-700">{uiText("Version ")}{v}{uiText(v === d.version ? ' (current)' : '')}</span>
+                    <span className="text-slate-400">{uiText(v === d.version ? formatDate(d.uploadDate) : 'Superseded — approved documents are never silently overwritten')}</span>
                   </div>
                 ))}
               </div>

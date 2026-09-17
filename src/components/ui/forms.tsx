@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
@@ -5,6 +6,7 @@ import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function Checkbox({ checked, onCheckedChange, className }: { checked?: boolean; onCheckedChange?: (v: boolean) => void; className?: string }) {
+  useUiLanguage();
   return (
     <CheckboxPrimitive.Root
       checked={checked}
@@ -17,6 +19,7 @@ export function Checkbox({ checked, onCheckedChange, className }: { checked?: bo
 }
 
 export function Switch({ checked, onCheckedChange }: { checked?: boolean; onCheckedChange?: (v: boolean) => void }) {
+  useUiLanguage();
   return (
     <SwitchPrimitive.Root
       checked={checked}
@@ -36,10 +39,11 @@ function colorForString(s: string) {
 }
 
 export function Avatar({ name, className, size = 32 }: { name: string; className?: string; size?: number }) {
+  useUiLanguage();
   const initials = name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
   return (
     <AvatarPrimitive.Root className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full text-white font-semibold', colorForString(name), className)} style={{ width: size, height: size, fontSize: size * 0.38 }}>
-      <AvatarPrimitive.Fallback>{initials}</AvatarPrimitive.Fallback>
+      <AvatarPrimitive.Fallback>{uiText(initials)}</AvatarPrimitive.Fallback>
     </AvatarPrimitive.Root>
   );
 }

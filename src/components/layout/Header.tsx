@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +10,7 @@ import { LanguageSwitcher } from '../common/LanguageSwitcher';
 import { formatDateTime } from '../../lib/utils';
 
 export function Header({ onMenuClick }: { onMenuClick: () => void }) {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
@@ -34,7 +36,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <Search size={15} className="text-slate-400" />
         <input
           value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder={t('header.searchPlaceholder') ?? undefined}
+          placeholder={uiText(t('header.searchPlaceholder') ?? undefined)}
           className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
         />
       </form>
@@ -50,7 +52,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <DropdownMenuTrigger asChild>
             <button className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100">
               <Bell size={18} />
-              {unread > 0 && <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
+              {unread > 0 && <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">{uiText(unread > 9 ? '9+' : unread)}</span>}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -65,7 +67,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                     {!n.read && <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-govblue-600" />}
                     <span className={n.read ? 'text-slate-500' : 'font-medium text-slate-800'}>{n.message}</span>
                   </div>
-                  <span className="ml-3.5 text-[10px] text-slate-400">{formatDateTime(n.date)}</span>
+                  <span className="ml-3.5 text-[10px] text-slate-400">{uiText(formatDateTime(n.date))}</span>
                 </DropdownMenuItem>
               ))}
               {myNotifications.length === 0 && <p className="px-3 py-6 text-center text-xs text-slate-400">{t('header.noNotifications')}</p>}
@@ -81,13 +83,13 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <Avatar name={currentUser?.name ?? '?'} size={30} />
               <div className="hidden text-left leading-tight sm:block">
                 <p className="text-xs font-semibold text-slate-800">{currentUser?.name}</p>
-                <p className="text-[10.5px] text-slate-400">{currentUser && t(`roles.${currentUser.role}`)}</p>
+                <p className="text-[10.5px] text-slate-400">{uiText(currentUser && t(`roles.${currentUser.role}`))}</p>
               </div>
               <ChevronDown size={14} className="hidden text-slate-400 sm:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{currentUser?.designation}</DropdownMenuLabel>
+            <DropdownMenuLabel>{uiText(currentUser?.designation)}</DropdownMenuLabel>
             <DropdownMenuItem onSelect={() => navigate('/select-role')}><UserCog size={14} /> {t('header.switchRole')}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem destructive onSelect={() => { logout(); navigate('/login'); }}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>

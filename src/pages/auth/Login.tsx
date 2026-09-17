@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +24,7 @@ const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
 ];
 
 export function Login() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const login = useStore((s) => s.login);
@@ -43,16 +45,16 @@ export function Login() {
   }
 
   return (
-    <AuthLayout title={t('auth.signInTitle')} subtitle={t('auth.signInSubtitle')}>
+    <AuthLayout title={uiText(t('auth.signInTitle'))} subtitle={t('auth.signInSubtitle')}>
       <form onSubmit={manualSubmit} className="space-y-3.5">
         <div>
           <Label>{t('auth.userId')}</Label>
-          <Input placeholder={t('auth.userIdPlaceholder') ?? undefined} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <Input placeholder={uiText(t('auth.userIdPlaceholder') ?? undefined)} value={username} onChange={(e) => setUsername(e.target.value)} />
         </div>
         <div>
           <Label>{t('auth.password')}</Label>
           <div className="relative">
-            <Input type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input type={showPw ? 'text' : 'password'} placeholder={uiText("••••••••")} value={password} onChange={(e) => setPassword(e.target.value)} />
             <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
               {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -77,7 +79,7 @@ export function Login() {
             className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs hover:border-navy-300 hover:bg-navy-50"
           >
             <span className="font-medium text-slate-700">{t(`roles.${a.role}`)}</span>
-            <span className="text-[10px] text-slate-400">{a.username}</span>
+            <span className="text-[10px] text-slate-400">{uiText(a.username)}</span>
           </button>
         ))}
       </div>

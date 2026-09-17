@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useNavigate } from 'react-router-dom';
 import { UserRound, HardHat, Building2, Landmark, Crown, Briefcase } from 'lucide-react';
 import type { Project } from '../../../../types';
@@ -8,6 +9,7 @@ import { Avatar } from '../../../../components/ui/forms';
 import { ContractorSummaryCard } from '../../../../components/common/ContractorSummaryCard';
 
 export function TeamTab({ project }: { project: Project }) {
+  useUiLanguage();
   const navigate = useNavigate();
   const users = useStore((s) => s.users);
   const contractors = useStore((s) => s.contractors);
@@ -38,11 +40,11 @@ export function TeamTab({ project }: { project: Project }) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <p className="text-sm font-semibold text-slate-800">{user.name}</p>
-                  <Badge className="flex items-center gap-1"><Icon size={11} /> {role}</Badge>
+                  <Badge className="flex items-center gap-1"><Icon size={11} /> {uiText(role)}</Badge>
                 </div>
-                <p className="mt-0.5 text-xs text-slate-500">{user.designation}</p>
-                <p className="text-[11px] text-slate-400">{user.department}</p>
-                <p className="mt-1.5 text-[11px] text-slate-500">{note}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{uiText(user.designation)}</p>
+                <p className="text-[11px] text-slate-400">{uiText(user.department)}</p>
+                <p className="mt-1.5 text-[11px] text-slate-500">{uiText(note)}</p>
                 <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-400">
                   <span>{user.email}</span>
                   <span>{user.phone}</span>
@@ -58,16 +60,16 @@ export function TeamTab({ project }: { project: Project }) {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700"><Building2 size={18} /></div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <p className="text-sm font-semibold text-slate-800">{contractor.company}</p>
-                  <Badge className="flex items-center gap-1"><HardHat size={11} /> Contractor</Badge>
+                  <p className="text-sm font-semibold text-slate-800">{uiText(contractor.company)}</p>
+                  <Badge className="flex items-center gap-1"><HardHat size={11} />{uiText(" Contractor")}</Badge>
                 </div>
-                <p className="mt-0.5 text-xs text-slate-500">Reg. {contractor.regId} · {contractor.contactPerson}</p>
-                <p className="mt-1.5 text-[11px] text-slate-500">Responsible for construction execution, field submissions and RA bill claims.</p>
+                <p className="mt-0.5 text-xs text-slate-500">{uiText("Reg. ")}{uiText(contractor.regId)} · {uiText(contractor.contactPerson)}</p>
+                <p className="mt-1.5 text-[11px] text-slate-500">{uiText("Responsible for construction execution, field submissions and RA bill claims.")}</p>
                 <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-400">
                   <span>{contractor.email}</span>
                   <span>{contractor.phone}</span>
                 </div>
-                <button onClick={() => navigate(`/contractors/${contractor.id}?from=${project.id}`)} className="mt-2 text-[11px] font-medium text-navy-700 underline">View Contractor Profile →</button>
+                <button onClick={() => navigate(`/contractors/${contractor.id}?from=${project.id}`)} className="mt-2 text-[11px] font-medium text-navy-700 underline">{uiText("View Contractor Profile →")}</button>
               </div>
             </CardContent>
           </Card>
@@ -78,10 +80,10 @@ export function TeamTab({ project }: { project: Project }) {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700"><Landmark size={18} /></div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <p className="text-sm font-semibold text-slate-800">{project.pmcName}</p>
-                <Badge>PMC / Design Consultancy</Badge>
+                <p className="text-sm font-semibold text-slate-800">{uiText(project.pmcName)}</p>
+                <Badge>{uiText("PMC / Design Consultancy")}</Badge>
               </div>
-              <p className="mt-1.5 text-[11px] text-slate-500">Project management consultancy supporting technical supervision and drawings.</p>
+              <p className="mt-1.5 text-[11px] text-slate-500">{uiText("Project management consultancy supporting technical supervision and drawings.")}</p>
             </div>
           </CardContent>
         </Card>
@@ -98,23 +100,23 @@ export function TeamTab({ project }: { project: Project }) {
 
       {contractor && (
         <Card>
-          <CardHeader><CardTitle>{contractor.company} — Project Points of Contact</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText(contractor.company)}{uiText(" — Project Points of Contact")}</CardTitle></CardHeader>
           {projectPocs.length === 0 ? (
-            <CardContent className="p-4 text-xs text-slate-400">No points of contact assigned to this project yet.</CardContent>
+            <CardContent className="p-4 text-xs text-slate-400">{uiText("No points of contact assigned to this project yet.")}</CardContent>
           ) : (
             <Table>
-              <THead><Tr><Th>Name</Th><Th>Designation</Th><Th>Role</Th><Th>Phone</Th><Th>Email</Th><Th>Responsibility</Th><Th>Availability</Th><Th>Primary</Th></Tr></THead>
+              <THead><Tr><Th>{uiText("Name")}</Th><Th>{uiText("Designation")}</Th><Th>{uiText("Role")}</Th><Th>{uiText("Phone")}</Th><Th>{uiText("Email")}</Th><Th>{uiText("Responsibility")}</Th><Th>{uiText("Availability")}</Th><Th>{uiText("Primary")}</Th></Tr></THead>
               <TBody>
                 {projectPocs.map((poc) => (
                   <Tr key={poc.id}>
                     <Td className="font-medium text-slate-800">{poc.name}</Td>
-                    <Td>{poc.designation}</Td>
-                    <Td>{poc.role}</Td>
+                    <Td>{uiText(poc.designation)}</Td>
+                    <Td>{uiText(poc.role)}</Td>
                     <Td>{poc.phone}</Td>
                     <Td className="max-w-[160px] truncate">{poc.email}</Td>
-                    <Td className="max-w-[200px] truncate">{poc.responsibility}</Td>
-                    <Td><StatusBadge status={poc.siteAvailability === 'ON_SITE' ? 'ACTIVE' : poc.siteAvailability === 'AVAILABLE' ? 'APPROVED' : 'PENDING'} label={poc.siteAvailability.replace('_', ' ')} /></Td>
-                    <Td>{poc.isPrimary ? <Badge className="border-navy-200 bg-navy-50 text-navy-700">Primary</Badge> : <span className="text-slate-400">Secondary</span>}</Td>
+                    <Td className="max-w-[200px] truncate">{uiText(poc.responsibility)}</Td>
+                    <Td><StatusBadge status={poc.siteAvailability === 'ON_SITE' ? 'ACTIVE' : poc.siteAvailability === 'AVAILABLE' ? 'APPROVED' : 'PENDING'} label={uiText(poc.siteAvailability.replace('_', ' '))} /></Td>
+                    <Td>{poc.isPrimary ? <Badge className="border-navy-200 bg-navy-50 text-navy-700">{uiText("Primary")}</Badge> : <span className="text-slate-400">{uiText("Secondary")}</span>}</Td>
                   </Tr>
                 ))}
               </TBody>
@@ -125,10 +127,9 @@ export function TeamTab({ project }: { project: Project }) {
 
       <Card>
         <CardContent className="p-4">
-          <p className="mb-2 text-xs font-semibold text-slate-600">Jurisdiction Chain of Custody</p>
+          <p className="mb-2 text-xs font-semibold text-slate-600">{uiText("Jurisdiction Chain of Custody")}</p>
           <p className="text-[11px] text-slate-500">
-            {project.division} → {project.district} District → {project.taluka} → {project.name}. Governance escalation for this project flows: Deputy Engineer → Executive Engineer → {ROLE_LABELS.CIVIL_SURGEON} → {ROLE_LABELS.REGIONAL_DIRECTOR} → {ROLE_LABELS.COMMISSIONER} → {ROLE_LABELS.MINISTER}, with the {ROLE_LABELS.VIGILANCE_AUDIT} holding independent statewide oversight at every level.
-          </p>
+            {uiText(project.division)} → {uiText(project.district)}{uiText(" District → ")}{uiText(project.taluka)} → {project.name}{uiText(". Governance escalation for this project flows: Deputy Engineer → Executive Engineer → ")}{uiText(ROLE_LABELS.CIVIL_SURGEON)} → {uiText(ROLE_LABELS.REGIONAL_DIRECTOR)} → {uiText(ROLE_LABELS.COMMISSIONER)} → {uiText(ROLE_LABELS.MINISTER)}{uiText(", with the ")}{uiText(ROLE_LABELS.VIGILANCE_AUDIT)}{uiText(" holding independent statewide oversight at every level.")}</p>
         </CardContent>
       </Card>
     </div>

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { Check, Clock, Circle, Camera, ChevronDown } from 'lucide-react';
 import type { Project } from '../../../../types';
@@ -13,6 +14,7 @@ type StepState = 'DONE' | 'ACTIVE' | 'PENDING';
 interface Step { label: string; date?: string; state: StepState; note?: string; description: string; photoStages: string[] }
 
 export function TimelineTab({ project }: { project: Project }) {
+  useUiLanguage();
   const tender = useStore((s) => s.tenders).find((t) => t.id === project.tenderId);
   const milestones = useStore((s) => s.milestones).filter((m) => m.projectId === project.id).sort((a, b) => a.order - b.order);
   const handoverSteps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id);
@@ -85,8 +87,8 @@ export function TimelineTab({ project }: { project: Project }) {
                 </div>
                 <div className="flex-1 pb-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className={cn('text-sm font-semibold', step.state === 'PENDING' ? 'text-slate-400' : 'text-slate-800')}>{step.label}</p>
-                    {step.date && <span className="text-[11px] text-slate-400">{formatDate(step.date)}</span>}
+                    <p className={cn('text-sm font-semibold', step.state === 'PENDING' ? 'text-slate-400' : 'text-slate-800')}>{uiText(step.label)}</p>
+                    {step.date && <span className="text-[11px] text-slate-400">{uiText(formatDate(step.date))}</span>}
                     {stepPhotos.length > 0 && <span className="flex items-center gap-1 text-[10.5px] text-slate-400"><Camera size={11} /> {stepPhotos.length}</span>}
                     <ChevronDown size={13} className="text-slate-300 opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
@@ -94,7 +96,7 @@ export function TimelineTab({ project }: { project: Project }) {
                   <div className={cn('grid transition-all duration-150', isHovered ? 'mt-1 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
                     <p className="overflow-hidden text-[11.5px] text-slate-500">{step.description}</p>
                   </div>
-                  {step.note && <p className="mt-0.5 text-[11.5px] text-slate-500">{step.note}</p>}
+                  {step.note && <p className="mt-0.5 text-[11.5px] text-slate-500">{uiText(step.note)}</p>}
                 </div>
               </div>
             );
@@ -104,12 +106,12 @@ export function TimelineTab({ project }: { project: Project }) {
 
       <Dialog open={openIndex !== null} onOpenChange={(v) => !v && setOpenIndex(null)}>
         {activeStep && (
-          <DialogContent title={activeStep.label} description={activeStep.date ? formatDate(activeStep.date) : undefined} size="lg">
+          <DialogContent title={uiText(activeStep.label)} description={uiText(activeStep.date ? formatDate(activeStep.date) : undefined)} size="lg">
             <p className="text-xs leading-relaxed text-slate-600">{activeStep.description}</p>
-            {activeStep.note && <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-500">{activeStep.note}</p>}
-            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} /> Site Photos</p>
+            {activeStep.note && <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-500">{uiText(activeStep.note)}</p>}
+            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} />{uiText(" Site Photos")}</p>
             {activeStepPhotos.length === 0 ? (
-              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">No photographic evidence tied to this stage yet.</p>
+              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">{uiText("No photographic evidence tied to this stage yet.")}</p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activeStepPhotos.map((p) => (

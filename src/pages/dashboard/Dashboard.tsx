@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -73,6 +74,7 @@ function matchesStatusFilter(p: Project, status: StatusFilterKey | null, photos:
 }
 
 export function Dashboard() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { projects: roleProjects, scopeLabel, isStatewide } = useProjectScope();
@@ -164,7 +166,7 @@ export function Dashboard() {
   }, [scopedProjects, scopedApprovals, scopedInspections, scopedPhotos, scopedProjectIds, allBills, allExtensionsOfTime, allChangeOrders]);
 
   const statusDist = ['ON_TRACK', 'AT_RISK', 'DELAYED', 'COMPLETED'].map((s) => ({
-    name: s.replace('_', ' '), value: scopedProjects.filter((p) => p.status === s).length, key: s,
+    name: uiText(s), value: scopedProjects.filter((p) => p.status === s).length, key: s,
   }));
 
   const overviewStats = useMemo(() => {
@@ -257,20 +259,20 @@ export function Dashboard() {
   return (
     <div>
       <PageHeader
-        title={t('dashboard.title')}
-        description={t('dashboard.subtitle', { name: currentUser?.name })}
+        title={uiText(t('dashboard.title'))}
+        description={uiText(t('dashboard.subtitle', { name: currentUser?.name }))}
       />
 
       {!isStatewide && (
         <div className="mb-4 flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-xs font-medium text-navy-700">
-          <MapPinned size={14} /> Showing data scoped to your jurisdiction: {scopeLabel}
+          <MapPinned size={14} />{uiText(" Showing data scoped to your jurisdiction: ")}{uiText(scopeLabel)}
         </div>
       )}
 
       {projects.length > 0 && (
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <KpiGroupCard
-          title={t('dashboard.kpiTotalProjects')} icon={Building2} tone="blue"
+          title={uiText(t('dashboard.kpiTotalProjects'))} icon={Building2} tone="blue"
           primary={{ value: kpis.total, label: 'projects' }} onPrimaryClick={() => setStatusFilter(null)}
           stats={[
             { label: t('dashboard.kpiInProgress').toLowerCase(), value: kpis.inProgress, tone: 'blue', onClick: () => toggleStatusFilter('IN_PROGRESS'), active: statusFilter === 'IN_PROGRESS' },
@@ -279,21 +281,21 @@ export function Dashboard() {
           ]}
         />
         <KpiGroupCard
-          title="Budget & Spend" icon={Wallet} tone="amber"
+          title={uiText("Budget & Spend")} icon={Wallet} tone="amber"
           primary={{ value: formatCurrency(kpis.sanctioned), label: 'sanctioned' }}
           stats={[
             { label: `spent (${kpis.sanctioned ? Math.round((kpis.spent / kpis.sanctioned) * 100) : 0}%)`, value: formatCurrency(kpis.spent), tone: 'amber', onClick: () => navigate('/finance') },
           ]}
         />
         <KpiGroupCard
-          title="Approvals & Quality" icon={ClipboardCheck} tone="amber"
+          title={uiText("Approvals & Quality")} icon={ClipboardCheck} tone="amber"
           primary={{ value: kpis.pendingApprovals, label: 'pending approvals' }} onPrimaryClick={() => navigate('/approvals')}
           stats={[
             { label: t('dashboard.kpiFailedQuality').toLowerCase(), value: kpis.failedQc, tone: 'red', onClick: () => navigate('/quality') },
           ]}
         />
         <KpiGroupCard
-          title="Data Integrity Flags" icon={ScanEye} tone="red"
+          title={uiText("Data Integrity Flags")} icon={ScanEye} tone="red"
           primary={{ value: kpis.financialAnomalies + kpis.staleProjects, label: 'flagged projects' }}
           stats={[
             { label: 'progress/financial anomalies', value: kpis.financialAnomalies, tone: 'amber', onClick: () => toggleStatusFilter('ANOMALY'), active: statusFilter === 'ANOMALY' },
@@ -302,7 +304,7 @@ export function Dashboard() {
         />
         {isSeniorRole && (
           <KpiGroupCard
-            title="Governance Watchlist" icon={AlertTriangle} tone="red"
+            title={uiText("Governance Watchlist")} icon={AlertTriangle} tone="red"
             primary={{ value: kpis.overdueInspections + kpis.overdueApprovals + kpis.billsOver30Days + kpis.projectsRequiringEot + kpis.projectsWithCostVariation, label: 'items need attention' }}
             stats={[
               { label: 'inspections overdue', value: kpis.overdueInspections, tone: kpis.overdueInspections > 0 ? 'red' : 'default' },
@@ -318,28 +320,27 @@ export function Dashboard() {
       )}
 
       <Card className="mb-4">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Layers size={15} /> Project Overview</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Layers size={15} />{uiText(" Project Overview")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-5 border-b border-slate-200" role="group" aria-label="Overview grouping">
+          <div className="flex flex-wrap gap-5 border-b border-slate-200" role="group" aria-label={uiText("Overview grouping")}>
             {([{ key: 'zone', label: 'Zone wise', icon: MapPinned, count: zoneFilter.length }, { key: 'budget', label: 'Budget wise', icon: Wallet, count: budgetFilter.length }, { key: 'scheme', label: 'Scheme wise', icon: Layers, count: schemeFilter.length }] as const).map((mode) => (
               <button key={mode.key} aria-pressed={overviewMode === mode.key} onClick={() => setOverviewMode(mode.key)}
                 className={cn('-mb-px flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500',
                   overviewMode === mode.key ? 'border-navy-700 text-navy-800' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800')}>
-                <mode.icon size={15} /> {mode.label}
+                <mode.icon size={15} /> {uiText(mode.label)}
                 {mode.count > 0 && <span className="rounded-full bg-navy-50 px-1.5 py-0.5 text-[10px] font-semibold text-navy-700">{mode.count}</span>}
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-500">Select one or more options. No selection includes all options.</p>
+          <p className="text-xs text-slate-500">{uiText("Select one or more options. No selection includes all options.")}</p>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
             {overviewStats.map((group) => (
               <button key={group.key} aria-pressed={selectedOverview.includes(group.key)} onClick={() => selectOverview(group.key)}
                 className={cn('rounded-lg border p-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50',
                   selectedOverview.includes(group.key) ? 'border-navy-400 bg-navy-50 ring-1 ring-navy-300' : 'border-slate-200 bg-white')}>
-                <p className="text-xs font-semibold text-slate-800">{group.label}</p>
+                <p className="text-xs font-semibold text-slate-800">{uiText(group.label)}</p>
                 <p className="mt-1 text-xl font-bold text-navy-700">{group.total}</p>
-                <p className="mt-0.5 text-[10.5px] text-slate-500">{group.completed} completed
-                  {group.delayed > 0 && <span className="text-red-500"> &middot; {group.delayed} delayed</span>}
+                <p className="mt-0.5 text-[10.5px] text-slate-500">{group.completed}{uiText(" completed")}{group.delayed > 0 && <span className="text-red-500"> &middot; {group.delayed}{uiText(" delayed")}</span>}
                 </p>
               </button>
             ))}
@@ -349,11 +350,11 @@ export function Dashboard() {
               ...zoneFilter.map((key) => ({ key, label: key, remove: () => setZoneFilter((values) => toggleSelection(values, key)) })),
               ...budgetFilter.map((key) => ({ key, label: BUDGET_BANDS.find((band) => band.key === key)?.label, remove: () => setBudgetFilter((values) => toggleSelection(values, key)) })),
               ...schemeFilter.map((key) => ({ key, label: key, remove: () => setSchemeFilter((values) => toggleSelection(values, key)) })),
-            ].map((filter) => <button key={filter.key} onClick={filter.remove} aria-label={`Remove ${filter.label} filter`}
+            ].map((filter) => <button key={filter.key} onClick={filter.remove} aria-label={uiMessage("Remove {{0}} filter", [filter.label])}
               className="flex items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-navy-700 hover:bg-navy-100">
-              {filter.label}<X size={12} />
+              {uiText(filter.label)}<X size={12} />
             </button>)}
-            <Button variant="outline" size="sm" onClick={clearFilters}><X size={13} /> Clear Filters</Button>
+            <Button variant="outline" size="sm" onClick={clearFilters}><X size={13} />{uiText(" Clear Filters")}</Button>
           </div>}
         </CardContent>
       </Card>
@@ -362,12 +363,12 @@ export function Dashboard() {
         <div className="rounded-lg border border-dashed border-slate-300 bg-white py-16 text-center">
           <Building2 className="mx-auto mb-2 text-slate-300" size={28} />
           <p className="text-sm font-medium text-slate-600">
-            {filtersActive ? 'No projects match the current filters.' : 'No projects are currently assigned to your account.'}
+            {uiText(filtersActive ? 'No projects match the current filters.' : 'No projects are currently assigned to your account.')}
           </p>
           {filtersActive ? (
-            <button onClick={clearFilters} className="mt-1 text-xs font-medium text-navy-700 hover:underline">Clear filters</button>
+            <button onClick={clearFilters} className="mt-1 text-xs font-medium text-navy-700 hover:underline">{uiText("Clear filters")}</button>
           ) : (
-            <p className="mt-1 text-xs text-slate-400">Contact your Executive Engineer or District Health Officer if this seems incorrect.</p>
+            <p className="mt-1 text-xs text-slate-400">{uiText("Contact your Executive Engineer or District Health Officer if this seems incorrect.")}</p>
           )}
         </div>
       ) : (
@@ -383,7 +384,7 @@ export function Dashboard() {
           <CardContent className="space-y-2.5 p-4">
             {criticalAlerts.map((a, i) => (
               <div key={i} className="flex items-start gap-2 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
-                <ShieldAlert size={14} className="mt-0.5 shrink-0" /> {a.text}
+                <ShieldAlert size={14} className="mt-0.5 shrink-0" /> {uiText(a.text)}
               </div>
             ))}
             {criticalAlerts.length === 0 && <p className="text-xs text-slate-400">{t('dashboard.noCriticalAlerts')}</p>}
@@ -396,25 +397,25 @@ export function Dashboard() {
 
       {(isSeniorRole || isProjectManager) && (
         <Card className="mt-4">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Gavel size={15} /> Decision Tracker ({pendingDecisions.length} pending)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Gavel size={15} />{uiText(" Decision Tracker (")}{pendingDecisions.length}{uiText(" pending)")}</CardTitle></CardHeader>
           {pendingDecisions.length === 0 ? (
-            <CardContent className="p-4"><p className="text-xs text-slate-400">No decisions currently pending in your jurisdiction.</p></CardContent>
+            <CardContent className="p-4"><p className="text-xs text-slate-400">{uiText("No decisions currently pending in your jurisdiction.")}</p></CardContent>
           ) : (
             <Table>
-              <THead><Tr><Th>Decision Required</Th><Th>Project</Th><Th>Financial Impact</Th><Th>Schedule Impact</Th><Th>Pending With</Th><Th>Pending Since</Th><Th>Priority</Th><Th /></Tr></THead>
+              <THead><Tr><Th>{uiText("Decision Required")}</Th><Th>{uiText("Project")}</Th><Th>{uiText("Financial Impact")}</Th><Th>{uiText("Schedule Impact")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Pending Since")}</Th><Th>{uiText("Priority")}</Th><Th /></Tr></THead>
               <TBody>
                 {pendingDecisions.map((d) => (
                   <Tr key={d.id}>
-                    <Td className="max-w-[240px] truncate font-medium text-slate-800">{d.decisionRequired}</Td>
+                    <Td className="max-w-[240px] truncate font-medium text-slate-800">{uiText(d.decisionRequired)}</Td>
                     <Td className="max-w-[160px] truncate">{projects.find((p) => p.id === d.projectId)?.name}</Td>
-                    <Td>{d.financialImpact ? formatCurrency(d.financialImpact) : '—'}</Td>
-                    <Td>{d.scheduleImpactDays ? `${d.scheduleImpactDays} days` : '—'}</Td>
+                    <Td>{uiText(d.financialImpact ? formatCurrency(d.financialImpact) : '—')}</Td>
+                    <Td>{uiText(d.scheduleImpactDays ? `${d.scheduleImpactDays} days` : '—')}</Td>
                     <Td>{t(`roles.${d.pendingWith}`)}</Td>
-                    <Td>{formatDate(d.pendingSince)}</Td>
+                    <Td>{uiText(formatDate(d.pendingSince))}</Td>
                     <Td><StatusBadge status={d.priority} /></Td>
                     <Td>
                       {d.pendingWith === currentUser?.role && (
-                        <Button size="sm" variant="outline" onClick={() => { setDecisionId(d.id); setOutcome(''); }}>Decide</Button>
+                        <Button size="sm" variant="outline" onClick={() => { setDecisionId(d.id); setOutcome(''); }}>{uiText("Decide")}</Button>
                       )}
                     </Td>
                   </Tr>
@@ -427,31 +428,31 @@ export function Dashboard() {
 
       {isProjectManager && (
         <Card className="mt-4">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Flame size={15} /> Portfolio Governance & Risk Rollup</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Flame size={15} />{uiText(" Portfolio Governance & Risk Rollup")}</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
             <RollupPanel
-              icon={Flame} title="Open Risks" count={portfolioRisks.length} emptyText="No open risks in your portfolio."
+              icon={Flame} title={uiText("Open Risks")} count={portfolioRisks.length} emptyText={uiText("No open risks in your portfolio.")}
               items={portfolioRisks.slice(0, 4).map((r) => ({
                 id: r.id, primary: r.risk, secondary: `${projects.find((p) => p.id === r.projectId)?.name ?? ''} · ${r.level}`,
                 onClick: () => navigate(`/projects/${r.projectId}?tab=risks`),
               }))}
             />
             <RollupPanel
-              icon={TriangleAlert} title="Site Issues" count={portfolioSiteIssues.length} emptyText="No open site issues."
+              icon={TriangleAlert} title={uiText("Site Issues")} count={portfolioSiteIssues.length} emptyText={uiText("No open site issues.")}
               items={portfolioSiteIssues.slice(0, 4).map((i) => ({
                 id: i.id, primary: i.description, secondary: `${projects.find((p) => p.id === i.projectId)?.name ?? ''} · ${i.category.replace(/_/g, ' ')}`,
                 onClick: () => navigate(`/projects/${i.projectId}?tab=governance`),
               }))}
             />
             <RollupPanel
-              icon={GitBranch} title="Change Orders" count={portfolioChangeOrders.length} emptyText="No change orders pending approval."
+              icon={GitBranch} title={uiText("Change Orders")} count={portfolioChangeOrders.length} emptyText={uiText("No change orders pending approval.")}
               items={portfolioChangeOrders.slice(0, 4).map((c) => ({
                 id: c.id, primary: c.title, secondary: `${projects.find((p) => p.id === c.projectId)?.name ?? ''} · ${formatCurrency(c.costImpact)}`,
                 onClick: () => navigate(`/projects/${c.projectId}?tab=governance`),
               }))}
             />
             <RollupPanel
-              icon={CalendarClock} title="EOT Requests" count={portfolioEots.length} emptyText="No pending EOT requests."
+              icon={CalendarClock} title={uiText("EOT Requests")} count={portfolioEots.length} emptyText={uiText("No pending EOT requests.")}
               items={portfolioEots.slice(0, 4).map((e) => ({
                 id: e.id, primary: e.reason, secondary: `${projects.find((p) => p.id === e.projectId)?.name ?? ''} · ${e.daysRequested} days requested`,
                 onClick: () => navigate(`/projects/${e.projectId}?tab=governance`),
@@ -473,24 +474,24 @@ export function Dashboard() {
                     if ((percent ?? 0) < 0.08) return null;
                     const angle = -(midAngle ?? 0) * Math.PI / 180;
                     const radius = (Number(innerRadius) + Number(outerRadius)) / 2;
-                    return <text x={Number(cx) + radius * Math.cos(angle)} y={Number(cy) + radius * Math.sin(angle)} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={12} fontWeight={700} stroke="#0f172a" strokeWidth={2} paintOrder="stroke">{((percent ?? 0) * 100).toFixed(1)}%</text>;
+                    return <text x={Number(cx) + radius * Math.cos(angle)} y={Number(cy) + radius * Math.sin(angle)} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={12} fontWeight={700} stroke="#0f172a" strokeWidth={2} paintOrder="stroke">{uiText(((percent ?? 0) * 100).toFixed(1))}%</text>;
                   }}>
                   {statusDist.filter((status) => status.value > 0).map((s) => <Cell key={s.key} fill={STATUS_HEX[s.key]} />)}
                 </Pie>
-                <RTooltip formatter={(value) => `${value} projects (${scopedProjects.length ? (Number(value) / scopedProjects.length * 100).toFixed(1) : 0}%)`} />
+                <RTooltip formatter={(value) => `${value} ${uiText('Projects')} (${scopedProjects.length ? (Number(value) / scopedProjects.length * 100).toFixed(1) : 0}%)`} />
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-3xl font-bold text-slate-800">{scopedProjects.length}</span>
-              <span className="text-xs text-slate-500">Total projects</span>
+              <span className="text-xs text-slate-500">{uiText("Total projects")}</span>
             </div>
             </div>
             <div className="pb-2 text-xs">
-              <div className="grid grid-cols-[1fr_3rem_4rem] gap-2 border-b border-slate-200 pb-2 text-slate-500"><span>Status</span><span className="text-right">Count</span><span className="text-right">Share</span></div>
+              <div className="grid grid-cols-[1fr_3rem_4rem] gap-2 border-b border-slate-200 pb-2 text-slate-500"><span>{uiText("Status")}</span><span className="text-right">{uiText("Count")}</span><span className="text-right">{uiText("Share")}</span></div>
               {statusDist.map((status) => <div key={status.key} className="grid grid-cols-[1fr_3rem_4rem] items-center gap-2 border-b border-slate-100 py-2.5 last:border-0">
                 <span className="flex items-center gap-2 text-slate-600"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: STATUS_HEX[status.key] }} />{status.name}</span>
                 <span className="text-right font-semibold tabular-nums text-slate-800">{status.value}</span>
-                <span className="text-right tabular-nums text-slate-600">{scopedProjects.length ? (status.value / scopedProjects.length * 100).toFixed(1) : '0.0'}%</span>
+                <span className="text-right tabular-nums text-slate-600">{uiText(scopedProjects.length ? (status.value / scopedProjects.length * 100).toFixed(1) : '0.0')}%</span>
               </div>)}
             </div>
           </CardContent>
@@ -509,9 +510,9 @@ export function Dashboard() {
                 <ProgressBar value={avgFinancial} colorClass="bg-emerald-500" />
               </div>
               <p className="rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                {Math.abs(avgFinancial - avgPhysical) < 5 ? t('dashboard.gapAligned')
+                {uiText(Math.abs(avgFinancial - avgPhysical) < 5 ? t('dashboard.gapAligned')
                   : avgFinancial > avgPhysical ? t('dashboard.gapFinancialAhead')
-                  : t('dashboard.gapPhysicalAhead')}
+                  : t('dashboard.gapPhysicalAhead'))}
               </p>
             </div>
           </CardContent>
@@ -526,9 +527,9 @@ export function Dashboard() {
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <YAxis type="category" dataKey="district" width={70} tick={{ fontSize: 10 }} />
                 <RTooltip formatter={(v: any) => formatCurrency(v)} />
-                <Bar dataKey="sanctioned" fill="#3b82f6" name="Sanctioned Amount" radius={[0, 3, 3, 0]} />
-                <Bar dataKey="spent" fill="#f59e0b" name="Amount Spent" radius={[0, 3, 3, 0]} />
-                <Bar dataKey="disbursed" fill="#10b981" name="Amount Disbursed" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="sanctioned" fill="#3b82f6" name={uiText("Sanctioned Amount")} radius={[0, 3, 3, 0]} />
+                <Bar dataKey="spent" fill="#f59e0b" name={uiText("Amount Spent")} radius={[0, 3, 3, 0]} />
+                <Bar dataKey="disbursed" fill="#10b981" name={uiText("Amount Disbursed")} radius={[0, 3, 3, 0]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               </BarChart>
             </ResponsiveContainer>
@@ -545,8 +546,8 @@ export function Dashboard() {
               {delayedProjects.map((p) => (
                 <Tr key={p.id} onClick={() => navigate(`/projects/${p.id}`)}>
                   <Td className="font-medium text-slate-800">{p.name}</Td>
-                  <Td>{p.district}</Td>
-                  <Td><StatusBadge status="DELAYED" label={t('dashboard.daysSuffix', { count: p.delayDays })} /></Td>
+                  <Td>{uiText(p.district)}</Td>
+                  <Td><StatusBadge status="DELAYED" label={uiText(t('dashboard.daysSuffix', { count: p.delayDays }))} /></Td>
                   <Td><ArrowRight size={14} className="text-slate-300" /></Td>
                 </Tr>
               ))}
@@ -562,10 +563,10 @@ export function Dashboard() {
             <TBody>
               {pendingApprovalsList.map((a) => (
                 <Tr key={a.id} onClick={() => navigate('/approvals')}>
-                  <Td className="font-medium text-slate-800">{a.type.replace('_', ' ')}</Td>
+                  <Td className="font-medium text-slate-800">{uiText(a.type.replace('_', ' '))}</Td>
                   <Td className="max-w-[160px] truncate">{projects.find((p) => p.id === a.projectId)?.name}</Td>
-                  <Td>{a.amount ? formatCurrency(a.amount) : '—'}</Td>
-                  <Td><StatusBadge status="PENDING" label={a.chain[a.currentStepIndex]?.replace('_', ' ')} /></Td>
+                  <Td>{uiText(a.amount ? formatCurrency(a.amount) : '—')}</Td>
+                  <Td><StatusBadge status="PENDING" label={uiText(a.chain[a.currentStepIndex]?.replace('_', ' '))} /></Td>
                 </Tr>
               ))}
             </TBody>
@@ -584,10 +585,10 @@ export function Dashboard() {
               {upcomingInspections.map((i) => (
                 <div key={i.id} className="flex items-center justify-between text-xs">
                   <div>
-                    <p className="font-medium text-slate-700">{i.category.replace('_', ' ')}</p>
+                    <p className="font-medium text-slate-700">{uiText(i.category.replace('_', ' '))}</p>
                     <p className="text-[10.5px] text-slate-400">{projects.find((p) => p.id === i.projectId)?.name}</p>
                   </div>
-                  <span className="text-[10.5px] text-slate-500">{formatDate(i.scheduledDate)}</span>
+                  <span className="text-[10.5px] text-slate-500">{uiText(formatDate(i.scheduledDate))}</span>
                 </div>
               ))}
             </CardContent>
@@ -599,7 +600,7 @@ export function Dashboard() {
           <CardContent className="space-y-2.5">
             {topContractors.map((c) => (
               <div key={c.id}>
-                <div className="mb-1 flex justify-between text-xs"><span className="truncate font-medium text-slate-700">{c.company}</span><span className="text-slate-500">{c.performanceScore}%</span></div>
+                <div className="mb-1 flex justify-between text-xs"><span className="truncate font-medium text-slate-700">{uiText(c.company)}</span><span className="text-slate-500">{c.performanceScore}%</span></div>
                 <ProgressBar value={c.performanceScore} className="h-1.5" />
               </div>
             ))}
@@ -623,20 +624,20 @@ export function Dashboard() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {recentPhotos.map((ph) => (
               <button key={ph.id} onClick={() => setPhotoId(ph.id)} className="flex gap-3 rounded-lg border border-slate-200 p-2.5 text-left transition-colors hover:border-navy-300 hover:bg-navy-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500">
-                <img src={photoSrc(ph)} alt={`${ph.dataUrl ? 'Site capture' : 'Sample construction photo'}: ${ph.stage}`} loading="lazy" className="h-24 w-20 shrink-0 rounded-md object-cover sm:w-24" />
+                <img src={photoSrc(ph)} alt={uiMessage("{{0}}: {{1}}", [ph.dataUrl ? 'Site capture' : 'Sample construction photo', ph.stage])} loading="lazy" className="h-24 w-20 shrink-0 rounded-md object-cover sm:w-24" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold leading-snug text-slate-800">{projects.find((project) => project.id === ph.projectId)?.name ?? ph.projectId}</p>
-                  <p className="mt-1 text-[11px] text-slate-600">{ph.stage} &middot; {ph.location}</p>
-                  <p className="mt-1 flex items-start gap-1 text-[11px] font-medium tabular-nums text-navy-700"><MapPinned size={12} className="mt-0.5 shrink-0" /><span>Lat {ph.lat.toFixed(5)}, Lng {ph.lng.toFixed(5)}</span></p>
-                  <p className="mt-1 text-[10px] text-slate-500">{formatDateTime(ph.capturedAt || ph.date)}</p>
+                  <p className="mt-1 text-[11px] text-slate-600">{uiText(ph.stage)} &middot; {uiText(ph.location)}</p>
+                  <p className="mt-1 flex items-start gap-1 text-[11px] font-medium tabular-nums text-navy-700"><MapPinned size={12} className="mt-0.5 shrink-0" /><span>{uiText("Lat ")}{uiText(ph.lat.toFixed(5))}{uiText(", Lng ")}{uiText(ph.lng.toFixed(5))}</span></p>
+                  <p className="mt-1 text-[10px] text-slate-500">{uiText(formatDateTime(ph.capturedAt || ph.date))}</p>
                   {ph.dataUrl && <span className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">
-                    {ph.locationSource === 'CAPTURED' ? 'Device photo / GPS captured' : 'Device photo / manual location'}
+                    {uiText(ph.locationSource === 'CAPTURED' ? 'Device photo / GPS captured' : 'Device photo / manual location')}
                   </span>}
                 </div>
               </button>
             ))}
           </div>
-          {recentPhotos.length === 0 && <p className="text-xs text-slate-500">No site photos available for the selected projects.</p>}
+          {recentPhotos.length === 0 && <p className="text-xs text-slate-500">{uiText("No site photos available for the selected projects.")}</p>}
         </CardContent>
       </Card>
       </>
@@ -644,18 +645,18 @@ export function Dashboard() {
 
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setPhotoId(null)}>
         {selectedPhoto && (
-          <DialogContent title={selectedPhotoProject?.name ?? selectedPhoto.projectId} description={`${selectedPhoto.stage} - ${formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)}`} size="lg">
-            <img src={photoSrc(selectedPhoto)} alt={selectedPhoto.description || selectedPhoto.stage} className="max-h-[50vh] w-full rounded-lg bg-slate-100 object-contain" />
+          <DialogContent title={uiText(selectedPhotoProject?.name ?? selectedPhoto.projectId)} description={uiMessage("{{0}} - {{1}}", [selectedPhoto.stage, formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)])} size="lg">
+            <img src={photoSrc(selectedPhoto)} alt={uiText(selectedPhoto.description || selectedPhoto.stage)} className="max-h-[50vh] w-full rounded-lg bg-slate-100 object-contain" />
             <div className="mt-3 space-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
-              <p className="font-semibold text-slate-800">{selectedPhoto.location}</p>
-              <p className="tabular-nums">Latitude {selectedPhoto.lat.toFixed(6)} &middot; Longitude {selectedPhoto.lng.toFixed(6)}</p>
+              <p className="font-semibold text-slate-800">{uiText(selectedPhoto.location)}</p>
+              <p className="tabular-nums">{uiText("Latitude ")}{uiText(selectedPhoto.lat.toFixed(6))}{uiText(" · Longitude ")}{uiText(selectedPhoto.lng.toFixed(6))}</p>
               <p>{selectedPhoto.description}</p>
-              <p>Uploaded by {selectedPhoto.uploadedBy}</p>
-              <p>{selectedPhoto.dataUrl ? (selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.') : 'Illustrative construction photo and demo coordinates; not live evidence from this site.'}</p>
+              <p>{uiText("Uploaded by ")}{uiText(selectedPhoto.uploadedBy)}</p>
+              <p>{uiText(selectedPhoto.dataUrl ? (selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.') : 'Illustrative construction photo and demo coordinates; not live evidence from this site.')}</p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPhotoId(null)}>Close</Button>
-              {photoProjectTab && <Button onClick={() => { setPhotoId(null); navigate(`/projects/${selectedPhoto.projectId}?${new URLSearchParams({ tab: photoProjectTab.value })}`); }}>View project {photoProjectTab.label.toLowerCase()} <ArrowRight size={13} /></Button>}
+              <Button variant="outline" onClick={() => setPhotoId(null)}>{uiText("Close")}</Button>
+              {photoProjectTab && <Button onClick={() => { setPhotoId(null); navigate(`/projects/${selectedPhoto.projectId}?${new URLSearchParams({ tab: photoProjectTab.value })}`); }}>{uiText("View project ")}{uiText(photoProjectTab.label.toLowerCase())} <ArrowRight size={13} /></Button>}
             </DialogFooter>
           </DialogContent>
         )}
@@ -663,14 +664,14 @@ export function Dashboard() {
 
       <Dialog open={!!decisionId} onOpenChange={(v) => !v && setDecisionId(null)}>
         {activeDecision && (
-          <DialogContent title="Record Decision" description={activeDecision.decisionRequired}>
+          <DialogContent title={uiText("Record Decision")} description={uiText(activeDecision.decisionRequired)}>
             <div className="space-y-2 text-xs">
-              <p className="text-slate-500">Recommended action: <span className="text-slate-700">{activeDecision.recommendedAction}</span></p>
-              <Textarea rows={3} placeholder="Decision outcome / remarks…" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
+              <p className="text-slate-500">{uiText("Recommended action: ")}<span className="text-slate-700">{uiText(activeDecision.recommendedAction)}</span></p>
+              <Textarea rows={3} placeholder={uiText("Decision outcome / remarks…")} value={outcome} onChange={(e) => setOutcome(e.target.value)} />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDecisionId(null)}>Cancel</Button>
-              <Button onClick={() => { resolveDecision(activeDecision.id, outcome.trim() || 'Decided.'); toast.success('Decision recorded.'); setDecisionId(null); }}>Record Decision</Button>
+              <Button variant="outline" onClick={() => setDecisionId(null)}>{uiText("Cancel")}</Button>
+              <Button onClick={() => { resolveDecision(activeDecision.id, outcome.trim() || 'Decided.'); toast.success(uiText('Decision recorded.')); setDecisionId(null); }}>{uiText("Record Decision")}</Button>
             </DialogFooter>
           </DialogContent>
         )}
@@ -686,20 +687,21 @@ function RollupPanel({ icon: Icon, title, count, items, emptyText }: {
   icon: React.ComponentType<{ size?: number; className?: string }>; title: string; count: number;
   items: { id: string; primary: string; secondary: string; onClick: () => void }[]; emptyText: string;
 }) {
+  useUiLanguage();
   return (
     <div className="rounded-lg border border-slate-200 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Icon size={14} className="text-slate-400" /> {title}</p>
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Icon size={14} className="text-slate-400" /> {uiText(title)}</p>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{count}</span>
       </div>
       {items.length === 0 ? (
-        <p className="text-[11px] text-slate-400">{emptyText}</p>
+        <p className="text-[11px] text-slate-400">{uiText(emptyText)}</p>
       ) : (
         <div className="space-y-2">
           {items.map((it) => (
             <button key={it.id} onClick={it.onClick} className="block w-full text-left">
-              <p className="truncate text-[11.5px] font-medium text-slate-700 hover:text-navy-700 hover:underline">{it.primary}</p>
-              <p className="truncate text-[10.5px] text-slate-400">{it.secondary}</p>
+              <p className="truncate text-[11.5px] font-medium text-slate-700 hover:text-navy-700 hover:underline">{uiText(it.primary)}</p>
+              <p className="truncate text-[10.5px] text-slate-400">{uiText(it.secondary)}</p>
             </button>
           ))}
         </div>

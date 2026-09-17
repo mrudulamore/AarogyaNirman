@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -16,14 +17,15 @@ export function KpiCard({ label, value, sub, icon: Icon, tone = 'default', onCli
   label: string; value: string | number; sub?: string; icon?: LucideIcon;
   tone?: 'default' | 'blue' | 'amber' | 'red' | 'emerald'; onClick?: () => void;
 }) {
+  useUiLanguage();
   return (
     <div onClick={onClick} className={cn('rounded-lg border border-slate-200 bg-white p-4 shadow-card transition-all', onClick && 'cursor-pointer hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md')}>
       <div className="flex items-start justify-between">
-        <p className="text-[11.5px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="text-[11.5px] font-medium uppercase tracking-wide text-slate-400">{uiText(label)}</p>
         {Icon && <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', TONE_CLASSES[tone])}><Icon size={14} /></div>}
       </div>
-      <p className="mt-1.5 text-2xl font-bold text-slate-900">{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-slate-400">{sub}</p>}
+      <p className="mt-1.5 text-2xl font-bold text-slate-900">{uiText(value)}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-slate-400">{uiText(sub)}</p>}
     </div>
   );
 }
@@ -45,15 +47,16 @@ export function KpiGroupCard({ title, icon: Icon, tone = 'default', primary, sta
   title: string; icon?: LucideIcon; tone?: 'default' | 'blue' | 'amber' | 'red' | 'emerald';
   primary: { value: string | number; label?: string }; stats: GroupStat[]; onPrimaryClick?: () => void;
 }) {
+  useUiLanguage();
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-card transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between">
-        <p className="text-[11.5px] font-medium uppercase tracking-wide text-slate-400">{title}</p>
+        <p className="text-[11.5px] font-medium uppercase tracking-wide text-slate-400">{uiText(title)}</p>
         {Icon && <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', TONE_CLASSES[tone])}><Icon size={14} /></div>}
       </div>
       <div onClick={onPrimaryClick} className={cn('mt-1.5 inline-flex items-baseline gap-1.5', onPrimaryClick && 'cursor-pointer')}>
-        <p className="text-2xl font-bold text-slate-900">{primary.value}</p>
-        {primary.label && <p className="text-[11px] text-slate-400">{primary.label}</p>}
+        <p className="text-2xl font-bold text-slate-900">{uiText(primary.value)}</p>
+        {primary.label && <p className="text-[11px] text-slate-400">{uiText(primary.label)}</p>}
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-2.5">
         {stats.map((s, i) => (
@@ -61,15 +64,15 @@ export function KpiGroupCard({ title, icon: Icon, tone = 'default', primary, sta
             key={i}
             onClick={s.onClick}
             disabled={!s.onClick}
-            title={s.onClick ? `Filter by ${s.label}` : undefined}
+            title={uiText(s.onClick ? `Filter by ${s.label}` : undefined)}
             className={cn(
               'flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] leading-none transition-colors disabled:cursor-default',
               s.onClick && !s.active && 'hover:bg-slate-50',
               s.active && 'bg-slate-100 ring-1 ring-inset ring-slate-300',
             )}
           >
-            <span className={cn('font-bold', TONE_TEXT[s.tone ?? 'default'])}>{s.value}</span>
-            <span className={cn(s.active ? 'text-slate-600' : 'text-slate-400')}>{s.label}</span>
+            <span className={cn('font-bold', TONE_TEXT[s.tone ?? 'default'])}>{uiText(s.value)}</span>
+            <span className={cn(s.active ? 'text-slate-600' : 'text-slate-400')}>{uiText(s.label)}</span>
           </button>
         ))}
       </div>
