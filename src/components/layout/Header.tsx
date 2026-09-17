@@ -25,14 +25,20 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const myNotifications = notifications.filter((n) => currentUser && n.targetRoles.includes(currentUser.role));
   const unread = myNotifications.filter((n) => !n.read).length;
 
+  function switchAccount() {
+    logout();
+    setQ('');
+    navigate('/login', { replace: true });
+  }
+
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4">
+    <header className="app-header sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-2 py-1 border-b border-slate-200 bg-white px-4">
       <button onClick={onMenuClick} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
         <Menu size={20} />
       </button>
 
       <form
-        className="hidden max-w-md flex-1 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 md:flex"
+        className="hidden max-w-md flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 md:flex"
         onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/search?q=${encodeURIComponent(q)}`); }}
       >
         <Search size={15} className="text-slate-400" />
@@ -49,6 +55,9 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         </button>
 
         <LanguageSwitcher />
+        <button type="button" onClick={switchAccount} className="flex min-h-10 max-w-24 items-center gap-1 rounded-md border border-slate-200 px-2 py-1.5 text-left text-[11px] font-medium text-navy-700 hover:bg-slate-100">
+          <UserCog size={15} className="shrink-0" /> {t('header.switchAccount')}
+        </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -62,7 +71,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <DropdownMenuLabel>{t('header.notifications')}</DropdownMenuLabel>
               {unread > 0 && <button onClick={() => markAllRead()} className="text-[11px] font-medium text-navy-700 hover:underline">{t('header.markAllRead')}</button>}
             </div>
-            <div className="max-h-80 w-80 overflow-y-auto">
+            <div className="max-h-80 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto">
               {myNotifications.slice(0, 8).map((n) => (
                 <DropdownMenuItem key={n.id} onSelect={() => { markRead(n.id); if (n.projectId) navigate(`/projects/${n.projectId}`); }} className="flex-col items-start gap-0.5 whitespace-normal py-2">
                   <div className="flex w-full items-start gap-2">
@@ -81,7 +90,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 hover:bg-slate-100">
+            <button type="button" aria-label={t('header.accountMenu')} className="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 hover:bg-slate-100">
               <Avatar name={currentUser?.name ?? '?'} size={30} />
               <div className="hidden text-left leading-tight sm:block">
                 <p className="text-xs font-semibold text-slate-800">{currentUser?.name}</p>
@@ -94,7 +103,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
             <DropdownMenuLabel>{uiText(currentUser?.designation)}</DropdownMenuLabel>
             <DropdownMenuItem onSelect={() => navigate('/select-role')}><UserCog size={14} /> {t('header.switchRole')}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onSelect={() => { logout(); navigate('/login'); }}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>
+            <DropdownMenuItem destructive onSelect={switchAccount}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

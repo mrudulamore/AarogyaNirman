@@ -18,7 +18,7 @@ export function DialogContent({ className, children, title, description, size = 
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
       <DialogPrimitive.Content className={cn(
-        'fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[92vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white shadow-xl focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95',
+        'fixed left-1/2 top-1/2 z-50 max-h-[88dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95',
         widths[size], className,
       )}>
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
@@ -26,7 +26,7 @@ export function DialogContent({ className, children, title, description, size = 
             <DialogPrimitive.Title className="text-base font-semibold text-slate-900">{uiText(title)}</DialogPrimitive.Title>
             {description && <DialogPrimitive.Description className="mt-0.5 text-xs text-slate-500">{uiText(description)}</DialogPrimitive.Description>}
           </div>
-          <DialogPrimitive.Close aria-label={uiText('Close')} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+          <DialogPrimitive.Close aria-label={uiText('Close')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600">
             <X size={16} />
           </DialogPrimitive.Close>
         </div>
@@ -38,7 +38,7 @@ export function DialogContent({ className, children, title, description, size = 
 export const DialogClose = DialogPrimitive.Close;
 export function DialogFooter({ children }: { children: React.ReactNode }) {
   useUiLanguage();
-  return <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">{children}</div>;
+  return <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">{children}</div>;
 }
 
 // ---------------- Confirm dialog helper ----------------
@@ -74,7 +74,7 @@ export function DropdownMenuContent({ children, align = 'end' }: { children: Rea
   useUiLanguage();
   return (
     <DropdownPrimitive.Portal>
-      <DropdownPrimitive.Content align={align} sideOffset={6} className="z-50 min-w-[180px] rounded-md border border-slate-200 bg-white p-1 shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95">
+      <DropdownPrimitive.Content align={align} sideOffset={6} className="z-50 max-w-[calc(100vw-1.5rem)] min-w-[180px] rounded-xl border border-slate-200 bg-white p-1 shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95">
         {children}
       </DropdownPrimitive.Content>
     </DropdownPrimitive.Portal>
@@ -85,7 +85,7 @@ export function DropdownMenuItem({ children, onSelect, className, destructive }:
   return (
     <DropdownPrimitive.Item
       onSelect={onSelect}
-      className={cn('flex cursor-pointer select-none items-center gap-2 rounded px-2.5 py-1.5 text-sm outline-none hover:bg-slate-100', destructive ? 'text-red-600' : 'text-slate-700', className)}
+      className={cn('ui-menu-item flex cursor-pointer select-none items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm outline-none data-[highlighted]:bg-slate-100 hover:bg-slate-100', destructive ? 'text-red-600' : 'text-slate-700', className)}
     >
       {children}
     </DropdownPrimitive.Item>

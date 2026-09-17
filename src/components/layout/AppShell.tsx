@@ -40,11 +40,11 @@ export function AppShell() {
   if (!allowed) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="app-shell flex h-screen overflow-hidden bg-slate-50">
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+        <main className="app-content min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
           <Outlet />
         </main>
       </div>

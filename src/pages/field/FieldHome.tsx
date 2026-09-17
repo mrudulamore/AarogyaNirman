@@ -93,7 +93,7 @@ export function FieldHome() {
   if (!project) return <p className="p-6 text-sm text-slate-400">{uiText("No project assigned.")}</p>;
 
   return (
-    <div className="mx-auto max-w-md space-y-4 pb-10">
+    <div className="field-workspace mx-auto max-w-3xl space-y-5 pb-10">
       <div>
         <p className="text-xs text-slate-400">{uiText(isContractor ? 'Contractor Dashboard' : 'Field Engineer App')}</p>
         <Select value={projectId} onValueChange={id => { setProjectId(id); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setCapturedPhoto(null); setAction(null); }}>
@@ -103,7 +103,7 @@ export function FieldHome() {
         {myProjects.length > 1 && <p className="mt-1 text-[10.5px] text-slate-400">{myProjects.length} {uiText("Assigned hospitals")}</p>}
       </div>
 
-      <Card>
+      <Card className="field-project">
         <CardContent className="p-4">
           <p className="text-sm font-semibold text-slate-800">{project.name}</p>
           <p className="text-xs text-slate-400">{uiText(project.taluka)}, {uiText(project.district)}</p>
@@ -258,9 +258,9 @@ function ActionButton({ icon: Icon, label, onClick, tone = 'default' }: { icon: 
   useUiLanguage();
   const tones: Record<string, string> = { default: 'bg-navy-700 hover:bg-navy-800', amber: 'bg-amber-600 hover:bg-amber-700', red: 'bg-red-600 hover:bg-red-700' };
   return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-2 rounded-lg ${tones[tone]} px-3 py-5 text-white shadow-sm transition-colors`}>
+    <button onClick={onClick} className={`field-action flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl ${tones[tone]} px-3 py-5 text-white shadow-sm transition-colors`}>
       <Icon size={22} />
-      <span className="text-center text-xs font-medium leading-tight">{uiText(label)}</span>
+      <span className="text-center text-sm font-semibold leading-snug">{uiText(label)}</span>
     </button>
   );
 }

@@ -20,6 +20,7 @@ export function SelectRole() {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const login = useStore((s) => s.login);
+  const logout = useStore((s) => s.logout);
   const roles = Object.keys(ROLE_LABELS) as Role[];
 
   function choose(role: Role) {
@@ -48,7 +49,10 @@ export function SelectRole() {
               <p className="mt-1 text-sm text-navy-200">{t('auth.selectRoleSubtitle')}</p>
             </div>
           </div>
-          <LanguageSwitcher variant="inline" />
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <LanguageSwitcher variant="inline" />
+            <button type="button" onClick={() => { logout(); navigate('/login', { replace: true }); }} className="rounded-md border border-white/30 px-3 py-2 text-xs text-white hover:bg-white/10">{t('header.switchAccount')}</button>
+          </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">

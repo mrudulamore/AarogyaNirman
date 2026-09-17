@@ -9,10 +9,10 @@ type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructiv
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-navy-700 text-white hover:bg-navy-800 shadow-sm',
+  primary: 'ui-primary bg-navy-700 text-white hover:bg-navy-800 shadow-sm shadow-navy-900/15',
   secondary: 'bg-slate-100 text-slate-800 hover:bg-slate-200',
   outline: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
-  ghost: 'text-slate-600 hover:bg-slate-100',
+  ghost: 'ui-ghost text-slate-600 hover:bg-slate-100',
   destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
   success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm',
 };
@@ -28,7 +28,7 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-1',
+        'ui-button inline-flex items-center justify-center whitespace-nowrap rounded-xl font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-1',
         variantClasses[variant], sizeClasses[size], className,
       )}
       {...props}
@@ -71,11 +71,11 @@ export function SeverityBadge({ severity }: { severity: string }) {
 // ---------------- Card ----------------
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   useUiLanguage();
-  return <div className={cn('rounded-lg border border-slate-200 bg-white shadow-card', className)} {...props}>{children}</div>;
+  return <div className={cn('ui-card rounded-2xl border border-slate-200/80 bg-white shadow-card', className)} {...props}>{children}</div>;
 }
 export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();
-  return <div className={cn('flex items-center justify-between border-b border-slate-100 px-5 py-4', className)}>{children}</div>;
+  return <div className={cn('ui-card-header flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4', className)}>{children}</div>;
 }
 export function CardTitle({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();
@@ -91,7 +91,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   ({ className, ...props }, ref) => (
     <input
       ref={ref}
-      className={cn('flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-500 disabled:opacity-50', className)}
+      className={cn('ui-input flex h-10 w-full rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-500 disabled:opacity-50', className)}
       {...props}
     />
   ),
@@ -102,7 +102,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
   ({ className, ...props }, ref) => (
     <textarea
       ref={ref}
-      className={cn('flex min-h-[80px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-500 disabled:opacity-50', className)}
+      className={cn('ui-input flex min-h-[96px] w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-500 disabled:opacity-50', className)}
       {...props}
     />
   ),
@@ -129,7 +129,7 @@ export function NativeSelect({ className, children, ...props }: React.SelectHTML
   useUiLanguage();
   return (
     <select
-      className={cn('flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-navy-500', className)}
+      className={cn('ui-input flex h-10 w-full rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-navy-500', className)}
       {...props}
     >
       {children}
@@ -178,11 +178,11 @@ export function Tr({ children, className, onClick }: { children: React.ReactNode
 }
 export function Th({ children, className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   useUiLanguage();
-  return <th className={cn('px-4 py-2.5 font-semibold', className)} {...props}>{children}</th>;
+  return <th className={cn('px-4 py-3 font-semibold tracking-wide', className)} {...props}>{children}</th>;
 }
 export function Td({ children, className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   useUiLanguage();
-  return <td className={cn('px-4 py-2.5 align-middle text-slate-700', className)} {...props}>{children}</td>;
+  return <td className={cn('px-4 py-3 align-middle text-slate-700', className)} {...props}>{children}</td>;
 }
 
 // ---------------- Empty state ----------------
