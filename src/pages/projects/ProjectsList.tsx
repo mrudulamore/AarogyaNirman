@@ -188,7 +188,7 @@ export function ProjectsList() {
           {filtered.map((p) => {
             const risk = riskStatus(p);
             return (
-              <Card key={p.id} className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate(`/projects/${p.id}`)}>
+              <Card key={p.id} className="project-tile cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate(`/projects/${p.id}`)}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold leading-snug text-slate-800">{p.name}</p>

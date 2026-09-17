@@ -27,7 +27,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
         'app-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-navy-800 bg-navy-900 text-slate-200 transition-transform lg:static lg:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
-        <div className="flex items-center gap-2.5 border-b border-navy-800/70 px-5 py-4">
+        <div className="sidebar-brand flex items-center gap-2.5 border-b border-navy-800/70 px-5 py-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-govblue-600 shadow-lg shadow-black/15">
             <Landmark size={18} className="text-white" />
           </div>

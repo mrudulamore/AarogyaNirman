@@ -9,10 +9,10 @@ type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructiv
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-navy-700 text-white hover:bg-navy-800 shadow-sm shadow-navy-900/15',
+  primary: 'ui-primary bg-navy-700 text-white hover:bg-navy-800 shadow-sm shadow-navy-900/15',
   secondary: 'bg-slate-100 text-slate-800 hover:bg-slate-200',
   outline: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
-  ghost: 'text-slate-600 hover:bg-slate-100',
+  ghost: 'ui-ghost text-slate-600 hover:bg-slate-100',
   destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
   success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm',
 };
@@ -75,7 +75,7 @@ export function Card({ className, children, ...props }: React.HTMLAttributes<HTM
 }
 export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();
-  return <div className={cn('flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4', className)}>{children}</div>;
+  return <div className={cn('ui-card-header flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4', className)}>{children}</div>;
 }
 export function CardTitle({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();

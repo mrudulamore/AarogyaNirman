@@ -8,7 +8,7 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
   const { t } = useTranslation();
   return (
     <div className="auth-shell flex min-h-screen bg-navy-950">
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-navy-900 p-10 text-white lg:flex">
+      <div className="auth-art relative hidden w-1/2 flex-col justify-between overflow-hidden bg-navy-900 p-10 text-white lg:flex">
         <div className="absolute inset-0 opacity-[0.07]" style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '28px 28px',
         }} />
@@ -34,7 +34,7 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
         <p className="relative text-[11px] text-navy-400">{t('auth.heroCopyright')}</p>
       </div>
 
-      <div className="flex w-full flex-1 items-center justify-center bg-slate-50 px-6 py-10 lg:w-1/2">
+      <div className="auth-form-area flex w-full flex-1 items-center justify-center bg-slate-50 px-6 py-10 lg:w-1/2">
         <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-8">
           <div className="mb-4 flex items-center justify-between lg:justify-end">
             <div className="flex items-center gap-2 lg:hidden">

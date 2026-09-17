@@ -86,3 +86,122 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Aarogya workspace — warm surfaces, architectural lines and a mint accent.
+   Presentation only: status colours and workflow states retain their semantics. */
+:root {
+  --workspace-ink: #123e3b;
+  --workspace-accent: #b9f0d1;
+  --workspace-line: #e1e8e4;
+}
+.app-shell { background: #f2f5f1; }
+.app-content {
+  background: radial-gradient(ellipse at 100% 0%, #deeee5 0%, transparent 48%), #f2f5f1;
+}
+.app-header { background: #fdfefb; border-color: var(--workspace-line); box-shadow: none; }
+.app-sidebar {
+  background: radial-gradient(ellipse at 0% 0%, #20564d, transparent 65%), #102e2d;
+  border-color: #284a44;
+}
+.app-sidebar .sidebar-brand { padding-block: 1.5rem; border-color: #ffffff15; }
+.sidebar-brand > div:first-child { background: #b9f0d1; color: #123e3b; border-radius: 14px; }
+.sidebar-brand > div:first-child svg { color: #123e3b; }
+.app-sidebar nav { padding-top: 1.25rem; }
+.app-sidebar nav a { color: #bfd1ce; padding-block: .8rem; border-radius: 12px; }
+.app-sidebar nav a:hover { background: #ffffff0d; color: white; }
+.app-sidebar nav a[aria-current="page"] { background: #b9f0d1; color: #123e3b; box-shadow: 0 5px 18px #00000015; }
+.app-sidebar nav a[aria-current="page"] > svg { stroke-width: 2.2; }
+.app-sidebar .text-navy-300, .app-sidebar .text-navy-200 { color: #bfd1ce; }
+.app-sidebar > div:last-child { border-color: #ffffff15; padding-block: 1.25rem; }
+.page-heading {
+  position: relative; isolation: isolate; overflow: hidden;
+  padding: 2rem; border: 1px solid #ffffff20; border-radius: 24px;
+  background: linear-gradient(115deg, #163e3c, #23584e);
+  box-shadow: 0 12px 32px -24px #163e3c80;
+}
+.page-heading::before, .auth-art::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  width: 320px; height: 320px; right: -50px; top: -140px;
+  border: 1px solid #b9f0d130; border-radius: 50%;
+  box-shadow: 0 0 0 35px #b9f0d10a, 0 0 0 70px #b9f0d109, 0 0 0 105px #b9f0d106;
+}
+.page-heading h1 { color: #f4fff8; font-weight: 600; letter-spacing: -.035em; }
+.page-heading p { color: #c9ded5; }
+.page-heading > * { position: relative; }
+.page-heading .ui-primary { background: #b9f0d1; color: #123e3b; box-shadow: none; }
+.page-heading .ui-primary:hover { background: #d1f7e0; }
+.ui-card, .metric-card { border-color: var(--workspace-line); border-radius: 20px; box-shadow: 0 4px 20px -12px #163e3c20; }
+.ui-card-header { padding-block: 1.125rem; border-color: #edf1ee; }
+.ui-card-header h3 { color: #173f3b; font-size: .9375rem; letter-spacing: -.015em; }
+.metric-card { position: relative; overflow: hidden; min-width: 0; }
+.metric-card > div:first-child { min-height: 2.75rem; }
+.metric-card > div:first-child > p { font-size: .625rem; letter-spacing: .1em; line-height: 1.6; color: #5e746f; }
+.metric-card > div:first-child > div { border-radius: 50%; width: 2.25rem; height: 2.25rem; box-shadow: none; }
+.metric-card > p.text-2xl, .metric-group > div:nth-child(2) > p:first-child { font-size: clamp(1.75rem, 2.1vw, 2.25rem); letter-spacing: -.055em; color: #163e3c; font-weight: 600; }
+.metric-group > div:last-child { border-color: #edf1ee; gap: .4rem; }
+.metric-group > div:last-child button { border-radius: 7px; padding: .4rem; background: #f4f7f4; line-height: 1.25; }
+.ui-primary { background: #1d554b; box-shadow: 0 3px 7px #123e3b12; }
+.ui-primary:hover { background: #123e3b; }
+.ui-button { border-radius: 11px; }
+.ui-input { background: #fcfdfb; border-color: #d8e2dc; box-shadow: none; }
+.ui-input:focus { border-color: #2e7664; }
+.table-scroll thead { background: #f4f7f3; color: #61776e; font-size: .65rem; }
+.table-scroll th { padding-block: 1rem; }
+.table-scroll td { padding-block: 1rem; }
+.table-scroll tbody tr:hover { background: #f7faf6; }
+.field-workspace > div:first-child > p:first-child { font-size: .7rem; color: #42685d; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.field-workspace > div:first-child > button { margin-top: .75rem; background: white; border-color: #d6e2da; min-height: 52px; border-radius: 14px; }
+.field-project { position: relative; overflow: hidden; background: linear-gradient(120deg, #153e3b, #296453); border: 0; }
+.field-project::after { content: ''; position: absolute; pointer-events: none; right: -50px; top: -60px; width: 200px; height: 200px; border: 35px solid #b9f0d10c; border-radius: 50%; }
+.field-project > div { position: relative; z-index: 1; padding: 1.75rem; }
+.field-project p:first-child { color: white; font-size: 1.35rem; line-height: 1.4; letter-spacing: -.025em; max-width: 34rem; }
+.field-project p:nth-child(2) { color: #b6d5c7; margin-top: .5rem; }
+.field-project > div > div { margin-top: 1.75rem; gap: .75rem; flex-wrap: wrap; }
+.field-project .font-medium { color: #e0f4e7; }
+.field-action { position: relative; align-items: flex-start; justify-content: space-between; text-align: left; min-height: 142px; padding: 1.25rem; border: 1px solid #dce7de; background: white; color: #204d43; box-shadow: 0 5px 15px -12px #123e3b50; transition: transform 160ms, box-shadow 160ms, background-color 160ms; }
+.field-action > svg { width: 42px; height: 42px; padding: 10px; border-radius: 13px; background: #e7f3e9; }
+.field-action > span { text-align: left; max-width: 100%; }
+.field-action.bg-amber-600 { background: #fff9e9; color: #805513; border-color: #efe1bc; }
+.field-action.bg-amber-600 > svg { background: #f7ebc9; }
+.field-action.bg-red-600 { background: #fff2ee; color: #a33d34; border-color: #f0d8d0; }
+.field-action.bg-red-600 > svg { background: #f9dfd7; }
+@media (hover: hover) {
+  .field-action:hover { transform: translateY(-3px); background: #f5faf5; box-shadow: 0 12px 25px -15px #123e3b55; }
+  .field-action.bg-amber-600:hover { background: #fff1cf; }
+  .field-action.bg-red-600:hover { background: #ffe4dc; }
+}
+.auth-art { isolation: isolate; background: linear-gradient(145deg, #123c37, #1f5148); }
+.auth-art::before { width: 560px; height: 560px; top: 20%; right: -220px; }
+.auth-art h1 { font-size: clamp(2.5rem, 3.8vw, 4.5rem); font-weight: 500; letter-spacing: -.05em; }
+.auth-art .text-navy-200, .auth-art .text-navy-300, .auth-art .text-navy-400 { color: #bed8cc; }
+.auth-form-area { background: radial-gradient(ellipse at top right, #daede0, transparent 65%), #f4f6f0; }
+.auth-form-area > div { border-radius: 28px; padding-block: 2.5rem; border-color: #e1e8dc; box-shadow: 0 24px 70px -35px #18493b45; }
+.auth-form-area h2 { color: #163e3c; font-size: 2rem; letter-spacing: -.04em; }
+@media (min-width: 1024px) {
+  .app-sidebar { margin: .75rem 0 .75rem .75rem; border-radius: 22px; border: 0; width: 248px; box-shadow: 0 10px 30px -15px #153e3b66; }
+  .app-header { margin: .75rem .75rem 0; border-radius: 18px; border: 1px solid var(--workspace-line); }
+}
+@media (max-width: 639px) {
+  .page-heading { padding: 1.5rem; border-radius: 20px; }
+  .page-heading h1 { font-size: 1.65rem; }
+  .page-heading p { font-size: .8rem; }
+  .field-project > div { padding: 1.35rem; }
+  .field-project p:first-child { font-size: 1.125rem; }
+  .metric-group > div:last-child button { min-height: 36px; }
+  .auth-form-area { padding-inline: 1rem; }
+  .auth-form-area > div { padding-block: 1.75rem; }
+}
+.metric-group > div:nth-child(2) { flex-wrap: wrap; }
+.metric-group > div:nth-child(2) > p:first-child { font-size: 1.75rem; white-space: nowrap; }
+.metric-group > div:last-child { gap: .25rem; }
+.metric-group > div:last-child button { padding: .3rem; }
+.metric-group > div:last-child button span:last-child { color: #65796f; }
+.page-heading .ui-ghost { color: #e0f1e7; }
+.page-heading .ui-ghost:hover { background: #ffffff15; }
+.workspace-tabs { padding: .3rem; gap: .3rem; background: #e9efea; border: 1px solid #dfe7df; border-radius: 14px; }
+.workspace-tabs > button { border-radius: 10px; color: #5c7368; }
+.workspace-tabs > button::after { display: none; }
+.workspace-tabs > button[data-state="active"] { background: white; color: #194d40; box-shadow: 0 2px 5px #123e3b0d; }
+.project-tile { border-top: 3px solid #a7d4bd; }
+.project-tile > div { padding: 1.4rem; }
+.project-tile:hover { border-color: #9dc6ad; box-shadow: 0 12px 28px -18px #234d3a66; }

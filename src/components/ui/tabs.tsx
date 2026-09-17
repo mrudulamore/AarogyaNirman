@@ -5,7 +5,7 @@ export const Tabs = TabsPrimitive.Root;
 
 export function TabsList({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <TabsPrimitive.List className={cn('flex flex-wrap gap-1 rounded-t-xl border-b border-slate-200', className)}>
+    <TabsPrimitive.List className={cn('workspace-tabs flex flex-wrap gap-1 rounded-t-xl border-b border-slate-200', className)}>
       {children}
     </TabsPrimitive.List>
   );

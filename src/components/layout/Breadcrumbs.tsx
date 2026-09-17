@@ -25,7 +25,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {
   useUiLanguage();
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div className="page-heading mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-slate-900">{uiText(title)}</h1>
         {description && <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">{uiText(description)}</p>}

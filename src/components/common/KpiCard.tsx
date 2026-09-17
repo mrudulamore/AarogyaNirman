@@ -19,7 +19,7 @@ export function KpiCard({ label, value, sub, icon: Icon, tone = 'default', onCli
 }) {
   useUiLanguage();
   return (
-    <div onClick={onClick} className={cn('rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 transition-all', onClick && 'cursor-pointer hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md')}>
+    <div onClick={onClick} className={cn('metric-card rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 transition-all', onClick && 'cursor-pointer hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md')}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{uiText(label)}</p>
         {Icon && <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl', TONE_CLASSES[tone])}><Icon size={14} /></div>}
@@ -49,7 +49,7 @@ export function KpiGroupCard({ title, icon: Icon, tone = 'default', primary, sta
 }) {
   useUiLanguage();
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 transition-shadow hover:shadow-md">
+    <div className="metric-card metric-group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{uiText(title)}</p>
         {Icon && <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl', TONE_CLASSES[tone])}><Icon size={14} /></div>}
