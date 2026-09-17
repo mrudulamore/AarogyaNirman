@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Building2, Landmark, HardHat, ClipboardList, Radar, Hammer, Stethoscope, Crown, MapPinned, KeyRound, Settings2, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
@@ -14,6 +15,7 @@ const ROLE_ICONS: Record<Role, typeof Building2> = {
 };
 
 export function SelectRole() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
@@ -68,7 +70,7 @@ export function SelectRole() {
                 </div>
                 <div className="relative min-w-0">
                   <p className="text-sm font-semibold text-white">{t(`roles.${role}`)}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-navy-300">{ROLE_DEPARTMENTS[role]}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-navy-300">{uiText(ROLE_DEPARTMENTS[role])}</p>
                 </div>
                 <ArrowRight size={15} className="relative ml-auto mt-1 shrink-0 text-navy-400 opacity-0 transition-opacity group-hover:opacity-100" />
               </button>

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +15,7 @@ import { cn } from '../../lib/utils';
 
 /** Card that tilts toward the cursor for a subtle 3D feel — pure CSS transform, no library. */
 function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  useUiLanguage();
   const ref = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<React.CSSProperties>({});
 
@@ -47,6 +49,7 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
 /** Fades + lifts a section in the first time it scrolls into view — keeps the page feeling
  * alive on scroll, not just on first paint. */
 function Reveal({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  useUiLanguage();
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -74,6 +77,7 @@ function Reveal({ children, className, delay = 0 }: { children: React.ReactNode;
 /** Animates a stat's leading integer counting up from 0 on mount; non-numeric values
  * ("4-Stage") render as-is with no animation. */
 function Counter({ value }: { value: string }) {
+  useUiLanguage();
   const match = value.match(/^(\d+)(\+?)$/);
   const [display, setDisplay] = useState<string>(match ? '0' : value);
 
@@ -95,7 +99,7 @@ function Counter({ value }: { value: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  return <>{display}</>;
+  return <>{uiText(display)}</>;
 }
 
 const RING_SQUASH = 0.4;
@@ -114,6 +118,7 @@ const RING_CONFIGS = [
  * not) plus a small round "electron" that actually orbits — a circle looks the same at any
  * rotation, so it can safely spin without needing to be counter-rotated. */
 function AtomDiagram({ stats }: { stats: { icon: LucideIcon; value: string; label: string }[] }) {
+  useUiLanguage();
   return (
     <div className="relative mx-auto flex h-[300px] w-[300px] items-center justify-center sm:h-[360px] sm:w-[360px]">
       <style>{`
@@ -123,7 +128,7 @@ function AtomDiagram({ stats }: { stats: { icon: LucideIcon; value: string; labe
 
       <div className="absolute z-10 flex h-24 w-24 flex-col items-center justify-center rounded-full bg-gradient-to-br from-govblue-600 to-emerald-500 text-white shadow-xl shadow-govblue-300/50 ring-4 ring-white sm:h-28 sm:w-28">
         <Landmark size={20} />
-        <span className="mt-1 text-[10px] font-bold leading-none">Maharashtra</span>
+        <span className="mt-1 text-[10px] font-bold leading-none">{uiText("Maharashtra")}</span>
       </div>
 
       {stats.map((s, i) => {
@@ -169,6 +174,7 @@ const LEADERSHIP_ROLES: Role[] = ['MINISTER', 'COMMISSIONER', 'REGIONAL_DIRECTOR
 const LEADERSHIP_ICONS: Partial<Record<Role, typeof Crown>> = { MINISTER: Crown, COMMISSIONER: Landmark, REGIONAL_DIRECTOR: MapPinned };
 
 export function Landing() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
@@ -298,8 +304,8 @@ export function Landing() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{u.name}</p>
-                      <p className="mt-0.5 truncate text-[11.5px] text-govblue-700">{u.designation}</p>
-                      <p className="mt-0.5 truncate text-[10.5px] text-slate-400">{u.department}</p>
+                      <p className="mt-0.5 truncate text-[11.5px] text-govblue-700">{uiText(u.designation)}</p>
+                      <p className="mt-0.5 truncate text-[10.5px] text-slate-400">{uiText(u.department)}</p>
                     </div>
                   </TiltCard>
                 </Reveal>
@@ -323,8 +329,8 @@ export function Landing() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-govblue-500 to-emerald-500 text-white shadow-md shadow-govblue-200">
                   <f.icon size={18} />
                 </div>
-                <p className="mt-4 text-sm font-semibold text-slate-900">{f.title}</p>
-                <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">{f.desc}</p>
+                <p className="mt-4 text-sm font-semibold text-slate-900">{uiText(f.title)}</p>
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">{uiText(f.desc)}</p>
               </TiltCard>
             </Reveal>
           ))}

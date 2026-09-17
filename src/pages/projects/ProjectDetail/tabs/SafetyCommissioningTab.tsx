@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, ShieldCheck, HardHat } from 'lucide-react';
@@ -15,6 +16,7 @@ const SEVERITIES: DefectSeverity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 /** Part 16: Safety and Commissioning combined into one tab, two clear sections, answering
  * "Is the site/system safe and ready?" */
 export function SafetyCommissioningTab({ project }: { project: Project }) {
+  useUiLanguage();
   const currentUser = useStore((s) => s.currentUser);
   const records = useStore((s) => s.safetyRecords).filter((r) => r.projectId === project.id).sort((a, b) => (a.date < b.date ? 1 : -1));
   const addSafetyRecord = useStore((s) => s.addSafetyRecord);
@@ -36,48 +38,48 @@ export function SafetyCommissioningTab({ project }: { project: Project }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-        <KpiCard label="Safety Inspections" value={records.filter((r) => r.type === 'INSPECTION').length} icon={ShieldCheck} />
-        <KpiCard label="Open Safety Issues" value={openIssues} icon={ShieldCheck} tone="amber" />
-        <KpiCard label="Critical Safety Issues" value={criticalCount} icon={ShieldCheck} tone={criticalCount > 0 ? 'red' : 'default'} />
-        <KpiCard label="PPE Compliance" value={`${avgPpe}%`} icon={HardHat} />
-        <KpiCard label="Commissioning Systems" value={items.length} icon={HardHat} />
-        <KpiCard label="Passed" value={readyCount} icon={HardHat} tone="emerald" />
-        <KpiCard label="Pending" value={pendingCount} icon={HardHat} tone="amber" />
-        <KpiCard label="Handover Readiness" value={`${readinessPct}%`} icon={HardHat} tone={readinessPct === 100 ? 'emerald' : 'default'} />
+        <KpiCard label={uiText("Safety Inspections")} value={records.filter((r) => r.type === 'INSPECTION').length} icon={ShieldCheck} />
+        <KpiCard label={uiText("Open Safety Issues")} value={openIssues} icon={ShieldCheck} tone="amber" />
+        <KpiCard label={uiText("Critical Safety Issues")} value={criticalCount} icon={ShieldCheck} tone={criticalCount > 0 ? 'red' : 'default'} />
+        <KpiCard label={uiText("PPE Compliance")} value={`${avgPpe}%`} icon={HardHat} />
+        <KpiCard label={uiText("Commissioning Systems")} value={items.length} icon={HardHat} />
+        <KpiCard label={uiText("Passed")} value={readyCount} icon={HardHat} tone="emerald" />
+        <KpiCard label={uiText("Pending")} value={pendingCount} icon={HardHat} tone="amber" />
+        <KpiCard label={uiText("Handover Readiness")} value={`${readinessPct}%`} icon={HardHat} tone={readinessPct === 100 ? 'emerald' : 'default'} />
       </div>
 
       {/* ---------------- SAFETY ---------------- */}
       <Card>
         <CardHeader>
-          <CardTitle>Safety</CardTitle>
-          {!readOnly && <Button size="sm" onClick={() => setOpen(true)}><Plus size={13} /> Log Safety Record</Button>}
+          <CardTitle>{uiText("Safety")}</CardTitle>
+          {!readOnly && <Button size="sm" onClick={() => setOpen(true)}><Plus size={13} />{uiText(" Log Safety Record")}</Button>}
         </CardHeader>
         <Table>
-          <THead><Tr><Th>Type</Th><Th>Date</Th><Th>Description</Th><Th>Severity</Th><Th>PPE %</Th><Th>Status</Th></Tr></THead>
+          <THead><Tr><Th>{uiText("Type")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Description")}</Th><Th>{uiText("Severity")}</Th><Th>{uiText("PPE %")}</Th><Th>{uiText("Status")}</Th></Tr></THead>
           <TBody>
             {records.map((r) => (
               <Tr key={r.id}>
-                <Td className="font-medium text-slate-800">{r.type.replace('_', ' ')}</Td>
-                <Td>{formatDate(r.date)}</Td>
+                <Td className="font-medium text-slate-800">{uiText(r.type.replace('_', ' '))}</Td>
+                <Td>{uiText(formatDate(r.date))}</Td>
                 <Td className="max-w-[260px] truncate">{r.description}</Td>
                 <Td><SeverityBadge severity={r.severity} /></Td>
                 <Td>{r.ppeCompliance}%</Td>
                 <Td><StatusBadge status={r.status} /></Td>
               </Tr>
             ))}
-            {records.length === 0 && <Tr><Td className="py-8 text-center text-slate-400"><span>No safety records logged.</span></Td></Tr>}
+            {records.length === 0 && <Tr><Td className="py-8 text-center text-slate-400"><span>{uiText("No safety records logged.")}</span></Td></Tr>}
           </TBody>
         </Table>
       </Card>
 
       {/* ---------------- COMMISSIONING ---------------- */}
       <Card>
-        <CardHeader><CardTitle>Commissioning Readiness — {readyCount}/{items.length} Ready{failedCount > 0 ? ` · ${failedCount} not ready` : ''}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{uiText("Commissioning Readiness — ")}{readyCount}/{items.length}{uiText(" Ready")}{uiText(failedCount > 0 ? ` · ${failedCount} not ready` : '')}</CardTitle></CardHeader>
         <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <div key={item.id} className="rounded-md border border-slate-200 p-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-700">{item.item}</p>
+                <p className="text-xs font-semibold text-slate-700">{uiText(item.item)}</p>
                 <StatusBadge status={item.status} />
               </div>
               <p className="mt-1 text-[10.5px] text-slate-400">{item.remarks}</p>
@@ -86,10 +88,10 @@ export function SafetyCommissioningTab({ project }: { project: Project }) {
                   {(['READY', 'PENDING', 'NOT_READY'] as const).map((st) => (
                     <button
                       key={st}
-                      onClick={() => { updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(`${item.item} marked ready.`); }}
+                      onClick={() => { try {  updateCommissioningItem(item.id, st, st === 'READY' ? 'Verified and ready.' : st === 'PENDING' ? 'Under final verification.' : 'Not ready.'); if (st === 'READY') toast.success(uiMessage("{{0}} marked ready.", [item.item]));  } catch (error) { toast.error(uiText((error as Error).message)); } }}
                       className={cn('rounded px-2 py-0.5 text-[10px] font-medium', item.status === st ? 'bg-navy-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
                     >
-                      {st.replace('_', ' ')}
+                      {uiText(st.replace('_', ' '))}
                     </button>
                   ))}
                 </div>
@@ -100,31 +102,31 @@ export function SafetyCommissioningTab({ project }: { project: Project }) {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title="Log Safety Record" description={project.name}>
+        <DialogContent title={uiText("Log Safety Record")} description={uiText(project.name)}>
           <div className="space-y-3">
             <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">Type</p>
+              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Type")}</p>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as SafetyRecordType })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SAFETY_TYPES.map((t) => <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>)}</SelectContent>
+                <SelectContent>{SAFETY_TYPES.map((t) => <SelectItem key={t} value={t}>{uiText(t.replace('_', ' '))}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">Severity</p>
+              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Severity")}</p>
               <Select value={form.severity} onValueChange={(v) => setForm({ ...form, severity: v as DefectSeverity })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SEVERITIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>{SEVERITIES.map((s) => <SelectItem key={s} value={s}>{uiText(s)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><p className="mb-1 text-xs font-medium text-slate-600">Description</p><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-            <div><p className="mb-1 text-xs font-medium text-slate-600">PPE Compliance %</p><Input type="number" min={0} max={100} value={form.ppeCompliance} onChange={(e) => setForm({ ...form, ppeCompliance: +e.target.value })} /></div>
+            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Description")}</p><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("PPE Compliance %")}</p><Input type="number" min={0} max={100} value={form.ppeCompliance} onChange={(e) => setForm({ ...form, ppeCompliance: +e.target.value })} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{uiText("Cancel")}</Button>
             <Button onClick={() => {
               addSafetyRecord({ projectId: project.id, type: form.type, date: new Date().toISOString().slice(0, 10), description: form.description || 'Safety record logged.', severity: form.severity, correctiveAction: '', status: 'OPEN', ppeCompliance: form.ppeCompliance });
-              toast.success('Safety record logged.'); setOpen(false);
-            }}>Log Record</Button>
+              toast.success(uiText('Safety record logged.')); setOpen(false);
+            }}>{uiText("Log Record")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

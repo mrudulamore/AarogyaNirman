@@ -1,7 +1,9 @@
+import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { RABillSubmission } from './RABillSubmission';
 import { BillEvidence } from './BillEvidence';
 import { FundDisbursalReports } from '../../../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
@@ -26,6 +28,7 @@ function ageingDays(dateIso: string): number {
  * financial position within seconds via the primary KPI row, then drill into bill status,
  * payment timeline and variation impact. Answers: "How much has been certified/paid?" */
 export function FinanceTab({ project }: { project: Project }) {
+  useUiLanguage();
   const bills = useStore((s) => s.bills).filter((b) => b.projectId === project.id).sort((a, b) => (a.submittedDate < b.submittedDate ? 1 : -1));
   const measurements = useStore((s) => s.measurements).filter((m) => m.projectId === project.id);
   const changeOrders = useStore((s) => s.changeOrders).filter((c) => c.projectId === project.id);
@@ -34,10 +37,12 @@ export function FinanceTab({ project }: { project: Project }) {
   const verifyBillQuality = useStore((s) => s.verifyBillQuality);
   const approveBill = useStore((s) => s.approveBill);
   const rejectBill = useStore((s) => s.rejectBill);
-  const markBillPaid = useStore((s) => s.markBillPaid);
+  
   const verifyMeasurement = useStore((s) => s.verifyMeasurement);
 
-  const [submitOpen, setSubmitOpen] = useState(false);
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const [submitOpen, setSubmitOpen] = useState(params.get('action') === 'submit-bill' && currentUser?.role === 'CONTRACTOR');
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const active = bills.find((b) => b.id === detailId);
@@ -130,28 +135,27 @@ export function FinanceTab({ project }: { project: Project }) {
       <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
       {/* A. Financial Summary — primary KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Sanctioned Cost" value={formatCurrency(project.sanctionedBudget)} />
-        <KpiCard label="Contract Value" value={formatCurrency(contractValue)} />
-        <KpiCard label="Work Certified" value={formatCurrency(workCertified)} tone="blue" />
-        <KpiCard label="Amount Paid" value={formatCurrency(amountPaid)} tone="emerald" />
-        <KpiCard label="Pending Bills" value={formatCurrency(pendingBillsValue)} tone="amber" />
-        <KpiCard label="Balance Contract Value" value={formatCurrency(balanceContractValue)} />
+        <KpiCard label={uiText("Sanctioned Cost")} value={formatCurrency(project.sanctionedBudget)} />
+        <KpiCard label={uiText("Contract Value")} value={formatCurrency(contractValue)} />
+        <KpiCard label={uiText("Work Certified")} value={formatCurrency(workCertified)} tone="blue" />
+        <KpiCard label={uiText("Amount Paid")} value={formatCurrency(amountPaid)} tone="emerald" />
+        <KpiCard label={uiText("Pending Bills")} value={formatCurrency(pendingBillsValue)} tone="amber" />
+        <KpiCard label={uiText("Balance Contract Value")} value={formatCurrency(balanceContractValue)} />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Financial Progress" value={`${project.financialProgress}%`} />
-        <KpiCard label="Retention Held" value={formatCurrency(retentionHeld)} />
-        <KpiCard label="Approved Variations" value={formatCurrency(approvedVariations)} />
-        <KpiCard label="Total Deductions" value={formatCurrency(totalDeductions)} />
-        <KpiCard label="Bills Under Review" value={billsUnderReview} />
-        <KpiCard label="Avg. Bill Processing" value={`${avgProcessingDays}d`} />
+        <KpiCard label={uiText("Financial Progress")} value={`${project.financialProgress}%`} />
+        <KpiCard label={uiText("Retention Held")} value={formatCurrency(retentionHeld)} />
+        <KpiCard label={uiText("Approved Variations")} value={formatCurrency(approvedVariations)} />
+        <KpiCard label={uiText("Total Deductions")} value={formatCurrency(totalDeductions)} />
+        <KpiCard label={uiText("Bills Under Review")} value={billsUnderReview} />
+        <KpiCard label={uiText("Avg. Bill Processing")} value={`${avgProcessingDays}d`} />
       </div>
 
       {gap >= 12 && (
         <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           <AlertTriangle size={14} className="shrink-0" />
           <span>
-            <strong>{project.financialProgress > project.physicalProgress ? 'Review Required' : 'Payment Lag'}</strong> — Physical {project.physicalProgress}% vs. Financial {project.financialProgress}% ({gap} point gap).
-            {project.financialProgress > project.physicalProgress ? ' Financial progress is ahead of certified physical work.' : ' Certified work is ahead of payments released.'}
+            <strong>{uiText(project.financialProgress > project.physicalProgress ? 'Review Required' : 'Payment Lag')}</strong>{uiText(" — Physical ")}{project.physicalProgress}{uiText("% vs. Financial ")}{project.financialProgress}% ({gap}{uiText(" point gap).")}{uiText(project.financialProgress > project.physicalProgress ? ' Financial progress is ahead of certified physical work.' : ' Certified work is ahead of payments released.')}
           </span>
         </div>
       )}
@@ -159,7 +163,7 @@ export function FinanceTab({ project }: { project: Project }) {
       {/* Decision-oriented finance charts (max 4, each supports a management decision) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Physical vs. Financial Progress</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Physical vs. Financial Progress")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={progressTrend}>
@@ -167,16 +171,16 @@ export function FinanceTab({ project }: { project: Project }) {
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
                 <RTooltip formatter={(v: any) => `${v}%`} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="planned" name="Planned Physical" stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="verified" name="Verified Physical" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="financial" name="Financial" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="planned" name={uiText("Planned Physical")} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="verified" name={uiText("Verified Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="financial" name={uiText("Financial")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Sanction to Payment</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Sanction to Payment")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={waterfallData} layout="vertical" margin={{ left: 10 }}>
@@ -191,14 +195,14 @@ export function FinanceTab({ project }: { project: Project }) {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Bill Ageing</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Bill Ageing")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={ageingBuckets}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
                 <XAxis dataKey="bucket" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <RTooltip />
-                <Bar dataKey="count" name="Bills" radius={[3, 3, 0, 0]}>
+                <Bar dataKey="count" name={uiText("Bills")} radius={[3, 3, 0, 0]}>
                   {ageingBuckets.map((b, i) => <Cell key={i} fill={b.bucket === '60+ Days' || b.bucket === '31-60 Days' ? '#ef4444' : b.bucket === '16-30 Days' ? '#f59e0b' : '#3b82f6'} />)}
                 </Bar>
               </BarChart>
@@ -207,7 +211,7 @@ export function FinanceTab({ project }: { project: Project }) {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Payment Trend</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Payment Trend")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={paymentTrend}>
@@ -215,8 +219,8 @@ export function FinanceTab({ project }: { project: Project }) {
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="certified" name="Certified" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="paid" name="Paid" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="certified" name={uiText("Certified")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="paid" name={uiText("Paid")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -226,11 +230,11 @@ export function FinanceTab({ project }: { project: Project }) {
       {/* B. Bill Status */}
       <Card>
         <CardHeader>
-          <CardTitle>Bills</CardTitle>
-          {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} /> Submit RA Bill</Button>}
+          <CardTitle>{uiText("Bills")}</CardTitle>
+          {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} />{uiText(" Submit RA Bill")}</Button>}
         </CardHeader>
         <Table>
-          <THead><Tr><Th>Bill No.</Th><Th>Type</Th><Th>Period</Th><Th>Claimed</Th><Th>Certified</Th><Th>Paid</Th><Th>Status</Th><Th>Pending With</Th><Th>Ageing</Th><Th /></Tr></THead>
+          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Type")}</Th><Th>{uiText("Period")}</Th><Th>{uiText("Claimed")}</Th><Th>{uiText("Certified")}</Th><Th>{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
           <TBody>
             {bills.map((b) => {
               const certified = ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status) ? b.netPayable : 0;
@@ -238,26 +242,26 @@ export function FinanceTab({ project }: { project: Project }) {
               const age = ageingDays(b.submittedDate);
               return (
                 <Tr key={b.id} onClick={() => setDetailId(b.id)}>
-                  <Td className="font-medium text-slate-800">{b.billNumber}</Td>
-                  <Td>RA Bill</Td>
-                  <Td>{formatDate(b.periodFrom)} — {formatDate(b.periodTo)}</Td>
-                  <Td>{formatCurrency(b.grossAmount)}</Td>
-                  <Td>{certified ? formatCurrency(certified) : '—'}</Td>
-                  <Td>{paid ? formatCurrency(paid) : '—'}</Td>
+                  <Td className="font-medium text-slate-800">{uiText(b.billNumber)}</Td>
+                  <Td>{uiText("RA Bill")}</Td>
+                  <Td>{uiText(formatDate(b.periodFrom))} — {uiText(formatDate(b.periodTo))}</Td>
+                  <Td>{uiText(formatCurrency(b.grossAmount))}</Td>
+                  <Td>{uiText(certified ? formatCurrency(certified) : '—')}</Td>
+                  <Td>{uiText(paid ? formatCurrency(paid) : '—')}</Td>
                   <Td><StatusBadge status={b.status} /></Td>
-                  <Td className="text-[11px] text-slate-500">{PENDING_WITH[b.status] ?? '—'}</Td>
-                  <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`}</Td>
+                  <Td className="text-[11px] text-slate-500">{uiText(PENDING_WITH[b.status] ?? '—')}</Td>
+                  <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{uiText(['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`)}</Td>
                   <Td className="space-x-1.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    {currentUser?.role === 'DEPUTY_ENGINEER' && b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { verifyBillSite(b.id); toast.success('Site-verified.'); }}>Site Verify</Button>}
-                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'SITE_VERIFIED' && <Button size="sm" variant="outline" onClick={() => { verifyBillQuality(b.id); toast.success('Quality-verified.'); }}>Quality Verify</Button>}
-                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { approveBill(b.id); toast.success('Bill approved.'); }}>Approve</Button>}
-                    {currentUser?.role === 'COMMISSIONER' && b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => { markBillPaid(b.id); toast.success('Payment released. Financial progress updated.'); }}>Mark Paid</Button>}
-                    {['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER'].includes(currentUser?.role ?? '') && ['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status) && <Button size="sm" variant="destructive" onClick={() => { rejectBill(b.id, 'Discrepancy in measurement'); toast.error('Bill returned.'); }}>Return</Button>}
+                    {currentUser?.role === 'DEPUTY_ENGINEER' && b.status === 'SUBMITTED' && <Button size="sm" variant="outline" onClick={() => { try {  verifyBillSite(b.id); toast.success(uiText('Site-verified.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Site Verify")}</Button>}
+                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'SITE_VERIFIED' && <Button size="sm" variant="outline" onClick={() => { verifyBillQuality(b.id); toast.success(uiText('Quality-verified.')); }}>{uiText("Quality Verify")}</Button>}
+                    {currentUser?.role === 'EXECUTIVE_ENGINEER' && b.status === 'QUALITY_VERIFIED' && <Button size="sm" onClick={() => { try {  approveBill(b.id); toast.success(uiText('Bill approved.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Approve")}</Button>}
+                    {currentUser?.role === 'COMMISSIONER' && b.status === 'APPROVED' && <Button size="sm" variant="success" onClick={() => navigate(`/projects/${project.id}?tab=controls&kind=PAYMENT`)}>{uiText('Record verified payment')}</Button>}
+                    {['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'COMMISSIONER'].includes(currentUser?.role ?? '') && ['SUBMITTED', 'SITE_VERIFIED', 'QUALITY_VERIFIED'].includes(b.status) && <Button size="sm" variant="destructive" onClick={() => { rejectBill(b.id, 'Discrepancy in measurement'); toast.error(uiText('Bill returned.')); }}>{uiText("Return")}</Button>}
                   </Td>
                 </Tr>
               );
             })}
-            {bills.length === 0 && <Tr><Td className="py-8 text-center text-slate-400"><span>No bills submitted yet.</span></Td></Tr>}
+            {bills.length === 0 && <Tr><Td className="py-8 text-center text-slate-400"><span>{uiText("No bills submitted yet.")}</span></Td></Tr>}
           </TBody>
         </Table>
       </Card>
@@ -265,15 +269,15 @@ export function FinanceTab({ project }: { project: Project }) {
       {/* D. Variation / Change Impact */}
       {changeOrders.length > 0 && (
         <Card>
-          <CardHeader><CardTitle>Variation / Change Impact</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Variation / Change Impact")}</CardTitle></CardHeader>
           <Table>
-            <THead><Tr><Th>Change</Th><Th>Cost Impact</Th><Th>Status</Th></Tr></THead>
+            <THead><Tr><Th>{uiText("Change")}</Th><Th>{uiText("Cost Impact")}</Th><Th>{uiText("Status")}</Th></Tr></THead>
             <TBody>
               {changeOrders.map((c) => (
                 <Tr key={c.id}>
-                  <Td className="max-w-[260px] truncate font-medium text-slate-800">{c.title}</Td>
-                  <Td className={c.costImpact >= 0 ? 'text-amber-600' : 'text-emerald-600'}>{c.costImpact >= 0 ? '+' : ''}{formatCurrency(c.costImpact)}</Td>
-                  <Td><StatusBadge status={c.status} label={c.status.replace(/_/g, ' ')} /></Td>
+                  <Td className="max-w-[260px] truncate font-medium text-slate-800">{uiText(c.title)}</Td>
+                  <Td className={c.costImpact >= 0 ? 'text-amber-600' : 'text-emerald-600'}>{uiText(c.costImpact >= 0 ? '+' : '')}{uiText(formatCurrency(c.costImpact))}</Td>
+                  <Td><StatusBadge status={c.status} label={uiText(c.status.replace(/_/g, ' '))} /></Td>
                 </Tr>
               ))}
             </TBody>
@@ -285,37 +289,37 @@ export function FinanceTab({ project }: { project: Project }) {
 
       <Dialog open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)}>
         {active && (
-          <DialogContent title={active.billNumber} description={project.name} size="lg">
+          <DialogContent title={uiText(active.billNumber)} description={uiText(project.name)} size="lg">
             <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-              <Row label="Gross Amount" value={formatCurrencyFull(active.grossAmount)} />
-              <Row label="Deductions" value={formatCurrencyFull(active.deductions)} />
-              <Row label="GST" value={formatCurrencyFull(active.gst)} />
-              <Row label="Retention" value={formatCurrencyFull(active.retention)} />
-              <Row label="Penalty" value={formatCurrencyFull(active.penalty)} />
-              <Row label="Net Payable" value={formatCurrencyFull(active.netPayable)} />
-              <Row label="Site Verified By" value={active.siteVerifiedBy ?? '—'} />
-              <Row label="Quality Verified By" value={active.qualityVerifiedBy ?? '—'} />
+              <Row label={uiText("Gross Amount")} value={formatCurrencyFull(active.grossAmount)} />
+              <Row label={uiText("Deductions")} value={formatCurrencyFull(active.deductions)} />
+              <Row label={uiText("GST")} value={formatCurrencyFull(active.gst)} />
+              <Row label={uiText("Retention")} value={formatCurrencyFull(active.retention)} />
+              <Row label={uiText("Penalty")} value={formatCurrencyFull(active.penalty)} />
+              <Row label={uiText("Net Payable")} value={formatCurrencyFull(active.netPayable)} />
+              <Row label={uiText("Site Verified By")} value={active.siteVerifiedBy ?? '—'} />
+              <Row label={uiText("Quality Verified By")} value={active.qualityVerifiedBy ?? '—'} />
             </div>
             <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-              <Row label="Work-order reference" value={active.workOrderReference ?? 'Not recorded'} />
-              <Row label="Bill date" value={formatDate(active.invoiceDate)} />
-              <Row label="Measurement reference" value={active.measurementBookId ?? 'Not recorded'} />
-              <Row label="Previous bill reference" value={active.previousBillReference || 'First bill / not recorded'} />
+              <Row label={uiText("Work-order reference")} value={active.workOrderReference ?? 'Not recorded'} />
+              <Row label={uiText("Bill date")} value={formatDate(active.invoiceDate)} />
+              <Row label={uiText("Measurement reference")} value={active.measurementBookId ?? 'Not recorded'} />
+              <Row label={uiText("Previous bill reference")} value={active.previousBillReference || 'First bill / not recorded'} />
             </div>
-            {active.workDescription && <p className="mt-3 text-xs text-slate-600">{active.workDescription}</p>}
+            {active.workDescription && <p className="mt-3 text-xs text-slate-600">{uiText(active.workDescription)}</p>}
             <BillEvidence attachments={active.attachments} />
-            <p className="mt-4 mb-2 text-xs font-semibold text-slate-600">Measurement Book Extract</p>
+            <p className="mt-4 mb-2 text-xs font-semibold text-slate-600">{uiText("Measurement Book Extract")}</p>
             <Table>
-              <THead><Tr><Th>Work Item</Th><Th>Unit</Th><Th>Previous</Th><Th>Current</Th><Th>Total</Th><Th>Rate</Th><Th>Amount</Th><Th /></Tr></THead>
+              <THead><Tr><Th>{uiText("Work Item")}</Th><Th>{uiText("Unit")}</Th><Th>{uiText("Previous")}</Th><Th>{uiText("Current")}</Th><Th>{uiText("Total")}</Th><Th>{uiText("Rate")}</Th><Th>{uiText("Amount")}</Th><Th /></Tr></THead>
               <TBody>
                 {activeMeasurements.map((m) => (
                   <Tr key={m.id}>
-                    <Td>{m.workItem}</Td><Td>{m.unit}</Td><Td>{m.previousQty}</Td><Td>{m.currentQty}</Td><Td>{m.totalQty}</Td>
-                    <Td>{formatCurrencyFull(m.rate)}</Td><Td>{formatCurrencyFull(m.amount)}</Td>
-                    <Td>{m.verified ? <StatusBadge status="APPROVED" label="Verified" /> : currentUser?.role === 'DEPUTY_ENGINEER' ? <Button size="sm" variant="outline" onClick={() => verifyMeasurement(m.id, currentUser?.name ?? 'Engineer')}><FileCheck2 size={12} /> Verify</Button> : <span>Pending verification</span>}</Td>
+                    <Td>{uiText(m.workItem)}</Td><Td>{uiText(m.unit)}</Td><Td>{m.previousQty}</Td><Td>{m.currentQty}</Td><Td>{m.totalQty}</Td>
+                    <Td>{uiText(formatCurrencyFull(m.rate))}</Td><Td>{uiText(formatCurrencyFull(m.amount))}</Td>
+                    <Td>{m.verified ? <StatusBadge status="APPROVED" label={uiText("Verified")} /> : currentUser?.role === 'DEPUTY_ENGINEER' ? <Button size="sm" variant="outline" onClick={() => { try { verifyMeasurement(m.id, currentUser?.name ?? 'Engineer'); } catch (error) { toast.error(uiText((error as Error).message)); } }}><FileCheck2 size={12} />{uiText(" Verify")}</Button> : <span>{uiText("Pending verification")}</span>}</Td>
                   </Tr>
                 ))}
-                {activeMeasurements.length === 0 && <Tr><Td className="py-4 text-center text-slate-400"><span>No linked measurement entries.</span></Td></Tr>}
+                {activeMeasurements.length === 0 && <Tr><Td className="py-4 text-center text-slate-400"><span>{uiText("No linked measurement entries.")}</span></Td></Tr>}
               </TBody>
             </Table>
           </DialogContent>
@@ -326,5 +330,6 @@ export function FinanceTab({ project }: { project: Project }) {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[10.5px] uppercase text-slate-400">{label}</p><p className="mt-0.5 font-medium text-slate-700">{value}</p></div>;
+  useUiLanguage();
+  return <div><p className="text-[10.5px] uppercase text-slate-400">{uiText(label)}</p><p className="mt-0.5 font-medium text-slate-700">{uiText(value)}</p></div>;
 }

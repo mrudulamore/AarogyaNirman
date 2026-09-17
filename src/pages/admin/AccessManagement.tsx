@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ const ALL_ROLES = Object.keys(ROLE_LABELS) as Role[];
 const ALL_NAV_KEYS = Object.keys(NAV_ITEMS);
 
 export function AccessManagement() {
+  useUiLanguage();
   const { t } = useTranslation();
   const users = useStore((s) => s.users);
   const currentUser = useStore((s) => s.currentUser);
@@ -26,18 +28,18 @@ export function AccessManagement() {
 
   function toggleModule(role: Role, key: string, enabled: boolean) {
     if (role === 'SUPERADMIN' && key === 'access' && !enabled) {
-      toast.error('Superadmin must always retain Access Management.');
+      toast.error(uiText('Superadmin must always retain Access Management.'));
       return;
     }
     const current = rolePermissions[role] ?? [];
     const next = enabled ? [...current, key] : current.filter((k) => k !== key);
     setRoleNavAccess(role, next);
-    toast.success(`${enabled ? 'Granted' : 'Revoked'} "${NAV_ITEMS[key].label}" for ${ROLE_LABELS[role]}`);
+    toast.success(uiMessage("{{0}} \"{{1}}\" for {{2}}", [enabled ? 'Granted' : 'Revoked', NAV_ITEMS[key].label, ROLE_LABELS[role]]));
   }
 
   function changeRole(userId: string, role: Role) {
     updateUserRole(userId, role);
-    toast.success('User role updated.');
+    toast.success(uiText('User role updated.'));
   }
 
   const filteredUsers = roleFilter === 'ALL' ? users : users.filter((u) => u.role === roleFilter);
@@ -45,18 +47,18 @@ export function AccessManagement() {
 
   return (
     <div>
-      <PageHeader title={t('pages.access.title', { defaultValue: 'Access Management' })} description={t('pages.access.desc', { defaultValue: 'Grant or revoke module-level access per role, and reassign user roles' })} />
+      <PageHeader title={uiText(t('pages.access.title', { defaultValue: 'Access Management' }))} description={uiText(t('pages.access.desc', { defaultValue: 'Grant or revoke module-level access per role, and reassign user roles' }))} />
 
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard icon={Users} label="Total Users" value={users.length} />
-        <KpiCard icon={ShieldAlert} label="Role Tiers" value={ALL_ROLES.length} />
-        <KpiCard icon={LayoutGrid} label="Modules" value={ALL_NAV_KEYS.length} />
-        <KpiCard icon={KeyRound} label="Superadmins" value={superadminCount} />
+        <KpiCard icon={Users} label={uiText("Total Users")} value={users.length} />
+        <KpiCard icon={ShieldAlert} label={uiText("Role Tiers")} value={ALL_ROLES.length} />
+        <KpiCard icon={LayoutGrid} label={uiText("Modules")} value={ALL_NAV_KEYS.length} />
+        <KpiCard icon={KeyRound} label={uiText("Superadmins")} value={superadminCount} />
       </div>
 
       <Card className="mb-5">
         <CardHeader>
-          <CardTitle>Role Access Matrix</CardTitle>
+          <CardTitle>{uiText("Role Access Matrix")}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {/* Plain grid, not a <table> — position:sticky on a <td>/<th> inside a
@@ -64,9 +66,7 @@ export function AccessManagement() {
               A div-grid keeps the Module column fixed while the role columns scroll. */}
           <div className="overflow-x-auto">
             <div className="grid text-sm" style={{ gridTemplateColumns: `180px repeat(${ALL_ROLES.length}, 150px)` }}>
-              <div className="sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.12)]">
-                Module
-              </div>
+              <div className="sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.12)]">{uiText("Module")}</div>
               {ALL_ROLES.map((r) => (
                 <div key={r} className="whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {t(`roles.${r}`, { defaultValue: ROLE_LABELS[r] })}
@@ -76,7 +76,7 @@ export function AccessManagement() {
               {ALL_NAV_KEYS.map((key) => (
                 <Fragment key={key}>
                   <div className="sticky left-0 z-10 flex items-center border-b border-r border-slate-100 bg-white px-4 py-2.5 font-medium text-slate-800 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.08)]">
-                    {NAV_ITEMS[key].label}
+                    {uiText(NAV_ITEMS[key].label)}
                   </div>
                   {ALL_ROLES.map((r) => (
                     <div key={r} className="flex items-center justify-center border-b border-slate-100 px-3 py-2.5">
@@ -95,11 +95,11 @@ export function AccessManagement() {
 
       <Card>
         <CardHeader className="flex-wrap gap-2">
-          <CardTitle>User Role Assignments</CardTitle>
+          <CardTitle>{uiText("User Role Assignments")}</CardTitle>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Roles</SelectItem>
+              <SelectItem value="ALL">{uiText("All Roles")}</SelectItem>
               {ALL_ROLES.map((r) => <SelectItem key={r} value={r}>{t(`roles.${r}`, { defaultValue: ROLE_LABELS[r] })}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -107,7 +107,7 @@ export function AccessManagement() {
         <CardContent className="p-0">
           <Table>
             <THead>
-              <Tr><Th>User</Th><Th>Department</Th><Th>Current Role</Th><Th>Reassign Role</Th></Tr>
+              <Tr><Th>{uiText("User")}</Th><Th>{uiText("Department")}</Th><Th>{uiText("Current Role")}</Th><Th>{uiText("Reassign Role")}</Th></Tr>
             </THead>
             <TBody>
               {filteredUsers.map((u) => (
@@ -117,11 +117,11 @@ export function AccessManagement() {
                       <Avatar name={u.name} size={26} />
                       <div>
                         <p className="font-medium text-slate-800">{u.name}</p>
-                        <p className="text-[11px] text-slate-400">{u.designation}</p>
+                        <p className="text-[11px] text-slate-400">{uiText(u.designation)}</p>
                       </div>
                     </div>
                   </Td>
-                  <Td className="max-w-[220px] truncate">{u.department}</Td>
+                  <Td className="max-w-[220px] truncate">{uiText(u.department)}</Td>
                   <Td>{t(`roles.${u.role}`, { defaultValue: ROLE_LABELS[u.role] })}</Td>
                   <Td>
                     <Select

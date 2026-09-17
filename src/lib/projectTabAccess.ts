@@ -9,7 +9,10 @@ export interface Project360Tab {
 }
 
 export const PROJECT_360_TABS: Project360Tab[] = [
+
   { label: 'Overview', value: 'overview' },              // What is happening?
+  { label: 'Contract controls', value: 'controls' },
+  { label: 'Monthly reports', value: 'monthly' },
   { label: 'Governance', value: 'governance' },           // What has been approved or changed?
   { label: 'Timeline', value: 'timeline' },                // Are we on time?
   { label: 'Tender / Contract', value: 'tender' },
@@ -60,5 +63,9 @@ export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
 export function tabsForRole(role: Role | undefined): Project360Tab[] {
   if (!role) return PROJECT_360_TABS;
   const allowed = new Set(ROLE_PROJECT_360_TABS[role]);
+  if (role === 'DEPUTY_ENGINEER') allowed.add('finance');
+  allowed.add('controls');
+  allowed.add('monthly');
+  if (role === 'CONTRACTOR') allowed.add('workers');
   return PROJECT_360_TABS.filter((t) => allowed.has(t.value));
 }

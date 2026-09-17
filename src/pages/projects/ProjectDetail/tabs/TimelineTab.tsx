@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { Check, Clock, Circle, Camera, ChevronDown } from 'lucide-react';
 import type { Project } from '../../../../types';
@@ -6,6 +7,7 @@ import { Card, CardContent } from '../../../../components/ui/primitives';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { photoSrc, formatDate, cn } from '../../../../lib/utils';
+import { activeControls } from '../../../../lib/projectControls';
 import { isMilestoneDelivered } from '../../../../lib/milestones';
 
 type StepState = 'DONE' | 'ACTIVE' | 'PENDING';
@@ -13,11 +15,14 @@ type StepState = 'DONE' | 'ACTIVE' | 'PENDING';
 interface Step { label: string; date?: string; state: StepState; note?: string; description: string; photoStages: string[] }
 
 export function TimelineTab({ project }: { project: Project }) {
+  useUiLanguage();
   const tender = useStore((s) => s.tenders).find((t) => t.id === project.tenderId);
   const milestones = useStore((s) => s.milestones).filter((m) => m.projectId === project.id).sort((a, b) => a.order - b.order);
   const handoverSteps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id);
   const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id);
+  const controls = useStore();
+  const contract = activeControls(controls, project.id).find(r => r.kind === 'CONTRACT');
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -52,7 +57,7 @@ export function TimelineTab({ project }: { project: Project }) {
     { label: 'RA Bills & Payments', date: undefined, state: project.amountSpent > 0 ? (project.status === 'COMPLETED' ? 'DONE' : 'ACTIVE') : 'PENDING', description: 'Running Account (RA) bills raised by the contractor against certified physical progress, verified and released as per the payment schedule.', photoStages: [] },
     { label: 'Completion', date: project.actualCompletionDate, state: project.actualCompletionDate ? 'DONE' : project.physicalProgress >= 90 ? 'ACTIVE' : 'PENDING', description: `Construction substantially complete at ${project.physicalProgress}% certified physical progress, with finishing and medical infrastructure fit-out underway or complete.`, photoStages: ['Finishing', 'Medical Infrastructure'] },
     { label: 'Handover', date: undefined, state: handoverComplete ? 'DONE' : handoverStarted ? 'ACTIVE' : 'PENDING', description: 'Facility handed over to the health department / hospital administration for operationalisation, including as-built drawings, O&M manuals and equipment commissioning records.', photoStages: ['Medical Infrastructure'] },
-    { label: 'Defect Liability Period', date: undefined, state: project.status === 'COMPLETED' ? 'ACTIVE' : 'PENDING', note: project.status === 'COMPLETED' ? '12-month defect liability period from handover.' : undefined, description: 'Contractor remains liable to rectify defects identified within the 12-month defect liability period following handover, at no additional cost to the Department.', photoStages: [] },
+    { label: 'Defect Liability Period', date: contract?.fields.liabilityEndDate, state: contract ? 'ACTIVE' : 'PENDING', note: contract ? `${contract.fields.liabilityMonths} ${uiText('months')} ? ${formatDate(contract.fields.commencementDate)} ? ${formatDate(contract.fields.liabilityEndDate)}` : uiText('Contract terms not yet verified'), description: uiText('Liability period and extensions follow the verified signed contract. Security release requires clearance of outstanding obligations.'), photoStages: [] },
   ];
 
   const activeStep = openIndex !== null ? steps[openIndex] : undefined;
@@ -85,8 +90,8 @@ export function TimelineTab({ project }: { project: Project }) {
                 </div>
                 <div className="flex-1 pb-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className={cn('text-sm font-semibold', step.state === 'PENDING' ? 'text-slate-400' : 'text-slate-800')}>{step.label}</p>
-                    {step.date && <span className="text-[11px] text-slate-400">{formatDate(step.date)}</span>}
+                    <p className={cn('text-sm font-semibold', step.state === 'PENDING' ? 'text-slate-400' : 'text-slate-800')}>{uiText(step.label)}</p>
+                    {step.date && <span className="text-[11px] text-slate-400">{uiText(formatDate(step.date))}</span>}
                     {stepPhotos.length > 0 && <span className="flex items-center gap-1 text-[10.5px] text-slate-400"><Camera size={11} /> {stepPhotos.length}</span>}
                     <ChevronDown size={13} className="text-slate-300 opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
@@ -94,7 +99,7 @@ export function TimelineTab({ project }: { project: Project }) {
                   <div className={cn('grid transition-all duration-150', isHovered ? 'mt-1 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
                     <p className="overflow-hidden text-[11.5px] text-slate-500">{step.description}</p>
                   </div>
-                  {step.note && <p className="mt-0.5 text-[11.5px] text-slate-500">{step.note}</p>}
+                  {step.note && <p className="mt-0.5 text-[11.5px] text-slate-500">{uiText(step.note)}</p>}
                 </div>
               </div>
             );
@@ -104,12 +109,12 @@ export function TimelineTab({ project }: { project: Project }) {
 
       <Dialog open={openIndex !== null} onOpenChange={(v) => !v && setOpenIndex(null)}>
         {activeStep && (
-          <DialogContent title={activeStep.label} description={activeStep.date ? formatDate(activeStep.date) : undefined} size="lg">
+          <DialogContent title={uiText(activeStep.label)} description={uiText(activeStep.date ? formatDate(activeStep.date) : undefined)} size="lg">
             <p className="text-xs leading-relaxed text-slate-600">{activeStep.description}</p>
-            {activeStep.note && <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-500">{activeStep.note}</p>}
-            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} /> Site Photos</p>
+            {activeStep.note && <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-500">{uiText(activeStep.note)}</p>}
+            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} />{uiText(" Site Photos")}</p>
             {activeStepPhotos.length === 0 ? (
-              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">No photographic evidence tied to this stage yet.</p>
+              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">{uiText("No photographic evidence tied to this stage yet.")}</p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activeStepPhotos.map((p) => (

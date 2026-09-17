@@ -1,6 +1,8 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, Clock, ShieldAlert, ShieldCheck, TrendingDown, Wallet, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
@@ -8,16 +10,17 @@ import { KpiCard } from '../../components/common/KpiCard';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 export function ContractorProfile() {
+  useUiLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const contractors = useStore((s) => s.contractors);
-  const projects = useStore((s) => s.projects);
-  const defects = useStore((s) => s.defects);
-  const bills = useStore((s) => s.bills);
+  const { projects, projectIds } = useProjectScope();
+  const defects = useStore((s) => s.defects).filter(r => projectIds.has(r.projectId));
+  const bills = useStore((s) => s.bills).filter(r => projectIds.has(r.projectId));
   const contractorPocs = useStore((s) => s.contractorPocs);
 
-  const contractor = contractors.find((c) => c.id === id);
+  const contractor = contractors.find((c) => c.id === id && projects.some(p => p.contractorId === c.id));
   const companyPocs = contractorPocs.filter((poc) => poc.contractorId === id);
 
   // When arrived at via a project's Team/Overview tab (?from=<projectId>), remember it so the
@@ -49,8 +52,7 @@ export function ContractorProfile() {
 
   if (!contractor || !stats) {
     return (
-      <div className="py-20 text-center text-sm text-slate-500">
-        Contractor not found.{' '}
+      <div className="py-20 text-center text-sm text-slate-500">{uiText("Contractor not found.")}{uiText(' ')}
         <button className="text-navy-700 underline" onClick={() => navigate(fromProject ? `/projects/${fromProject.id}` : '/contractors')}>
           {fromProject ? `Back to ${fromProject.name}` : 'Back to contractors'}
         </button>
@@ -71,7 +73,7 @@ export function ContractorProfile() {
           onClick={() => navigate(`/projects/${fromProject.id}?tab=team`)}
           className="mb-3 flex items-center gap-1.5 text-xs font-medium text-navy-700 hover:underline"
         >
-          <ArrowLeft size={13} /> Back to {fromProject.name}
+          <ArrowLeft size={13} />{uiText(" Back to ")}{fromProject.name}
         </button>
       )}
 
@@ -83,36 +85,35 @@ export function ContractorProfile() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-md bg-navy-50 text-navy-700"><Building2 size={20} /></div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-lg font-bold text-slate-900">{contractor.company}</h1>
-                    <StatusBadge status={contractor.status} label={contractor.status.replace('_', ' ')} />
+                    <h1 className="text-lg font-bold text-slate-900">{uiText(contractor.company)}</h1>
+                    <StatusBadge status={contractor.status} label={uiText(contractor.status.replace('_', ' '))} />
                   </div>
-                  <p className="text-xs text-slate-500">Reg. {contractor.regId} · {contractor.classification} · {contractor.contactPerson} · {contractor.phone}</p>
+                  <p className="text-xs text-slate-500">{uiText("Reg. ")}{uiText(contractor.regId)} · {uiText(contractor.classification)} · {uiText(contractor.contactPerson)} · {contractor.phone}</p>
                 </div>
               </div>
             </div>
             {underperforming && (
               <span className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
-                <AlertTriangle size={13} /> Decision-support flag: repeated performance concerns
-              </span>
+                <AlertTriangle size={13} />{uiText(" Decision-support flag: repeated performance concerns")}</span>
             )}
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Total Contracts" value={stats.myProjects.length} icon={Building2} />
-        <KpiCard label="Active Contracts" value={stats.active.length} icon={Clock} tone="blue" />
-        <KpiCard label="Completed Contracts" value={stats.completed.length} icon={ShieldCheck} tone="emerald" />
-        <KpiCard label="Delayed Contracts" value={stats.delayed.length} icon={AlertTriangle} tone={stats.delayed.length > 0 ? 'red' : 'default'} />
-        <KpiCard label="Average Delay" value={`${stats.avgDelay} days`} icon={TrendingDown} tone={stats.avgDelay > 0 ? 'amber' : 'default'} />
-        <KpiCard label="Defect Rate" value={`${stats.defectRate} / project`} icon={ShieldAlert} />
-        <KpiCard label="Avg. Defect Closure Time" value={`${stats.avgClosureDays} days`} icon={Clock} />
-        <KpiCard label="Bill Disputes" value={stats.disputedBills.length} icon={Wallet} tone={stats.disputedBills.length > 0 ? 'red' : 'default'} />
+        <KpiCard label={uiText("Total Contracts")} value={stats.myProjects.length} icon={Building2} />
+        <KpiCard label={uiText("Active Contracts")} value={stats.active.length} icon={Clock} tone="blue" />
+        <KpiCard label={uiText("Completed Contracts")} value={stats.completed.length} icon={ShieldCheck} tone="emerald" />
+        <KpiCard label={uiText("Delayed Contracts")} value={stats.delayed.length} icon={AlertTriangle} tone={stats.delayed.length > 0 ? 'red' : 'default'} />
+        <KpiCard label={uiText("Average Delay")} value={`${stats.avgDelay} days`} icon={TrendingDown} tone={stats.avgDelay > 0 ? 'amber' : 'default'} />
+        <KpiCard label={uiText("Defect Rate")} value={`${stats.defectRate} / project`} icon={ShieldAlert} />
+        <KpiCard label={uiText("Avg. Defect Closure Time")} value={`${stats.avgClosureDays} days`} icon={Clock} />
+        <KpiCard label={uiText("Bill Disputes")} value={stats.disputedBills.length} icon={Wallet} tone={stats.disputedBills.length > 0 ? 'red' : 'default'} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Performance Scorecard</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Performance Scorecard")}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {[
               { l: 'Overall Performance', v: contractor.performanceScore },
@@ -122,7 +123,7 @@ export function ContractorProfile() {
               { l: 'Bill Processing Score', v: contractor.billProcessingScore },
             ].map((m) => (
               <div key={m.l}>
-                <div className="mb-1 flex justify-between text-xs"><span className="text-slate-500">{m.l}</span><span className="font-semibold text-slate-800">{m.v}%</span></div>
+                <div className="mb-1 flex justify-between text-xs"><span className="text-slate-500">{uiText(m.l)}</span><span className="font-semibold text-slate-800">{m.v}%</span></div>
                 <ProgressBar value={m.v} colorClass={m.v >= 75 ? 'bg-emerald-500' : m.v >= 55 ? 'bg-amber-500' : 'bg-red-500'} />
               </div>
             ))}
@@ -130,36 +131,36 @@ export function ContractorProfile() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Contract Summary</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText("Contract Summary")}</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-xs">
-            <Row label="Contract Amount (latest)" value={formatCurrency(contractor.contractAmount)} />
-            <Row label="Contract Period" value={`${formatDate(contractor.startDate)} — ${formatDate(contractor.endDate)}`} />
-            <Row label="Open Defects" value={String(contractor.openDefects)} />
-            <Row label="Total Defects Raised" value={String(stats.myDefects.length)} />
-            <Row label="Total Bills Submitted" value={String(stats.myBills.length)} />
-            <Row label="Disputed / Rejected Bills" value={String(stats.disputedBills.length)} />
+            <Row label={uiText("Contract Amount (latest)")} value={formatCurrency(contractor.contractAmount)} />
+            <Row label={uiText("Contract Period")} value={`${formatDate(contractor.startDate)} — ${formatDate(contractor.endDate)}`} />
+            <Row label={uiText("Open Defects")} value={String(contractor.openDefects)} />
+            <Row label={uiText("Total Defects Raised")} value={String(stats.myDefects.length)} />
+            <Row label={uiText("Total Bills Submitted")} value={String(stats.myBills.length)} />
+            <Row label={uiText("Disputed / Rejected Bills")} value={String(stats.disputedBills.length)} />
           </CardContent>
         </Card>
       </div>
 
       <Card className="mt-4">
-        <CardHeader><CardTitle>Team / Points of Contact</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{uiText("Team / Points of Contact")}</CardTitle></CardHeader>
         {companyPocs.length === 0 ? (
-          <CardContent className="p-4 text-xs text-slate-400">No points of contact registered.</CardContent>
+          <CardContent className="p-4 text-xs text-slate-400">{uiText("No points of contact registered.")}</CardContent>
         ) : (
           <Table>
-            <THead><Tr><Th>Name</Th><Th>Designation</Th><Th>Role</Th><Th>Phone</Th><Th>Email</Th><Th>Assigned Projects</Th><Th>Availability</Th><Th /></Tr></THead>
+            <THead><Tr><Th>{uiText("Name")}</Th><Th>{uiText("Designation")}</Th><Th>{uiText("Role")}</Th><Th>{uiText("Phone")}</Th><Th>{uiText("Email")}</Th><Th>{uiText("Assigned Projects")}</Th><Th>{uiText("Availability")}</Th><Th /></Tr></THead>
             <TBody>
               {companyPocs.map((poc) => (
                 <Tr key={poc.id}>
                   <Td className="font-medium text-slate-800">{poc.name}</Td>
-                  <Td>{poc.designation}</Td>
-                  <Td>{poc.role}</Td>
+                  <Td>{uiText(poc.designation)}</Td>
+                  <Td>{uiText(poc.role)}</Td>
                   <Td>{poc.phone}</Td>
                   <Td className="max-w-[160px] truncate">{poc.email}</Td>
                   <Td>{poc.assignedProjectIds.length}</Td>
-                  <Td><StatusBadge status={poc.siteAvailability === 'ON_SITE' ? 'ACTIVE' : poc.siteAvailability === 'AVAILABLE' ? 'APPROVED' : 'PENDING'} label={poc.siteAvailability.replace('_', ' ')} /></Td>
-                  <Td>{poc.isPrimary && <StatusBadge status="APPROVED" label="Primary" />}</Td>
+                  <Td><StatusBadge status={poc.siteAvailability === 'ON_SITE' ? 'ACTIVE' : poc.siteAvailability === 'AVAILABLE' ? 'APPROVED' : 'PENDING'} label={uiText(poc.siteAvailability.replace('_', ' '))} /></Td>
+                  <Td>{poc.isPrimary && <StatusBadge status="APPROVED" label={uiText("Primary")} />}</Td>
                 </Tr>
               ))}
             </TBody>
@@ -168,9 +169,9 @@ export function ContractorProfile() {
       </Card>
 
       <Card className="mt-4">
-        <CardHeader><CardTitle>Performance by Project</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{uiText("Performance by Project")}</CardTitle></CardHeader>
         <Table>
-          <THead><Tr><Th>Project</Th><Th>Status</Th><Th>Physical</Th><Th>Financial</Th><Th>Delay</Th><Th>Quality Score</Th></Tr></THead>
+          <THead><Tr><Th>{uiText("Project")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Physical")}</Th><Th>{uiText("Financial")}</Th><Th>{uiText("Delay")}</Th><Th>{uiText("Quality Score")}</Th></Tr></THead>
           <TBody>
             {stats.myProjects.map((p) => (
               <Tr key={p.id} onClick={() => navigate(`/projects/${p.id}`)}>
@@ -178,7 +179,7 @@ export function ContractorProfile() {
                 <Td><StatusBadge status={p.status} /></Td>
                 <Td>{p.physicalProgress}%</Td>
                 <Td>{p.financialProgress}%</Td>
-                <Td className={p.delayDays > 0 ? 'text-red-600' : ''}>{p.delayDays > 0 ? `${p.delayDays} days` : 'On schedule'}</Td>
+                <Td className={p.delayDays > 0 ? 'text-red-600' : ''}>{uiText(p.delayDays > 0 ? `${p.delayDays} days` : 'On schedule')}</Td>
                 <Td>{p.qualityScore}%</Td>
               </Tr>
             ))}
@@ -190,5 +191,6 @@ export function ContractorProfile() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between border-b border-slate-50 pb-1.5"><span className="text-slate-400">{label}</span><span className="font-medium text-slate-700">{value}</span></div>;
+  useUiLanguage();
+  return <div className="flex justify-between border-b border-slate-50 pb-1.5"><span className="text-slate-400">{uiText(label)}</span><span className="font-medium text-slate-700">{uiText(value)}</span></div>;
 }

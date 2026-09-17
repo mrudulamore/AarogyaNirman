@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
@@ -38,6 +39,7 @@ Button.displayName = 'Button';
 
 // ---------------- Badge / Status ----------------
 export function Badge({ className, children, variant = 'default' }: { className?: string; children: React.ReactNode; variant?: 'default' | 'outline' }) {
+  useUiLanguage();
   return (
     <span className={cn(
       'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
@@ -50,31 +52,37 @@ export function Badge({ className, children, variant = 'default' }: { className?
 }
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const c = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING;
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold', c.bg, c.text, c.border)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', c.dot)} />
-      {label ?? t(`status.${status}`, { defaultValue: status.replace(/_/g, ' ') })}
+      {uiText(label ?? t(`status.${status}`, { defaultValue: status.replace(/_/g, ' ') }))}
     </span>
   );
 }
 
 export function SeverityBadge({ severity }: { severity: string }) {
+  useUiLanguage();
   return <StatusBadge status={severity} />;
 }
 
 // ---------------- Card ----------------
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  useUiLanguage();
   return <div className={cn('rounded-lg border border-slate-200 bg-white shadow-card', className)} {...props}>{children}</div>;
 }
 export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
+  useUiLanguage();
   return <div className={cn('flex items-center justify-between border-b border-slate-100 px-5 py-4', className)}>{children}</div>;
 }
 export function CardTitle({ className, children }: { className?: string; children: React.ReactNode }) {
+  useUiLanguage();
   return <h3 className={cn('text-sm font-semibold text-slate-800', className)}>{children}</h3>;
 }
 export function CardContent({ className, children }: { className?: string; children: React.ReactNode }) {
+  useUiLanguage();
   return <div className={cn('p-5', className)}>{children}</div>;
 }
 
@@ -102,20 +110,23 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
 Textarea.displayName = 'Textarea';
 
 export function Label({ className, children, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
+  useUiLanguage();
   return <label className={cn('mb-1.5 block text-xs font-medium text-slate-600', className)} {...props}>{children}</label>;
 }
 
 export function FormField({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  useUiLanguage();
   return (
     <div>
-      <Label>{label}</Label>
+      <Label>{uiText(label)}</Label>
       {children}
-      {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
+      {hint && <p className="mt-1 text-[11px] text-slate-400">{uiText(hint)}</p>}
     </div>
   );
 }
 
 export function NativeSelect({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  useUiLanguage();
   return (
     <select
       className={cn('flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-navy-500', className)}
@@ -128,11 +139,13 @@ export function NativeSelect({ className, children, ...props }: React.SelectHTML
 
 // ---------------- Separator ----------------
 export function Separator({ className }: { className?: string }) {
+  useUiLanguage();
   return <div className={cn('h-px w-full bg-slate-200', className)} />;
 }
 
 // ---------------- Progress ----------------
 export function ProgressBar({ value, className, colorClass }: { value: number; className?: string; colorClass?: string }) {
+  useUiLanguage();
   const v = Math.max(0, Math.min(100, value));
   const color = colorClass ?? (v >= 90 ? 'bg-emerald-500' : v >= 60 ? 'bg-blue-500' : v >= 35 ? 'bg-amber-500' : 'bg-red-500');
   return (
@@ -144,6 +157,7 @@ export function ProgressBar({ value, className, colorClass }: { value: number; c
 
 // ---------------- Table ----------------
 export function Table({ className, children }: { className?: string; children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <div className="table-scroll">
       <table className={cn('w-full border-collapse text-sm', className)}>{children}</table>
@@ -151,28 +165,34 @@ export function Table({ className, children }: { className?: string; children: R
   );
 }
 export function THead({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   return <thead className="border-b border-slate-200 bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{children}</thead>;
 }
 export function TBody({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   return <tbody className="divide-y divide-slate-100">{children}</tbody>;
 }
 export function Tr({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+  useUiLanguage();
   return <tr onClick={onClick} className={cn(onClick && 'cursor-pointer hover:bg-slate-50', className)}>{children}</tr>;
 }
 export function Th({ children, className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  useUiLanguage();
   return <th className={cn('px-4 py-2.5 font-semibold', className)} {...props}>{children}</th>;
 }
 export function Td({ children, className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  useUiLanguage();
   return <td className={cn('px-4 py-2.5 align-middle text-slate-700', className)} {...props}>{children}</td>;
 }
 
 // ---------------- Empty state ----------------
 export function EmptyState({ icon, title, description, action }: { icon?: React.ReactNode; title: string; description?: string; action?: React.ReactNode }) {
+  useUiLanguage();
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 px-6 py-14 text-center">
       {icon && <div className="mb-1 text-slate-300">{icon}</div>}
-      <p className="text-sm font-medium text-slate-600">{title}</p>
-      {description && <p className="max-w-sm text-xs text-slate-400">{description}</p>}
+      <p className="text-sm font-medium text-slate-600">{uiText(title)}</p>
+      {description && <p className="max-w-sm text-xs text-slate-400">{uiText(description)}</p>}
       {action}
     </div>
   );
@@ -180,6 +200,7 @@ export function EmptyState({ icon, title, description, action }: { icon?: React.
 
 // ---------------- Loading ----------------
 export function Spinner({ className }: { className?: string }) {
+  useUiLanguage();
   return (
     <svg className={cn('animate-spin text-current', className)} width="16" height="16" viewBox="0 0 24 24" fill="none">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -189,5 +210,6 @@ export function Spinner({ className }: { className?: string }) {
 }
 
 export function Skeleton({ className }: { className?: string }) {
+  useUiLanguage();
   return <div className={cn('animate-pulse rounded bg-slate-200', className)} />;
 }

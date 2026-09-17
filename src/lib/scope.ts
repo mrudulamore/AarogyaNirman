@@ -85,7 +85,7 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
     }
 
     case 'EXECUTIVE_ENGINEER': {
-      const assigned = allProjects.filter((p) => p.executiveEngineerId === user.id);
+      const assigned = allProjects.filter((p) => p.executiveEngineerId === user.id || user.assignedProjectIds.includes(p.id));
       return scoped(assigned, `${assigned.length} assigned project${assigned.length === 1 ? '' : 's'} (PWD Circle)`);
     }
 
@@ -95,18 +95,15 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
     }
 
     case 'DEPUTY_ENGINEER': {
-      const assigned = allProjects.filter((p) => p.siteEngineerId === user.id);
+      const assigned = allProjects.filter((p) => p.siteEngineerId === user.id || user.assignedProjectIds.includes(p.id));
       return scoped(assigned, `${assigned.length} assigned project${assigned.length === 1 ? '' : 's'} (Site)`);
     }
 
     case 'CONTRACTOR': {
-      // There's no distinct Contractor account in the user roster (the login synthesizes one),
-      // so the demo represents the flagship project's contracting firm — this keeps the
-      // Contractor login anchored to the same guided-demo project (defect / RA bill flow)
-      // as every other role, instead of an arbitrary firm.
-      const anchorContractorId = allProjects[0]?.contractorId;
+      // Account identity and explicit hospital assignments determine access, never array order.
+      const anchorContractorId = user.contractorId;
       const firm = contractors.find((c) => c.id === anchorContractorId);
-      const assigned = allProjects.filter((p) => p.contractorId === anchorContractorId);
+      const assigned = anchorContractorId ? allProjects.filter((p) => p.contractorId === anchorContractorId && user.assignedProjectIds.includes(p.id)) : [];
       return scoped(assigned, firm ? `${firm.company} — ${assigned.length} contract${assigned.length === 1 ? '' : 's'}` : 'No active contracts');
     }
 
@@ -116,7 +113,7 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
     }
 
     default:
-      return statewide('Statewide');
+      return EMPTY_SCOPE;
   }
 }
 

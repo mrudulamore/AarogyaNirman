@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Landmark, AlertTriangle, ShieldAlert, ArrowRight, Flag, Camera } from 'lucide-react';
@@ -28,6 +29,7 @@ interface RiskItem {
  * Risk, Defect and Finance tabs into one executive read — the whole point of the Ministry
  * experience is summary + exception + evidence, not module-by-module navigation. */
 export function MinistryOverviewTab({ project }: { project: Project }) {
+  useUiLanguage();
   const [, setParams] = useSearchParams();
   const users = useStore((s) => s.users);
   const contractors = useStore((s) => s.contractors);
@@ -99,39 +101,39 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
     <div className="space-y-4">
       {/* Progress KPI row — four separate numbers, never combined */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Reported Progress" value={`${project.reportedProgress}%`} />
-        <KpiCard label="Verified Progress" value={`${project.verifiedProgress}%`} tone="blue" />
-        <KpiCard label="Certified Progress" value={`${project.physicalProgress}%`} tone="emerald" />
-        <KpiCard label="Financial Progress" value={`${project.financialProgress}%`} tone="amber" />
-        <KpiCard label="Days Delayed" value={project.delayDays > 0 ? `${project.delayDays}` : '0'} tone={project.delayDays > 0 ? 'red' : 'default'} />
-        <KpiCard label="Overall Project Health" value={health} tone={health === 'Critical' ? 'red' : health === 'At Risk' ? 'amber' : 'emerald'} />
+        <KpiCard label={uiText("Reported Progress")} value={`${project.reportedProgress}%`} />
+        <KpiCard label={uiText("Verified Progress")} value={`${project.verifiedProgress}%`} tone="blue" />
+        <KpiCard label={uiText("Certified Progress")} value={`${project.physicalProgress}%`} tone="emerald" />
+        <KpiCard label={uiText("Financial Progress")} value={`${project.financialProgress}%`} tone="amber" />
+        <KpiCard label={uiText("Days Delayed")} value={project.delayDays > 0 ? `${project.delayDays}` : '0'} tone={project.delayDays > 0 ? 'red' : 'default'} />
+        <KpiCard label={uiText("Overall Project Health")} value={health} tone={health === 'Critical' ? 'red' : health === 'At Risk' ? 'amber' : 'emerald'} />
       </div>
 
       {/* Governance summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Landmark size={15} /> Governance Summary</CardTitle>
-          <button onClick={() => setGovernanceOpen(true)} className="text-xs font-medium text-navy-700 underline">View Governance Details →</button>
+          <CardTitle className="flex items-center gap-2"><Landmark size={15} />{uiText(" Governance Summary")}</CardTitle>
+          <button onClick={() => setGovernanceOpen(true)} className="text-xs font-medium text-navy-700 underline">{uiText("View Governance Details →")}</button>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 p-5 text-xs sm:grid-cols-3 lg:grid-cols-4">
-          <GField label="Administrative Approval" value={formatDate(project.startDate)} />
-          <GField label="Technical Sanction" value={formatDate(project.startDate)} />
-          <GField label="Original Sanctioned Cost" value={formatCurrency(project.sanctionedBudget)} />
-          <GField label="Current Approved Cost" value={formatCurrency(currentApprovedCost)} tone={approvedChangeValue !== 0 ? 'amber' : undefined} />
-          <GField label="Contract Value" value={formatCurrency(project.workOrderValue || project.sanctionedBudget)} />
-          <GField label="Original Completion" value={formatDate(project.originalCompletionDate)} />
-          <GField label="Current Approved Completion" value={formatDate(project.plannedCompletionDate)} tone={project.plannedCompletionDate !== project.originalCompletionDate ? 'amber' : undefined} />
-          <GField label="Extension of Time" value={approvedEot > 0 ? `+${approvedEot} days` : 'None'} tone={approvedEot > 0 ? 'amber' : undefined} />
-          <GField label="Change Orders" value={String(changeOrders.length)} />
-          <GField label="Approved Cost Variation" value={formatCurrency(approvedChangeValue)} tone={approvedChangeValue !== 0 ? 'amber' : undefined} />
-          <GField label="Funding Scheme" value={project.scheme} />
-          <GField label="Executing Authority" value="Public Works Department (Health Wing)" />
+          <GField label={uiText("Administrative Approval")} value={formatDate(project.startDate)} />
+          <GField label={uiText("Technical Sanction")} value={formatDate(project.startDate)} />
+          <GField label={uiText("Original Sanctioned Cost")} value={formatCurrency(project.sanctionedBudget)} />
+          <GField label={uiText("Current Approved Cost")} value={formatCurrency(currentApprovedCost)} tone={approvedChangeValue !== 0 ? 'amber' : undefined} />
+          <GField label={uiText("Contract Value")} value={formatCurrency(project.workOrderValue || project.sanctionedBudget)} />
+          <GField label={uiText("Original Completion")} value={formatDate(project.originalCompletionDate)} />
+          <GField label={uiText("Current Approved Completion")} value={formatDate(project.plannedCompletionDate)} tone={project.plannedCompletionDate !== project.originalCompletionDate ? 'amber' : undefined} />
+          <GField label={uiText("Extension of Time")} value={approvedEot > 0 ? `+${approvedEot} days` : 'None'} tone={approvedEot > 0 ? 'amber' : undefined} />
+          <GField label={uiText("Change Orders")} value={String(changeOrders.length)} />
+          <GField label={uiText("Approved Cost Variation")} value={formatCurrency(approvedChangeValue)} tone={approvedChangeValue !== 0 ? 'amber' : undefined} />
+          <GField label={uiText("Funding Scheme")} value={project.scheme} />
+          <GField label={uiText("Executing Authority")} value="Public Works Department (Health Wing)" />
         </CardContent>
       </Card>
 
       {/* Milestones — description, % completion and geo-tagged photo evidence, read-only */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Flag size={15} /> Milestones — Description, Completion & Geo-Tagged Evidence</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Flag size={15} />{uiText(" Milestones — Description, Completion & Geo-Tagged Evidence")}</CardTitle></CardHeader>
         <CardContent className="p-4">
           <div className="space-y-2.5">
             {milestones.map((m) => {
@@ -147,29 +149,29 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-xs font-semibold text-slate-800">{m.name}</p>
                       <StatusBadge status={m.status} />
-                      <span className="text-[10.5px] text-slate-400">Weightage {m.weightagePct}%</span>
-                      {milestonePhotoCount > 0 && <span className="flex items-center gap-1 text-[10.5px] text-slate-400"><Camera size={11} /> {milestonePhotoCount} geo-tagged photo{milestonePhotoCount === 1 ? '' : 's'}</span>}
+                      <span className="text-[10.5px] text-slate-400">{uiText("Weightage ")}{m.weightagePct}%</span>
+                      {milestonePhotoCount > 0 && <span className="flex items-center gap-1 text-[10.5px] text-slate-400"><Camera size={11} /> {milestonePhotoCount}{uiText(" geo-tagged photo")}{uiText(milestonePhotoCount === 1 ? '' : 's')}</span>}
                     </div>
                     <p className="mt-1 line-clamp-1 text-[11.5px] text-slate-500">{m.description}</p>
                     <div className="mt-1.5 flex items-center gap-2">
                       <ProgressBar value={pctComplete} className="h-1.5 w-32" colorClass={pctComplete === 100 ? 'bg-emerald-500' : 'bg-blue-500'} />
-                      <span className="text-[10.5px] font-medium text-slate-500">{pctComplete}% complete</span>
+                      <span className="text-[10.5px] font-medium text-slate-500">{pctComplete}{uiText("% complete")}</span>
                     </div>
                   </div>
                   <ArrowRight size={13} className="mt-0.5 shrink-0 text-slate-300" />
                 </button>
               );
             })}
-            {milestones.length === 0 && <p className="text-xs text-slate-400">No milestones recorded for this project.</p>}
+            {milestones.length === 0 && <p className="text-xs text-slate-400">{uiText("No milestones recorded for this project.")}</p>}
           </div>
         </CardContent>
       </Card>
 
       {/* Executive risk section */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle size={15} /> Executive Risk Summary</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle size={15} />{uiText(" Executive Risk Summary")}</CardTitle></CardHeader>
         <CardContent className="space-y-2 p-4">
-          {activeRisks.length === 0 && <p className="text-xs text-slate-400">No elevated risks identified across schedule, finance, quality, contractor, approvals, safety or handover.</p>}
+          {activeRisks.length === 0 && <p className="text-xs text-slate-400">{uiText("No elevated risks identified across schedule, finance, quality, contractor, approvals, safety or handover.")}</p>}
           {activeRisks.map((r) => (
             <button
               key={r.category}
@@ -180,9 +182,9 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
               )}
             >
               <div>
-                <p className={cn('text-xs font-semibold', r.severity === 'HIGH' ? 'text-red-700' : 'text-amber-700')}>{r.category} — {r.severity}</p>
+                <p className={cn('text-xs font-semibold', r.severity === 'HIGH' ? 'text-red-700' : 'text-amber-700')}>{uiText(r.category)} — {uiText(r.severity)}</p>
                 <p className={cn('mt-0.5 text-[11.5px]', r.severity === 'HIGH' ? 'text-red-700' : 'text-amber-700')}>{r.description}</p>
-                <p className="mt-1 text-[10.5px] text-slate-500">Owner: {r.owner}{r.ageingDays ? ` · Ageing: ${r.ageingDays} days` : ''}</p>
+                <p className="mt-1 text-[10.5px] text-slate-500">{uiText("Owner: ")}{uiText(r.owner)}{uiText(r.ageingDays ? ` · Ageing: ${r.ageingDays} days` : '')}</p>
               </div>
               <ArrowRight size={13} className={cn('mt-0.5 shrink-0', r.severity === 'HIGH' ? 'text-red-400' : 'text-amber-400')} />
             </button>
@@ -192,27 +194,27 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
 
       {/* Defect summary — read-only */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><ShieldAlert size={15} /> Defect Summary (Read Only)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><ShieldAlert size={15} />{uiText(" Defect Summary (Read Only)")}</CardTitle></CardHeader>
         <CardContent className="p-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <MiniKpi label="Open Defects" value={openDefects.length} />
-            <MiniKpi label="Critical" value={defects.filter((d) => d.severity === 'CRITICAL' && d.status !== 'CLOSED').length} tone="red" />
-            <MiniKpi label="Overdue" value={overdueDefects.length} tone="red" />
-            <MiniKpi label="Reinspection Pending" value={reinspectionPendingDefects.length} tone="amber" />
-            <MiniKpi label="Avg. Closure Time" value={`${avgClosureDays}d`} />
+            <MiniKpi label={uiText("Open Defects")} value={openDefects.length} />
+            <MiniKpi label={uiText("Critical")} value={defects.filter((d) => d.severity === 'CRITICAL' && d.status !== 'CLOSED').length} tone="red" />
+            <MiniKpi label={uiText("Overdue")} value={overdueDefects.length} tone="red" />
+            <MiniKpi label={uiText("Reinspection Pending")} value={reinspectionPendingDefects.length} tone="amber" />
+            <MiniKpi label={uiText("Avg. Closure Time")} value={`${avgClosureDays}d`} />
           </div>
           {topCriticalDefects.length > 0 && (
             <Table>
-              <THead><Tr><Th>ID</Th><Th>Location</Th><Th>Severity</Th><Th>Assigned Contractor</Th><Th>Ageing</Th><Th>Status</Th></Tr></THead>
+              <THead><Tr><Th>{uiText("ID")}</Th><Th>{uiText("Location")}</Th><Th>{uiText("Severity")}</Th><Th>{uiText("Assigned Contractor")}</Th><Th>{uiText("Ageing")}</Th><Th>{uiText("Status")}</Th></Tr></THead>
               <TBody>
                 {topCriticalDefects.map((d) => (
                   <Tr key={d.id} onClick={() => setDefectId(d.id)}>
                     <Td className="font-mono text-[11px] text-slate-500">{d.id}</Td>
-                    <Td className="max-w-[160px] truncate">{d.location}</Td>
+                    <Td className="max-w-[160px] truncate">{uiText(d.location)}</Td>
                     <Td><SeverityBadge severity={d.severity} /></Td>
                     <Td className="max-w-[160px] truncate">{contractors.find((c) => c.id === d.contractorId)?.company ?? '—'}</Td>
                     <Td>{Math.round((now - new Date(d.createdDate).getTime()) / 86400000)}d</Td>
-                    <Td><StatusBadge status={d.status} label={DEFECT_STATUS_LABELS[d.status]} /></Td>
+                    <Td><StatusBadge status={d.status} label={uiText(DEFECT_STATUS_LABELS[d.status])} /></Td>
                   </Tr>
                 ))}
               </TBody>
@@ -222,28 +224,28 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
       </Card>
 
       <Dialog open={governanceOpen} onOpenChange={setGovernanceOpen}>
-        <DialogContent title="Governance Details (Read Only)" description={project.name} size="xl">
+        <DialogContent title={uiText("Governance Details (Read Only)")} description={uiText(project.name)} size="xl">
           <GovernanceTab project={project} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!milestoneId} onOpenChange={(v) => !v && setMilestoneId(null)}>
         {activeMilestone && (
-          <DialogContent title={activeMilestone.name} description={`${project.name} — Read Only`} size="lg">
+          <DialogContent title={uiText(activeMilestone.name)} description={uiMessage("{{0}} — Read Only", [project.name])} size="lg">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <StatusBadge status={activeMilestone.status} />
-              <span className="text-xs text-slate-500">Weightage {activeMilestone.weightagePct}% of contract value</span>
+              <span className="text-xs text-slate-500">{uiText("Weightage ")}{activeMilestone.weightagePct}{uiText("% of contract value")}</span>
             </div>
             <p className="text-xs leading-relaxed text-slate-600">{activeMilestone.description}</p>
             <div className="mt-3 grid grid-cols-2 gap-3 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
-              <DField label="Planned Finish" value={formatDate(activeMilestone.plannedDate)} />
-              <DField label="Actual Finish" value={activeMilestone.actualDate ? formatDate(activeMilestone.actualDate) : '—'} />
-              <DField label="Planned Value" value={formatCurrency(activeMilestone.plannedValue)} />
-              <DField label="Certified Value" value={activeMilestone.certifiedValue ? formatCurrency(activeMilestone.certifiedValue) : '—'} />
+              <DField label={uiText("Planned Finish")} value={formatDate(activeMilestone.plannedDate)} />
+              <DField label={uiText("Actual Finish")} value={activeMilestone.actualDate ? formatDate(activeMilestone.actualDate) : '—'} />
+              <DField label={uiText("Planned Value")} value={formatCurrency(activeMilestone.plannedValue)} />
+              <DField label={uiText("Certified Value")} value={activeMilestone.certifiedValue ? formatCurrency(activeMilestone.certifiedValue) : '—'} />
             </div>
-            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} /> Geo-Tagged Progress Photos ({activeMilestonePhotos.length})</p>
+            <p className="mb-2 mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Camera size={13} />{uiText(" Geo-Tagged Progress Photos (")}{activeMilestonePhotos.length})</p>
             {activeMilestonePhotos.length === 0 ? (
-              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">No geo-tagged photo evidence submitted for this milestone yet.</p>
+              <p className="rounded-md border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">{uiText("No geo-tagged photo evidence submitted for this milestone yet.")}</p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activeMilestonePhotos.map((p) => (
@@ -257,29 +259,29 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
 
       <Dialog open={!!defectId} onOpenChange={(v) => !v && setDefectId(null)}>
         {activeDefect && (
-          <DialogContent title={`Defect ${activeDefect.id} (Read Only)`} description={activeDefect.location} size="xl">
+          <DialogContent title={uiMessage("Defect {{0}} (Read Only)", [activeDefect.id])} description={uiText(activeDefect.location)} size="xl">
             <div className="mb-3 flex gap-2">
-              <SeverityBadge severity={activeDefect.severity} /><StatusBadge status={activeDefect.status} label={DEFECT_STATUS_LABELS[activeDefect.status]} />
+              <SeverityBadge severity={activeDefect.severity} /><StatusBadge status={activeDefect.status} label={uiText(DEFECT_STATUS_LABELS[activeDefect.status])} />
             </div>
             <p className="mb-3 text-xs text-slate-600">{activeDefect.description}</p>
-            <p className="mb-2 text-xs font-semibold text-slate-600">Evidence</p>
+            <p className="mb-2 text-xs font-semibold text-slate-600">{uiText("Evidence")}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <EvidenceCard label="BEFORE" seed={activeDefect.imageSeed} category={activeDefect.category} date={activeDefect.createdDate} by={activeDefect.reportedBy} />
-              <EvidenceCard label="RECTIFICATION" seed={activeDefect.correctiveActionPhotoSeed} category={activeDefect.category} date={activeDefect.acknowledgedDate} empty="Awaiting contractor rectification evidence" />
-              <EvidenceCard label="AFTER / REINSPECTION" seed={activeDefect.reinspectionPhotoSeed} category={activeDefect.category} date={activeDefect.closedDate} empty="Awaiting reinspection closure evidence" />
+              <EvidenceCard label={uiText("BEFORE")} seed={activeDefect.imageSeed} category={activeDefect.category} date={activeDefect.createdDate} by={activeDefect.reportedBy} />
+              <EvidenceCard label={uiText("RECTIFICATION")} seed={activeDefect.correctiveActionPhotoSeed} category={activeDefect.category} date={activeDefect.acknowledgedDate} empty="Awaiting contractor rectification evidence" />
+              <EvidenceCard label={uiText("AFTER / REINSPECTION")} seed={activeDefect.reinspectionPhotoSeed} category={activeDefect.category} date={activeDefect.closedDate} empty="Awaiting reinspection closure evidence" />
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-              <DField label="Category" value={activeDefect.category.replace(/_/g, ' ')} />
-              <DField label="Contractor" value={contractors.find((c) => c.id === activeDefect.contractorId)?.company ?? '—'} />
-              <DField label="Assigned POC" value={contractorPocs.find((p) => p.id === activeDefect.assignedPocId)?.name ?? 'Not yet assigned'} />
-              <DField label="Government Engineer" value={users.find((u) => u.id === activeDefect.responsibleEngineerId)?.name ?? '—'} />
-              <DField label="Due Date" value={formatDate(activeDefect.dueDate)} />
-              <DField label="Created" value={formatDate(activeDefect.createdDate)} />
+              <DField label={uiText("Category")} value={activeDefect.category.replace(/_/g, ' ')} />
+              <DField label={uiText("Contractor")} value={contractors.find((c) => c.id === activeDefect.contractorId)?.company ?? '—'} />
+              <DField label={uiText("Assigned POC")} value={contractorPocs.find((p) => p.id === activeDefect.assignedPocId)?.name ?? 'Not yet assigned'} />
+              <DField label={uiText("Government Engineer")} value={users.find((u) => u.id === activeDefect.responsibleEngineerId)?.name ?? '—'} />
+              <DField label={uiText("Due Date")} value={formatDate(activeDefect.dueDate)} />
+              <DField label={uiText("Created")} value={formatDate(activeDefect.createdDate)} />
             </div>
             {activeDefect.correctiveActionNotes && (
               <div className="mt-3 rounded-md bg-emerald-50 p-2.5 text-xs">
-                <p className="font-medium text-emerald-700">Corrective Action Notes</p>
-                <p className="mt-1 text-emerald-700">{activeDefect.correctiveActionNotes}</p>
+                <p className="font-medium text-emerald-700">{uiText("Corrective Action Notes")}</p>
+                <p className="mt-1 text-emerald-700">{uiText(activeDefect.correctiveActionNotes)}</p>
               </div>
             )}
           </DialogContent>
@@ -290,23 +292,26 @@ export function MinistryOverviewTab({ project }: { project: Project }) {
 }
 
 function DField({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[10.5px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-0.5 font-medium text-slate-700">{value}</p></div>;
+  useUiLanguage();
+  return <div><p className="text-[10.5px] uppercase tracking-wide text-slate-400">{uiText(label)}</p><p className="mt-0.5 font-medium text-slate-700">{uiText(value)}</p></div>;
 }
 
 function GField({ label, value, tone }: { label: string; value: string; tone?: 'amber' }) {
+  useUiLanguage();
   return (
     <div>
-      <p className="text-[10.5px] uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={cn('mt-0.5 font-medium', tone === 'amber' ? 'text-amber-700' : 'text-slate-700')}>{value}</p>
+      <p className="text-[10.5px] uppercase tracking-wide text-slate-400">{uiText(label)}</p>
+      <p className={cn('mt-0.5 font-medium', tone === 'amber' ? 'text-amber-700' : 'text-slate-700')}>{uiText(value)}</p>
     </div>
   );
 }
 
 function MiniKpi({ label, value, tone }: { label: string; value: string | number; tone?: 'red' | 'amber' }) {
+  useUiLanguage();
   return (
     <div className="rounded-md border border-slate-200 p-3">
-      <p className="text-[10.5px] font-medium uppercase text-slate-400">{label}</p>
-      <p className={cn('mt-1 text-xl font-bold', tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : 'text-slate-800')}>{value}</p>
+      <p className="text-[10.5px] font-medium uppercase text-slate-400">{uiText(label)}</p>
+      <p className={cn('mt-1 text-xl font-bold', tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : 'text-slate-800')}>{uiText(value)}</p>
     </div>
   );
 }

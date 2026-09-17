@@ -30,4 +30,10 @@ i18n
     },
   });
 
+function updateDocumentLanguage(language: string) {
+  if (typeof document !== 'undefined') document.documentElement.lang = language.split('-')[0];
+}
+i18n.on('languageChanged', updateDocumentLanguage);
+updateDocumentLanguage(i18n.resolvedLanguage ?? i18n.language ?? 'en');
+
 export default i18n;

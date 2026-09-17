@@ -52,7 +52,7 @@ export const ROLE_NAV: Record<Role, string[]> = {
   // and field visibility, without the statewide/jurisdictional oversight senior roles carry.
   PROJECT_MANAGER: ['dashboard', 'projects', 'tenders', 'contractors', 'workers', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'search', 'field', 'portfolioTimeline'],
   DEPUTY_ENGINEER: ['dashboard', 'projects', 'field', 'workers', 'quality', 'defects', 'documents', 'notifications', 'search'],
-  CONTRACTOR: ['dashboard', 'projects', 'field', 'finance', 'defects', 'documents', 'notifications', 'search'],
+  CONTRACTOR: ['dashboard', 'projects', 'field', 'workers', 'finance', 'defects', 'documents', 'notifications', 'search'],
   MEDICAL_OFFICER: ['dashboard', 'projects', 'documents', 'reports', 'notifications', 'search'],
   VIGILANCE_AUDIT: ['dashboard', 'projects', 'observer', 'defects', 'approvals', 'audit', 'notifications', 'search'],
   // IT/System Admin — technical support & system health only; deliberately excluded from

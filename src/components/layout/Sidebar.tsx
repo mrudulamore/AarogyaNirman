@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Landmark, MapPinned } from 'lucide-react';
@@ -11,6 +12,7 @@ import { cn } from '../../lib/utils';
 const COUNTED_KEYS = new Set(['projects', 'approvals', 'defects', 'quality', 'finance', 'notifications', 'tenders']);
 
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const rolePermissions = useStore((s) => s.rolePermissions);
@@ -67,7 +69,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
             <p className="text-[11px] text-navy-300">{t('sidebar.signedInAs')}</p>
             <p className="truncate text-xs font-medium text-white">{t(`roles.${currentUser.role}`)}</p>
             <p className="mt-1.5 flex items-center gap-1 truncate text-[10.5px] text-navy-300">
-              <MapPinned size={11} className="shrink-0" /> {scopeLabel}
+              <MapPinned size={11} className="shrink-0" /> {uiText(scopeLabel)}
             </p>
           </div>
         )}

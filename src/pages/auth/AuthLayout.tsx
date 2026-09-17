@@ -1,8 +1,10 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useTranslation } from 'react-i18next';
 import { Landmark, ShieldCheck } from 'lucide-react';
 import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
 export function AuthLayout({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle: string }) {
+  useUiLanguage();
   const { t } = useTranslation();
   return (
     <div className="flex min-h-screen bg-navy-950">
@@ -43,8 +45,8 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
             </div>
             <LanguageSwitcher variant="inline" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-          <p className="mb-6 mt-1 text-sm text-slate-500">{subtitle}</p>
+          <h2 className="text-lg font-bold text-slate-900">{uiText(title)}</h2>
+          <p className="mb-6 mt-1 text-sm text-slate-500">{uiText(subtitle)}</p>
           {children}
         </div>
       </div>

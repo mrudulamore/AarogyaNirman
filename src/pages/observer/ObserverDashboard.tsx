@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +13,7 @@ import { formatDate } from '../../lib/utils';
 import { ClipboardCheck, AlertTriangle, Eye } from 'lucide-react';
 
 export function ObserverDashboard() {
+  useUiLanguage();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const projects = useStore((s) => s.projects);
@@ -32,31 +34,31 @@ export function ObserverDashboard() {
 
   return (
     <div>
-      <PageHeader title={t('pages.observer.title')} description={t('pages.observer.desc', { name: currentUser?.name })} actions={<Button onClick={() => setOpen(true)}><Plus size={15} /> Add Observation</Button>} />
+      <PageHeader title={uiText(t('pages.observer.title'))} description={uiText(t('pages.observer.desc', { name: currentUser?.name }))} actions={<Button onClick={() => setOpen(true)}><Plus size={15} />{uiText(" Add Observation")}</Button>} />
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Upcoming Inspections" value={upcomingInspections.length} icon={ClipboardCheck} tone="blue" />
-        <KpiCard label="Open Defects" value={openDefects} icon={AlertTriangle} tone="red" />
-        <KpiCard label="Pending Approvals" value={pendingApprovals} icon={ClipboardCheck} tone="amber" />
-        <KpiCard label="My Observations" value={myObservations.length} icon={Eye} />
+        <KpiCard label={uiText("Upcoming Inspections")} value={upcomingInspections.length} icon={ClipboardCheck} tone="blue" />
+        <KpiCard label={uiText("Open Defects")} value={openDefects} icon={AlertTriangle} tone="red" />
+        <KpiCard label={uiText("Pending Approvals")} value={pendingApprovals} icon={ClipboardCheck} tone="amber" />
+        <KpiCard label={uiText("My Observations")} value={myObservations.length} icon={Eye} />
       </div>
 
       <Card>
-        <CardHeader><CardTitle>My Observations</CardTitle></CardHeader>
-        {myObservations.length === 0 ? <EmptyState icon={<Radar size={32} />} title="No observations submitted yet" /> : (
+        <CardHeader><CardTitle>{uiText("My Observations")}</CardTitle></CardHeader>
+        {myObservations.length === 0 ? <EmptyState icon={<Radar size={32} />} title={uiText("No observations submitted yet")} /> : (
           <Table>
-            <THead><Tr><Th>Project</Th><Th>Category</Th><Th>Note</Th><Th>Recommended Action</Th><Th>Date</Th><Th>Status</Th></Tr></THead>
+            <THead><Tr><Th>{uiText("Project")}</Th><Th>{uiText("Category")}</Th><Th>{uiText("Note")}</Th><Th>{uiText("Recommended Action")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Status")}</Th></Tr></THead>
             <TBody>
               {myObservations.map((o) => (
                 <Tr key={o.id}>
                   <Td className="max-w-[180px] truncate">{projects.find((p) => p.id === o.projectId)?.name}</Td>
-                  <Td>{o.category}</Td>
-                  <Td className="max-w-[220px] truncate">{o.note}</Td>
-                  <Td>{o.recommendedAction}</Td>
-                  <Td>{formatDate(o.date)}</Td>
+                  <Td>{uiText(o.category)}</Td>
+                  <Td className="max-w-[220px] truncate">{uiText(o.note)}</Td>
+                  <Td>{uiText(o.recommendedAction)}</Td>
+                  <Td>{uiText(formatDate(o.date))}</Td>
                   <Td>
                     {o.status === 'OPEN' ? (
-                      <Button size="sm" variant="outline" onClick={() => { updateObservationStatus(o.id, 'ACKNOWLEDGED'); toast.success('Marked acknowledged.'); }}>Acknowledge</Button>
+                      <Button size="sm" variant="outline" onClick={() => { updateObservationStatus(o.id, 'ACKNOWLEDGED'); toast.success(uiText('Marked acknowledged.')); }}>{uiText("Acknowledge")}</Button>
                     ) : <StatusBadge status={o.status} />}
                   </Td>
                 </Tr>
@@ -67,39 +69,39 @@ export function ObserverDashboard() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title="Add Observation" size="lg">
+        <DialogContent title={uiText("Add Observation")} size="lg">
           <div className="space-y-3">
             <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">Project</p>
+              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Project")}</p>
               <Select value={form.projectId} onValueChange={(v) => setForm({ ...form, projectId: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">Category</p>
+              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Category")}</p>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{['Quality', 'Safety', 'Progress', 'Documentation'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <SelectContent>{['Quality', 'Safety', 'Progress', 'Documentation'].map((c) => <SelectItem key={c} value={c}>{uiText(c)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><p className="mb-1 text-xs font-medium text-slate-600">Observation Note</p><Textarea rows={3} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
+            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Observation Note")}</p><Textarea rows={3} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
             <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">Recommended Action</p>
+              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Recommended Action")}</p>
               <Select value={form.recommendedAction} onValueChange={(v) => setForm({ ...form, recommendedAction: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{['Continue monitoring', 'Flag to Executive Engineer', 'Schedule follow-up visit', 'No action required'].map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+                <SelectContent>{['Continue monitoring', 'Flag to Executive Engineer', 'Schedule follow-up visit', 'No action required'].map((a) => <SelectItem key={a} value={a}>{uiText(a)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">Simulated photo attachment</div>
+            <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">{uiText("Simulated photo attachment")}</div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{uiText("Cancel")}</Button>
             <Button onClick={() => {
-              if (!form.note.trim()) { toast.error('Observation note required.'); return; }
+              if (!form.note.trim()) { toast.error(uiText('Observation note required.')); return; }
               addObservation({ projectId: form.projectId, observer: currentUser?.name ?? 'Observer', date: new Date().toISOString().slice(0, 10), category: form.category, note: form.note, recommendedAction: form.recommendedAction, status: 'OPEN', imageSeed: Math.floor(Math.random() * 99999) });
-              toast.success('Observation recorded.'); setOpen(false); setForm({ ...form, note: '' });
-            }}>Submit Observation</Button>
+              toast.success(uiText('Observation recorded.')); setOpen(false); setForm({ ...form, note: '' });
+            }}>{uiText("Submit Observation")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

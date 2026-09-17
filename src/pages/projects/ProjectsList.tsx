@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +25,7 @@ function riskStatus(p: Project): 'High Risk' | 'Medium Risk' | 'Low Risk' | 'Clo
 }
 
 export function ProjectsList() {
+  useUiLanguage();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
@@ -99,14 +101,14 @@ export function ProjectsList() {
   }
 
   function submitCreate() {
-    if (!form.name.trim()) { toast.error('Project name is required.'); return; }
+    if (!form.name.trim()) { toast.error(uiText('Project name is required.')); return; }
     const p = addProject({
       name: form.name, type: form.type, district: form.district, taluka: form.taluka || 'HQ Taluka',
       division: MAHARASHTRA_HIERARCHY.find((d) => d.districts.some((x) => x.district === form.district))?.division ?? 'Pune Division',
       bedCount: form.bedCount, sanctionedBudget: form.sanctionedBudget * 100000,
       lat: 20 + Math.random() * 60, lng: 20 + Math.random() * 60,
     });
-    toast.success(`Project "${p.name}" created.`);
+    toast.success(uiMessage("Project \"{{0}}\" created.", [p.name]));
     setCreateOpen(false);
     navigate(`/projects/${p.id}`);
   }
@@ -124,48 +126,45 @@ export function ProjectsList() {
   return (
     <div>
       <PageHeader
-        title={t('pages.projects.title')}
-        description={t('pages.projects.desc', { shown: filtered.length, total: scopedProjects.length })}
+        title={uiText(t('pages.projects.title'))}
+        description={uiText(t('pages.projects.desc', { shown: filtered.length, total: scopedProjects.length }))}
         actions={<>
           <div className="flex overflow-hidden rounded-md border border-slate-300">
             <button onClick={() => setView('grid')} className={`p-1.5 ${view === 'grid' ? 'bg-navy-700 text-white' : 'bg-white text-slate-500'}`}><LayoutGrid size={15} /></button>
             <button onClick={() => setView('list')} className={`p-1.5 ${view === 'list' ? 'bg-navy-700 text-white' : 'bg-white text-slate-500'}`}><ListIcon size={15} /></button>
           </div>
-          {canCreateProject && <Button onClick={() => setCreateOpen(true)}><Plus size={15} /> Add Project</Button>}
+          {canCreateProject && <Button onClick={() => setCreateOpen(true)}><Plus size={15} />{uiText(" Add Project")}</Button>}
         </>}
       />
 
       {!isStatewide && (
-        <div className="mb-4 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-xs font-medium text-navy-700">
-          Showing projects within your jurisdiction: {scopeLabel}
+        <div className="mb-4 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-xs font-medium text-navy-700">{uiText("Showing projects within your jurisdiction: ")}{uiText(scopeLabel)}
         </div>
       )}
 
       <Card className="mb-4 overflow-hidden">
         <div className="flex items-center justify-between bg-gradient-to-r from-navy-50 to-white px-4 py-2.5">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-navy-700">
-            <Landmark size={12} /> Jurisdictional Drill-Down
-          </p>
+            <Landmark size={12} />{uiText(" Jurisdictional Drill-Down")}</p>
           {(scheme !== 'ALL' || facilityType !== 'ALL' || region !== 'ALL' || district !== 'ALL' || projectId !== 'ALL') && (
             <button
               onClick={() => { setScheme('ALL'); setFacilityType('ALL'); setRegion('ALL'); setDistrict('ALL'); setProjectId('ALL'); }}
               className="flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-navy-700"
             >
-              <RotateCcw size={11} /> Reset filters
-            </button>
+              <RotateCcw size={11} />{uiText(" Reset filters")}</button>
           )}
         </div>
         <CardContent className="p-4 pt-3">
           <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
-            <CascadeSelect icon={Landmark} label="Scheme" value={scheme} onChange={setScheme} options={schemeOptions} />
+            <CascadeSelect icon={Landmark} label={uiText("Scheme")} value={scheme} onChange={setScheme} options={schemeOptions} />
             <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
-            <CascadeSelect icon={Building2} label="Facility Type" value={facilityType} onChange={setFacilityType} options={facilityOptions} />
+            <CascadeSelect icon={Building2} label={uiText("Facility Type")} value={facilityType} onChange={setFacilityType} options={facilityOptions} />
             <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
-            <CascadeSelect icon={Map} label="Region" value={region} onChange={setRegion} options={regionOptions} />
+            <CascadeSelect icon={Map} label={uiText("Region")} value={region} onChange={setRegion} options={regionOptions} />
             <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
-            <CascadeSelect icon={MapPinned} label="District" value={district} onChange={setDistrict} options={districtOptions} />
+            <CascadeSelect icon={MapPinned} label={uiText("District")} value={district} onChange={setDistrict} options={districtOptions} />
             <ChevronRight size={16} className="hidden shrink-0 self-center text-slate-300 lg:block" />
-            <CascadeSelect icon={Hospital} label="Hospital / Project" value={projectId} onChange={setProjectId} options={projectOptions} />
+            <CascadeSelect icon={Hospital} label={uiText("Hospital / Project")} value={projectId} onChange={setProjectId} options={projectOptions} />
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {QUICK_FILTERS.map((qf) => (
@@ -177,7 +176,7 @@ export function ProjectsList() {
                   quickFilters.has(qf.key) ? 'border-navy-600 bg-navy-700 text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
                 )}
               >
-                {qf.label}
+                {uiText(qf.label)}
               </button>
             ))}
           </div>
@@ -195,47 +194,47 @@ export function ProjectsList() {
                     <p className="text-sm font-semibold leading-snug text-slate-800">{p.name}</p>
                     <StatusBadge status={p.status} />
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{p.taluka}, {p.district} · {p.facilityType}</p>
+                  <p className="mt-1 text-xs text-slate-400">{uiText(p.taluka)}, {uiText(p.district)} · {uiText(p.facilityType)}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full border border-navy-200 bg-navy-50 px-2 py-0.5 text-[10px] font-medium text-navy-700">{p.scheme}</span>
-                    <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold', risk === 'High Risk' ? 'border-red-200 bg-red-50 text-red-700' : risk === 'Medium Risk' ? 'border-amber-200 bg-amber-50 text-amber-700' : risk === 'Closed' ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>{risk}</span>
+                    <span className="rounded-full border border-navy-200 bg-navy-50 px-2 py-0.5 text-[10px] font-medium text-navy-700">{uiText(p.scheme)}</span>
+                    <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold', risk === 'High Risk' ? 'border-red-200 bg-red-50 text-red-700' : risk === 'Medium Risk' ? 'border-amber-200 bg-amber-50 text-amber-700' : risk === 'Closed' ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>{uiText(risk)}</span>
                   </div>
                   <div className="mt-3 space-y-2">
                     <div>
-                      <div className="mb-1 flex justify-between text-[11px] text-slate-500"><span>Physical Progress</span><span className="font-semibold">{p.physicalProgress}%</span></div>
+                      <div className="mb-1 flex justify-between text-[11px] text-slate-500"><span>{uiText("Physical Progress")}</span><span className="font-semibold">{p.physicalProgress}%</span></div>
                       <ProgressBar value={p.physicalProgress} />
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                    <span className="text-slate-500">{formatCurrency(p.sanctionedBudget)} · {p.contractorId && contractors.find((c) => c.id === p.contractorId)?.company}</span>
-                    <span className="flex items-center gap-1 font-medium text-navy-700">View <ArrowRight size={12} /></span>
+                    <span className="text-slate-500">{uiText(formatCurrency(p.sanctionedBudget))} · {p.contractorId && contractors.find((c) => c.id === p.contractorId)?.company}</span>
+                    <span className="flex items-center gap-1 font-medium text-navy-700">{uiText("View ")}<ArrowRight size={12} /></span>
                   </div>
                 </CardContent>
               </Card>
             );
           })}
-          {filtered.length === 0 && <p className="col-span-full py-16 text-center text-sm text-slate-400">No projects match the selected filters.</p>}
+          {filtered.length === 0 && <p className="col-span-full py-16 text-center text-sm text-slate-400">{uiText("No projects match the selected filters.")}</p>}
         </div>
       ) : (
         <Card>
           <Table>
             <THead>
-              <Tr><Th>Project</Th><Th>Facility</Th><Th>Scheme</Th><Th>District</Th><Th>Contractor</Th><Th>Physical</Th><Th>Financial</Th><Th>Status</Th><Th>Risk</Th><Th>Original Completion</Th><Th>Current Completion</Th></Tr>
+              <Tr><Th>{uiText("Project")}</Th><Th>{uiText("Facility")}</Th><Th>{uiText("Scheme")}</Th><Th>{uiText("District")}</Th><Th>{uiText("Contractor")}</Th><Th>{uiText("Physical")}</Th><Th>{uiText("Financial")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Risk")}</Th><Th>{uiText("Original Completion")}</Th><Th>{uiText("Current Completion")}</Th></Tr>
             </THead>
             <TBody>
               {filtered.map((p) => (
                 <Tr key={p.id} onClick={() => navigate(`/projects/${p.id}`)}>
                   <Td className="max-w-[200px] truncate font-medium text-slate-800">{p.name}</Td>
-                  <Td>{p.facilityType}</Td>
-                  <Td>{p.scheme}</Td>
-                  <Td>{p.district}</Td>
+                  <Td>{uiText(p.facilityType)}</Td>
+                  <Td>{uiText(p.scheme)}</Td>
+                  <Td>{uiText(p.district)}</Td>
                   <Td className="max-w-[140px] truncate">{contractors.find((c) => c.id === p.contractorId)?.company ?? '—'}</Td>
                   <Td>{p.physicalProgress}%</Td>
                   <Td>{p.financialProgress}%</Td>
                   <Td><StatusBadge status={p.status} /></Td>
-                  <Td>{riskStatus(p)}</Td>
-                  <Td>{formatDate(p.originalCompletionDate)}</Td>
-                  <Td className={p.plannedCompletionDate !== p.originalCompletionDate ? 'font-medium text-amber-600' : ''}>{formatDate(p.plannedCompletionDate)}</Td>
+                  <Td>{uiText(riskStatus(p))}</Td>
+                  <Td>{uiText(formatDate(p.originalCompletionDate))}</Td>
+                  <Td className={p.plannedCompletionDate !== p.originalCompletionDate ? 'font-medium text-amber-600' : ''}>{uiText(formatDate(p.plannedCompletionDate))}</Td>
                 </Tr>
               ))}
             </TBody>
@@ -244,32 +243,32 @@ export function ProjectsList() {
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent title="Add New Hospital Project" description="Register a new project under administrative sanction.">
+        <DialogContent title={uiText("Add New Hospital Project")} description={uiText("Register a new project under administrative sanction.")}>
           <div className="space-y-3">
-            <LField label="Project Name"><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Sub-District Hospital — Osmanabad" /></LField>
+            <LField label={uiText("Project Name")}><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={uiText("e.g. Sub-District Hospital — Osmanabad")} /></LField>
             <div className="grid grid-cols-2 gap-3">
-              <LField label="Project Type">
+              <LField label={uiText("Project Type")}>
                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as ProjectType })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{PROJECT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>{PROJECT_TYPES.map((t) => <SelectItem key={t} value={t}>{uiText(t)}</SelectItem>)}</SelectContent>
                 </Select>
               </LField>
-              <LField label="District">
+              <LField label={uiText("District")}>
                 <Select value={form.district} onValueChange={(v) => setForm({ ...form, district: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{ALL_DISTRICTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                  <SelectContent>{ALL_DISTRICTS.map((d) => <SelectItem key={d} value={d}>{uiText(d)}</SelectItem>)}</SelectContent>
                 </Select>
               </LField>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <LField label="Taluka"><Input value={form.taluka} onChange={(e) => setForm({ ...form, taluka: e.target.value })} placeholder="Taluka" /></LField>
-              <LField label="Bed Count"><Input type="number" value={form.bedCount} onChange={(e) => setForm({ ...form, bedCount: +e.target.value })} /></LField>
+              <LField label={uiText("Taluka")}><Input value={form.taluka} onChange={(e) => setForm({ ...form, taluka: e.target.value })} placeholder={uiText("Taluka")} /></LField>
+              <LField label={uiText("Bed Count")}><Input type="number" value={form.bedCount} onChange={(e) => setForm({ ...form, bedCount: +e.target.value })} /></LField>
             </div>
-            <LField label="Sanctioned Budget (₹ Lakh)"><Input type="number" value={form.sanctionedBudget} onChange={(e) => setForm({ ...form, sanctionedBudget: +e.target.value })} /></LField>
+            <LField label={uiText("Sanctioned Budget (₹ Lakh)")}><Input type="number" value={form.sanctionedBudget} onChange={(e) => setForm({ ...form, sanctionedBudget: +e.target.value })} /></LField>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={submitCreate}>Create Project</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{uiText("Cancel")}</Button>
+            <Button onClick={submitCreate}>{uiText("Create Project")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -278,14 +277,15 @@ export function ProjectsList() {
 }
 
 function CascadeSelect({ label, value, onChange, options, icon: Icon }: { label: string; value: string; onChange: (v: string) => void; options: FilterOption[]; icon: any }) {
+  useUiLanguage();
   const isActive = value !== 'ALL';
   return (
     <div className="min-w-0 flex-1">
-      <p className="mb-1 flex items-center gap-1 text-[11px] font-medium text-slate-500"><Icon size={11} className={isActive ? 'text-navy-700' : 'text-slate-400'} /> {label}</p>
+      <p className="mb-1 flex items-center gap-1 text-[11px] font-medium text-slate-500"><Icon size={11} className={isActive ? 'text-navy-700' : 'text-slate-400'} /> {uiText(label)}</p>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className={cn('transition-colors', isActive && 'border-navy-300 bg-navy-50/60 font-medium text-navy-800')}><SelectValue /></SelectTrigger>
         <SelectContent>
-          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label} <span className="text-slate-400">[{o.count}]</span></SelectItem>)}
+          {options.map((o) => <SelectItem key={o.value} value={o.value}>{uiText(o.label)} <span className="text-slate-400">[{o.count}]</span></SelectItem>)}
         </SelectContent>
       </Select>
     </div>
@@ -293,5 +293,6 @@ function CascadeSelect({ label, value, onChange, options, icon: Icon }: { label:
 }
 
 function LField({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><p className="mb-1 text-xs font-medium text-slate-600">{label}</p>{children}</div>;
+  useUiLanguage();
+  return <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText(label)}</p>{children}</div>;
 }

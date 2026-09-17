@@ -1,3 +1,4 @@
+import { uiMessage, uiText, useUiLanguage } from '../../../i18n/ui';
 import { useEffect, useRef, useState } from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { ChevronLeft, ChevronRight, LayoutDashboard, CalendarDays, FileSignature, ListChecks, Files, LayoutGrid, Flag, Package, Camera, MapPinned, Users, HardHat, ShieldCheck, Wallet, CheckCircle, History, Landmark } from 'lucide-react';
@@ -18,7 +19,7 @@ const SECTION_ICONS = {
 };
 
 const SECTION_GROUPS = [
-  { label: 'Overview', keys: ['overview', 'governance'] },
+  { label: 'Overview', keys: ['overview', 'governance', 'controls', 'monthly'] },
   { label: 'Schedule', keys: ['timeline', 'tender', 'milestones'] },
   { label: 'Work & Materials', keys: ['boq', 'materials', 'progress'] },
   { label: 'Evidence', keys: ['photos', 'field evidence'] },
@@ -29,6 +30,7 @@ const SECTION_GROUPS = [
 ];
 
 export function ProjectNavigation({ tabs, value, onSelect }: { tabs: Project360Tab[]; value: string; onSelect: (value: string) => void }) {
+  useUiLanguage();
   const [jumpOpen, setJumpOpen] = useState(false);
   const activeIndex = tabs.findIndex((tab) => tab.value === value);
   const activeTab = tabs[activeIndex];
@@ -68,52 +70,52 @@ export function ProjectNavigation({ tabs, value, onSelect }: { tabs: Project360T
     <Dialog open={jumpOpen} onOpenChange={setJumpOpen}>
     <div className="sticky top-0 z-20 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur-md md:static">
       <div className="flex min-w-0 items-center gap-2">
-        <button type="button" aria-label="Previous project section" disabled={activeIndex <= 0} onClick={() => onSelect(tabs[activeIndex - 1].value)} className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-25 md:hidden"><ChevronLeft size={18} /></button>
+        <button type="button" aria-label={uiText("Previous project section")} disabled={activeIndex <= 0} onClick={() => onSelect(tabs[activeIndex - 1].value)} className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-25 md:hidden"><ChevronLeft size={18} /></button>
       <div className="hidden min-w-0 flex-1 items-center gap-1 md:flex">
-        <button type="button" aria-label="Scroll project sections left" disabled={!edges.left} onClick={() => scroll(-1)} className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500"><ChevronLeft size={18} /></button>
+        <button type="button" aria-label={uiText("Scroll project sections left")} disabled={!edges.left} onClick={() => scroll(-1)} className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500"><ChevronLeft size={18} /></button>
         <div ref={railRef} className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsPrimitive.List aria-label="Project sections" className="flex w-max min-w-full flex-nowrap gap-1" loop>
+          <TabsPrimitive.List aria-label={uiText("Project sections")} className="flex w-max min-w-full flex-nowrap gap-1" loop>
             {tabs.map((tab) => {
               const Icon = SECTION_ICONS[tab.value as keyof typeof SECTION_ICONS] ?? Files;
               return <TabsPrimitive.Trigger key={tab.value} value={tab.value}
                 className={cn('flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-colors sm:px-4 sm:text-sm',
                   'text-slate-500 hover:bg-slate-50 hover:text-navy-700 data-[state=active]:bg-navy-50 data-[state=active]:text-navy-800 data-[state=active]:shadow-[inset_0_-2px_0_0_#265aa0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500')}>
-                <Icon size={16} aria-hidden="true" />{tab.label}
+                <Icon size={16} aria-hidden="true" />{uiText(tab.label)}
               </TabsPrimitive.Trigger>;
             })}
           </TabsPrimitive.List>
         </div>
-        <button type="button" aria-label="Scroll project sections right" disabled={!edges.right} onClick={() => scroll(1)} className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500"><ChevronRight size={18} /></button>
+        <button type="button" aria-label={uiText("Scroll project sections right")} disabled={!edges.right} onClick={() => scroll(1)} className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500"><ChevronRight size={18} /></button>
       </div>
       <DialogTrigger asChild>
-        <button type="button" aria-label={`Jump to Section, current section ${activeTab?.label ?? ''}, ${activeIndex + 1} of ${tabs.length}`} className="flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-left shadow-sm hover:bg-navy-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500 md:order-first md:min-h-11 md:shrink-0 md:flex-none md:border-transparent md:bg-gradient-to-br md:from-navy-700 md:to-sky-500 md:text-white md:shadow-none md:hover:brightness-105">
+        <button type="button" aria-label={uiMessage("Jump to Section, current section {{0}}, {{1}} of {{2}}", [activeTab?.label ?? '', activeIndex + 1, tabs.length])} className="flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-left shadow-sm hover:bg-navy-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500 md:order-first md:min-h-11 md:shrink-0 md:flex-none md:border-transparent md:bg-gradient-to-br md:from-navy-700 md:to-sky-500 md:text-white md:shadow-none md:hover:brightness-105">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-navy-700 to-sky-500 text-white md:hidden"><ActiveIcon size={19} /></span>
-          <span className="min-w-0 flex-1 text-sm font-semibold text-slate-800 md:hidden">{activeTab?.label}</span>
+          <span className="min-w-0 flex-1 text-sm font-semibold text-slate-800 md:hidden">{uiText(activeTab?.label)}</span>
           <span className="shrink-0 text-[11px] tabular-nums text-slate-400 md:hidden">{activeIndex + 1}/{tabs.length}</span>
           <LayoutGrid size={17} className="shrink-0 text-navy-700 md:text-white" />
         </button>
       </DialogTrigger>
-      <button type="button" aria-label="Next project section" disabled={activeIndex < 0 || activeIndex >= tabs.length - 1} onClick={() => onSelect(tabs[activeIndex + 1].value)} className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-25 md:hidden"><ChevronRight size={18} /></button>
+      <button type="button" aria-label={uiText("Next project section")} disabled={activeIndex < 0 || activeIndex >= tabs.length - 1} onClick={() => onSelect(tabs[activeIndex + 1].value)} className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-25 md:hidden"><ChevronRight size={18} /></button>
       </div>
-      <div className="mt-2 flex gap-1 px-1 pb-1" aria-label="Section position">
-        {tabs.map((tab) => <button key={tab.value} type="button" onClick={() => onSelect(tab.value)} title={tab.label} aria-label={`Go to ${tab.label}`} aria-current={tab.value === value ? 'step' : undefined} className="group flex h-5 min-w-0 flex-1 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500">
+      <div className="mt-2 flex gap-1 px-1 pb-1" aria-label={uiText("Section position")}>
+        {tabs.map((tab) => <button key={tab.value} type="button" onClick={() => onSelect(tab.value)} title={uiText(tab.label)} aria-label={uiMessage("Go to {{0}}", [uiText(tab.label)])} aria-current={tab.value === value ? 'step' : undefined} className="group flex h-5 min-w-0 flex-1 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500">
           <span className={cn('h-1 w-full rounded-full transition-colors', tab.value === value ? 'bg-navy-600' : 'bg-slate-100 group-hover:bg-navy-200')} />
         </button>)}
       </div>
     </div>
-    <DialogContent title="Jump to Section" description={`${tabs.length} sections available for your role`} size="lg">
+    <DialogContent title={uiText("Jump to Section")} description={uiMessage("{{0}} sections available for your role", [tabs.length])} size="lg">
       <div className="space-y-6">
         {SECTION_GROUPS.map((group) => {
           const available = group.keys.flatMap((key) => tabs.filter((tab) => tab.value === key));
           if (!available.length) return null;
-          return <section key={group.label} aria-label={group.label}>
-            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{group.label}</h3>
+          return <section key={group.label} aria-label={uiText(group.label)}>
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{uiText(group.label)}</h3>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {available.map((tab) => {
                 const Icon = SECTION_ICONS[tab.value as keyof typeof SECTION_ICONS] ?? Files;
                 return <button key={tab.value} type="button" aria-pressed={tab.value === value} onClick={() => { onSelect(tab.value); setJumpOpen(false); }} className={cn('flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500', tab.value === value ? 'border-navy-300 bg-navy-50 text-navy-800' : 'border-slate-200 text-slate-600 hover:border-navy-200 hover:bg-slate-50')}>
                   <span className={cn('flex h-10 w-10 items-center justify-center rounded-lg', tab.value === value ? 'bg-gradient-to-br from-navy-700 to-sky-500 text-white' : 'bg-slate-100 text-slate-500')}><Icon size={21} /></span>
-                  {tab.label}
+                  {uiText(tab.label)}
                 </button>;
               })}
             </div>
