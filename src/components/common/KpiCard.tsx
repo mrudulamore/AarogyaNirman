@@ -19,13 +19,13 @@ export function KpiCard({ label, value, sub, icon: Icon, tone = 'default', onCli
 }) {
   useUiLanguage();
   return (
-    <div onClick={onClick} className={cn('rounded-lg border border-slate-200 bg-white p-4 shadow-card transition-all', onClick && 'cursor-pointer hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md')}>
-      <div className="flex items-start justify-between">
-        <p className="text-[11.5px] font-medium uppercase tracking-wide text-slate-400">{uiText(label)}</p>
-        {Icon && <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', TONE_CLASSES[tone])}><Icon size={14} /></div>}
+    <div onClick={onClick} className={cn('rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 transition-all', onClick && 'cursor-pointer hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md')}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{uiText(label)}</p>
+        {Icon && <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl', TONE_CLASSES[tone])}><Icon size={14} /></div>}
       </div>
-      <p className="mt-1.5 text-2xl font-bold text-slate-900">{uiText(value)}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-slate-400">{uiText(sub)}</p>}
+      <p className="mt-3 break-words text-2xl font-bold tracking-tight text-slate-900">{uiText(value)}</p>
+      {sub && <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{uiText(sub)}</p>}
     </div>
   );
 }
@@ -49,10 +49,10 @@ export function KpiGroupCard({ title, icon: Icon, tone = 'default', primary, sta
 }) {
   useUiLanguage();
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-card transition-shadow hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <p className="text-[11.5px] font-medium uppercase tracking-wide text-slate-400">{uiText(title)}</p>
-        {Icon && <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', TONE_CLASSES[tone])}><Icon size={14} /></div>}
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{uiText(title)}</p>
+        {Icon && <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl', TONE_CLASSES[tone])}><Icon size={14} /></div>}
       </div>
       <div onClick={onPrimaryClick} className={cn('mt-1.5 inline-flex items-baseline gap-1.5', onPrimaryClick && 'cursor-pointer')}>
         <p className="text-2xl font-bold text-slate-900">{uiText(primary.value)}</p>

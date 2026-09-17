@@ -42,3 +42,47 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up { animation: fade-up 0.6s ease-out both; }
+
+/* Shared presentation layer: browser and Android WebView use the same styles. */
+.app-shell { height: 100dvh; }
+.app-content {
+  background: radial-gradient(ellipse at 85% 0, #eaf0f8 0, transparent 55%), #f6f8fc;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  overscroll-behavior-y: contain;
+}
+.app-content > * { max-width: 1600px; margin-inline: auto; }
+.app-header {
+  padding-top: max(.375rem, env(safe-area-inset-top));
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 2px 12px rgba(15,23,42,.025);
+}
+.app-sidebar {
+  background: linear-gradient(165deg, #152746 0%, #0d1830 65%);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.ui-card { box-shadow: 0 2px 8px rgba(15,23,42,.035), 0 12px 30px -24px rgba(15,23,42,.2); }
+.ui-button { transition: background-color 150ms, border-color 150ms, box-shadow 150ms; }
+.ui-input { transition: border-color 150ms, box-shadow 150ms; }
+.ui-input:hover:not(:disabled) { border-color: #94a3b8; }
+.ui-menu-item { min-height: 36px; }
+.table-scroll { overscroll-behavior-x: contain; }
+.table-scroll th { white-space: nowrap; }
+.table-scroll tbody tr:hover { background-color: #f8fafc; }
+:where(button, a, input, select, textarea, [role="tab"]):focus-visible {
+  outline: 2px solid #3572bd;
+  outline-offset: 3px;
+}
+::selection { background: #d7e6f5; color: #162648; }
+@media (max-width: 639px) {
+  .ui-button { min-height: 44px; height: auto; padding-block: .625rem; white-space: normal; }
+  .ui-input { min-height: 44px; font-size: 16px; }
+  .ui-menu-item { min-height: 44px; }
+  .app-header { padding-inline: .75rem; column-gap: .25rem; }
+  .app-header > div { gap: .125rem; }
+  .app-header button { min-height: 40px; }
+  .auth-shell { min-height: 100dvh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

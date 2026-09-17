@@ -31,6 +31,7 @@ export function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState(false);
 
   function quickLogin(role: Role) {
     login(role);
@@ -39,22 +40,23 @@ export function Login() {
 
   function manualSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const match = DEMO_ACCOUNTS.find((a) => a.username === username.trim()) ?? DEMO_ACCOUNTS[0];
+    const match = DEMO_ACCOUNTS.find((a) => a.username === username.trim().toLowerCase());
+    if (!match) { setError(true); return; }
     login(match.role);
-    navigate('/select-role');
+    navigate('/dashboard', { replace: true });
   }
 
   return (
     <AuthLayout title={uiText(t('auth.signInTitle'))} subtitle={t('auth.signInSubtitle')}>
       <form onSubmit={manualSubmit} className="space-y-3.5">
         <div>
-          <Label>{t('auth.userId')}</Label>
-          <Input placeholder={uiText(t('auth.userIdPlaceholder') ?? undefined)} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <Label htmlFor="login-id">{t('auth.userId')}</Label>
+          <Input id="login-id" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-invalid={error} aria-describedby={error ? 'login-error' : undefined} placeholder={t('auth.userIdPlaceholder') ?? undefined} value={username} onChange={(e) => { setUsername(e.target.value); setError(false); }} />
         </div>
         <div>
-          <Label>{t('auth.password')}</Label>
+          <Label htmlFor="login-password">{t('auth.password')}</Label>
           <div className="relative">
-            <Input type={showPw ? 'text' : 'password'} placeholder={uiText("••••••••")} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input id="login-password" name="password" autoComplete="current-password" type={showPw ? 'text' : 'password'} placeholder={uiText("••••••••")} value={password} onChange={(e) => setPassword(e.target.value)} />
             <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
               {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -64,6 +66,7 @@ export function Login() {
           <a href="/forgot-password" onClick={(e) => { e.preventDefault(); navigate('/forgot-password'); }} className="text-navy-700 hover:underline">{t('auth.forgotPassword')}</a>
           <span className="flex items-center gap-1 text-slate-400"><ShieldCheck size={12} /> {t('auth.securedSession')}</span>
         </div>
+        {error && <p id="login-error" role="alert" className="text-xs text-red-600">{t('auth.unknownLoginId')}</p>}
         <Button type="submit" className="w-full" size="lg">{t('auth.signIn')}</Button>
       </form>
 
@@ -79,7 +82,7 @@ export function Login() {
             className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs hover:border-navy-300 hover:bg-navy-50"
           >
             <span className="font-medium text-slate-700">{t(`roles.${a.role}`)}</span>
-            <span className="text-[10px] text-slate-400">{uiText(a.username)}</span>
+            <span className="text-[10px] text-slate-400">{a.username}</span>
           </button>
         ))}
       </div>

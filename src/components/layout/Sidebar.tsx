@@ -22,13 +22,13 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
   return (
     <>
-      {mobileOpen && <div className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden" onClick={onClose} />}
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside className={cn(
-        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-navy-800 bg-navy-900 text-slate-200 transition-transform lg:static lg:translate-x-0',
+        'app-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-navy-800 bg-navy-900 text-slate-200 transition-transform lg:static lg:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
         <div className="flex items-center gap-2.5 border-b border-navy-800/70 px-5 py-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-govblue-600">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-govblue-600 shadow-lg shadow-black/15">
             <Landmark size={18} className="text-white" />
           </div>
           <div className="leading-tight">
@@ -37,7 +37,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           </div>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {keys.map((key) => {
             const item = NAV_ITEMS[key];
             const count = COUNTED_KEYS.has(key) ? counts[key] : undefined;
@@ -47,8 +47,8 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
                 to={item.path}
                 onClick={onClose}
                 className={({ isActive }) => cn(
-                  'flex items-center gap-2.5 rounded-md px-3 py-2 text-[13.5px] font-medium transition-colors',
-                  isActive ? 'bg-govblue-600 text-white' : 'text-navy-100 hover:bg-navy-800 hover:text-white',
+                  'flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors',
+                  isActive ? 'bg-govblue-600 text-white shadow-md shadow-black/10 ring-1 ring-white/15' : 'text-navy-200 hover:bg-navy-800 hover:text-white',
                 )}
               >
                 <item.icon size={16} className="shrink-0" />

@@ -48,6 +48,8 @@
     "signedInAs": "Signed in as"
   },
   "header": {
+    "switchAccount": "Switch account",
+    "accountMenu": "Account menu",
     "searchPlaceholder": "Search projects, contractors, bills, defects…",
     "notifications": "Notifications",
     "markAllRead": "Mark all read",
@@ -57,6 +59,7 @@
     "signOut": "Sign out"
   },
   "auth": {
+    "unknownLoginId": "Login ID not recognised. Enter one of the demo account IDs shown below.",
     "heroTitle": "Hospital Construction Monitoring & Project Management System",
     "heroSubtitle": "End-to-end visibility of public hospital infrastructure — from administrative sanction to operational handover — with transparent progress, evidence-backed quality verification and accountable financial approvals.",
     "heroFooterNote": "Secure government access · Role-based authorization · Full audit trail",
