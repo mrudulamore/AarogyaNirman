@@ -22,7 +22,7 @@ export function SelectRole() {
   const currentUser = useStore((s) => s.currentUser);
   const login = useStore((s) => s.login);
   const logout = useStore((s) => s.logout);
-  const roles = (Object.keys(ROLE_LABELS) as Role[]).filter(role => role !== 'WORKFORCE');
+  const roles: Role[] = (Object.keys(ROLE_LABELS) as Role[]).filter(role => role !== 'WORKFORCE');
   roles.splice(roles.indexOf('DEPUTY_ENGINEER') + 1, 0, 'WORKFORCE');
 
   function choose(role: Role) {
