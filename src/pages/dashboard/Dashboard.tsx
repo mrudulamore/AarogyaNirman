@@ -1,3 +1,4 @@
+import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -249,6 +250,7 @@ export function Dashboard() {
 
   // Superadmin's "dashboard" is the Access Management console — access/permission
   // governance is their job, not project monitoring.
+  if (currentUser?.role === 'WORKFORCE') return <WorkforceHome />;
   if (currentUser?.role === 'SUPERADMIN') return <AccessManagement />;
 
   // The native app is built for field roles: Deputy/Junior Engineers and Contractors land
@@ -270,7 +272,7 @@ export function Dashboard() {
       )}
 
       {projects.length > 0 && (
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="dashboard-metrics mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <KpiGroupCard
           title={uiText(t('dashboard.kpiTotalProjects'))} icon={Building2} tone="blue"
           primary={{ value: kpis.total, label: 'projects' }} onPrimaryClick={() => setStatusFilter(null)}

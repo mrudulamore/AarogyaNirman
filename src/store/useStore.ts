@@ -1,3 +1,7 @@
+import { workforceAccount } from '../lib/workforceAccount';
+import { DEFAULT_ESCALATION, pendingWork, daysLate, drawingWarning, type EscalationPolicy } from '../lib/pendingWork';
+import { ROLE_LABELS } from '../lib/constants';
+import { contractorAccount } from '../lib/contractorAccount';
 import { generateFundInstallments } from '../mock/fundInstallments';
 import { todayDate } from '../lib/fundDisbursal';
 import { create } from 'zustand';
@@ -23,6 +27,10 @@ let auditSeq = 0;
 const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toString(36)}`;
 
 export interface StoreState extends ControlActions {
+  escalationPolicy: EscalationPolicy;
+  escalationKeys: string[];
+  setEscalationPolicy: (policy: EscalationPolicy) => void;
+  evaluateEscalations: () => void;
   controlRecords: ControlRecord[];
   currentUser: User | null;
   users: User[];
@@ -79,7 +87,7 @@ export interface StoreState extends ControlActions {
   updateProject: (id: string, patch: Partial<Project>) => void;
 
   // progress
-  addProgressReport: (r: Omit<ProgressReport, 'id'>) => void;
+  addProgressReport: (r: Omit<ProgressReport, 'id'>) => Promise<void>;
   addPhoto: (p: Omit<SitePhoto, 'id'>) => SitePhoto;
   deletePhoto: (id: string) => void;
 
@@ -174,6 +182,28 @@ export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
       currentUser: null,
+      escalationPolicy: DEFAULT_ESCALATION,
+      escalationKeys: [],
+      setEscalationPolicy: (policy) => {
+        if (get().currentUser?.role !== 'COMMISSIONER') throw new Error('Only the commissioner can configure escalation.');
+        const roles = ['EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'CIVIL_SURGEON', 'REGIONAL_DIRECTOR', 'COMMISSIONER'];
+        if (![policy.approvalDays, policy.firstDays, policy.secondDays].every(n => Number.isInteger(n) && n > 0) || policy.secondDays < policy.firstDays || !roles.includes(policy.firstRole) || !roles.includes(policy.secondRole)) throw new Error('Enter valid escalation thresholds and recipients.');
+        set({ escalationPolicy: policy }); get().logAction('Updated delay escalation policy');
+      },
+      evaluateEscalations: () => {
+        if (!get().currentUser || get().currentUser?.role === 'WORKFORCE') return;
+        const policy = get().escalationPolicy;
+        for (const task of pendingWork(get(), todayDate(), policy, false)) {
+          const days = daysLate(task.due, todayDate());
+          if (!days) continue;
+          const level = days >= policy.secondDays ? 2 : days >= policy.firstDays ? 1 : 0;
+          const role = level === 2 ? policy.secondRole : level === 1 ? policy.firstRole : task.ownerRole;
+          const key = [task.id, task.due, level, role].join(':');
+          if (get().escalationKeys.includes(key)) continue;
+          set(s => ({ escalationKeys: [...s.escalationKeys, key] }));
+          get().pushNotification({ projectId: task.projectId, type: level ? 'WARNING' : 'INFO', targetRoles: [...new Set([task.ownerRole, role])], message: task.title + ' is ' + days + ' days overdue. Escalation level ' + level + '.' });
+        }
+      },
       controlRecords: [],
       ...createControlActions(set, get),
       ...seed,
@@ -181,13 +211,19 @@ export const useStore = create<StoreState>()(
       fundInstallments: generateFundInstallments(seed.projects, todayDate()),
 
       login: (role, userId) => {
+        if (get().currentUser?.role === 'WORKFORCE' && role !== 'WORKFORCE') throw new Error('Sign out before switching accounts.');
+        if (role === 'WORKFORCE') {
+          const worker = userId ? get().workers.find(w => w.id === userId) : get().workers[0];
+          set({ currentUser: worker ? workforceAccount(worker) : null }); return;
+        }
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
-        if (role === 'CONTRACTOR' && !user && !userId) {
-          const firm = get().contractors[0];
-          set({ currentUser: { ...get().users[0], id: `ACCOUNT-${firm.id}`, name: firm.contactPerson, role, contractorId: firm.id, assignedProjectIds: get().projects.filter(p => p.contractorId === firm.id).map(p => p.id) } });
+        if (userId && user?.role !== role) { set({ currentUser: null }); return; }
+        if (role === 'CONTRACTOR') {
+          const firm = get().contractors.find(c => c.id === user?.contractorId) ?? (!userId && !user ? get().contractors[0] : undefined);
+          set({ currentUser: firm ? contractorAccount(firm, get().projects, user) : null });
           return;
         }
-        set({ currentUser: user ?? { ...get().users[0], role } });
+        set({ currentUser: user?.role === role ? user : null });
       },
       logout: () => set({ currentUser: null }),
 
@@ -197,7 +233,10 @@ export const useStore = create<StoreState>()(
       },
       updateUserRole: (userId, role) => {
         const user = get().users.find((u) => u.id === userId);
-        set((s) => ({ users: s.users.map((u) => (u.id === userId ? { ...u, role } : u)) }));
+        set((s) => ({
+          users: s.users.map((u) => (u.id === userId ? { ...u, role, designation: ROLE_LABELS[role] } : u)),
+          currentUser: s.currentUser?.id === userId ? null : s.currentUser,
+        }));
         if (user) get().logAction(`Changed ${user.name}'s role from ${user.role} to ${role}`);
       },
 
@@ -233,10 +272,22 @@ export const useStore = create<StoreState>()(
         if (before) get().logAction('Updated project details', before.name);
       },
 
-      addProgressReport: (r) => {
+      addProgressReport: async (r) => {
         assertProjectAccess(get(), r.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         if (!Number.isFinite(r.progressPct) || r.progressPct < 0 || r.progressPct > 100) throw new Error('Progress must be between 0 and 100.');
-        const report: ProgressReport = { ...r, id: nid('PRG') };
+        const submitter = get().currentUser!;
+        const warning = drawingWarning(get(), r.projectId, r.drawingId);
+        if (warning) throw new Error(warning);
+        if (r.clientSubmissionId && get().progressReports.some(p => p.clientSubmissionId === r.clientSubmissionId && p.projectId === r.projectId)) return;
+        if (!r.attachments?.length || r.attachments.length > 5) throw new Error('Attach 1 to 5 supporting documents.');
+        for (const attachment of r.attachments) {
+          const file = await readBillFile(attachment.id);
+          if (!file.size || file.size > 5 * 1024 * 1024 || file.size !== attachment.size || file.type !== attachment.mimeType || !['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) throw new Error('Use PDF, JPEG or PNG files up to 5 MB each.');
+        }
+        if (get().currentUser?.id !== submitter.id || get().currentUser?.role !== submitter.role) throw new Error('Your account changed. Reopen the progress form.');
+        assertProjectAccess(get(), r.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        if (r.clientSubmissionId && get().progressReports.some(p => p.clientSubmissionId === r.clientSubmissionId && p.projectId === r.projectId)) return;
+        const report: ProgressReport = { ...r, submittedBy: submitter.name, id: nid('PRG') };
         set((s) => ({ progressReports: [report, ...s.progressReports] }));
         const project = get().projects.find((p) => p.id === r.projectId);
         get().updateProject(r.projectId, { reportedProgress: Math.max(project?.reportedProgress ?? 0, r.progressPct) });
@@ -357,6 +408,7 @@ export const useStore = create<StoreState>()(
       },
 
       scheduleInspection: (i) => {
+        const warning = drawingWarning(get(), i.projectId, i.drawingId); if (warning) throw new Error(warning);
         const insp: Inspection = {
           id: nid('INS'), status: 'SCHEDULED', items: [], score: 0, overallResult: 'NOT_INSPECTED', isReinspection: false, ...i,
         };
@@ -527,13 +579,16 @@ export const useStore = create<StoreState>()(
         get().logAction(`Added worker ${w.name} (${w.role})`, project?.name);
       },
       markAttendance: (workerId, projectId, method) => {
-        assertProjectAccess(get(), projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'SUPERADMIN']);
+        const actor = get().currentUser;
+        if (actor?.role === 'WORKFORCE') {
+          if (actor.workerId !== workerId || !get().workers.some(w => w.id === workerId && w.projectId === projectId)) throw new Error('You can mark only your own attendance at your assigned site.');
+        } else assertProjectAccess(get(), projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'SUPERADMIN']);
         if (!get().workers.some(w => w.id === workerId && w.projectId === projectId)) throw new Error('Worker does not belong to this hospital.');
         if (get().attendance.some(a => a.workerId === workerId && a.date === todayDate())) return;
         const now = new Date();
         const rec: AttendanceRecord = {
-          id: nid('ATT'), workerId, projectId, date: now.toISOString().slice(0, 10),
-          checkIn: now.toTimeString().slice(0, 5), method, shift: 'Day',
+          id: nid('ATT'), workerId, projectId, date: todayDate(),
+          checkIn: now.toTimeString().slice(0, 5), method: actor?.role === 'WORKFORCE' ? 'MANUAL' : method, shift: get().workers.find(w => w.id === workerId)!.shift,
         };
         set((s) => ({ attendance: [rec, ...s.attendance], workers: s.workers.map((w) => (w.id === workerId ? { ...w, attendanceStatus: 'PRESENT' } : w)) }));
         const project = get().projects.find((p) => p.id === projectId);
@@ -767,7 +822,20 @@ export const useStore = create<StoreState>()(
       name: 'hcms-maharashtra-store-v5',
       merge: (persisted, current) => {
         const saved = persisted as Partial<StoreState> | undefined;
-        return { ...current, ...saved, currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+        if (saved?.currentUser?.role === 'WORKFORCE') {
+          const worker = (saved.workers ?? current.workers).find(w => w.id === saved.currentUser?.workerId);
+          saved.currentUser = worker ? workforceAccount(worker) : null;
+        }
+        else if (saved?.currentUser?.role === 'CONTRACTOR') {
+          const firm = (saved.contractors ?? current.contractors).find(c => c.id === saved.currentUser?.contractorId);
+          const user = (saved.users ?? current.users).find(u => u.id === saved.currentUser?.id && u.role === 'CONTRACTOR');
+          saved.currentUser = firm ? contractorAccount(firm, saved.projects ?? current.projects, user) : null;
+        }
+        else if (saved?.currentUser) {
+          const user = (saved.users ?? current.users).find(u => u.id === saved.currentUser?.id && u.role === saved.currentUser?.role);
+          saved.currentUser = user ?? null;
+        }
+        return { ...current, ...saved, currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;

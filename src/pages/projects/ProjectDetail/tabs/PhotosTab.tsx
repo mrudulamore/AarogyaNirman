@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogFooter, ConfirmDialog } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { photoSrc, formatDate, formatDateTime } from '../../../../lib/utils';
-import { simulateCapture, isWithinGeofence } from '../../../../lib/geo';
+import { isWithinGeofence } from '../../../../lib/geo';
 
 const STAGE_OPTIONS = ['Foundation', 'Structure', 'Roofing', 'MEP', 'Finishing', 'Medical Infrastructure'];
 const TYPES: PhotoType[] = ['BEFORE', 'PROGRESS', 'COMPLETION'];
@@ -26,37 +26,52 @@ export function PhotosTab({ project }: { project: Project }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [stageFilter, setStageFilter] = useState('ALL');
-  const [form, setForm] = useState({ stage: STAGE_OPTIONS[0], type: 'PROGRESS' as PhotoType, description: '' });
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [place, setPlace] = useState('ALL');
+  const [form, setForm] = useState({ building: '', floor: '', activity: '', stage: STAGE_OPTIONS[0], type: 'PROGRESS' as PhotoType, description: '' });
 
-  const filtered = stageFilter === 'ALL' ? photos : photos.filter((p) => p.stage === stageFilter);
+  const locationKey = (p: { building?: string; floor?: string; activity?: string; stage: string }) => [p.building || 'Unspecified building', p.floor || 'Unspecified floor', p.activity || p.stage].join(' / ');
+  const places = [...new Set(photos.map(locationKey))];
+  const filtered = photos.filter(p => (stageFilter === 'ALL' || p.stage === stageFilter) && (place === 'ALL' || locationKey(p) === place));
   const grouped = useMemo(() => {
     const map = new Map<string, typeof photos>();
-    filtered.forEach((p) => { const arr = map.get(p.stage) ?? []; arr.push(p); map.set(p.stage, arr); });
+    filtered.forEach((p) => { const arr = map.get(locationKey(p)) ?? []; arr.push(p); map.set(locationKey(p), arr); });
     return Array.from(map.entries());
   }, [filtered]);
 
   const viewerIndex = filtered.findIndex((p) => p.id === viewerId);
   const viewerPhoto = filtered[viewerIndex];
 
-  function submitUpload() {
-    addPhoto({
-      projectId: project.id, stage: form.stage, type: form.type, date: new Date().toISOString().slice(0, 10),
-      location: `${project.taluka}, ${project.district}`, uploadedBy: currentUser?.name ?? 'Deputy Engineer',
-      uploadedByRole: currentUser?.role ?? 'DEPUTY_ENGINEER',
-      description: form.description || `${form.stage} — ${form.type.toLowerCase()} photo`, seed: Math.floor(Math.random() * 99999),
-      ...simulateCapture(project),
-    });
-    toast.success(uiText('Photo uploaded with device-captured location and timestamp metadata.'));
-    setUploadOpen(false);
+  async function submitUpload() {
+    if (busy) return; setBusy(true);
+    try {
+      if (!file || !['image/jpeg', 'image/png'].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024) throw new Error('Select a JPEG or PNG photo up to 5 MB.');
+      if (!form.building.trim() || !form.floor.trim() || !form.activity.trim()) throw new Error('Enter building, floor and activity to group the photo.');
+      const account = useStore.getState().currentUser;
+      const url = URL.createObjectURL(file);
+      let dataUrl: string;
+      try {
+        const image = new Image(); image.src = url; await image.decode();
+        const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas'); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale);
+        const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Photo processing is unavailable.');
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height); dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      } finally { URL.revokeObjectURL(url); }
+      if (useStore.getState().currentUser !== account) throw new Error('Your account changed. Reopen the photo form.');
+      const now = new Date().toISOString();
+      addPhoto({ projectId: project.id, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
+        location: form.building + ' / ' + form.floor, uploadedBy: currentUser?.name ?? '', uploadedByRole: currentUser!.role,
+        description: form.description, seed: 0, dataUrl, lat: project.siteLat, lng: project.siteLng, locationSource: 'MANUAL', capturedAt: now, uploadedAt: now, deviceInfo: 'File upload; source capture time unverified' });
+      toast.success(uiText('Photo saved on this device.')); setFile(null); setUploadOpen(false);
+    } catch(e) { toast.error(uiText((e as Error).message)); } finally { setBusy(false); }
   }
-
-  const beforeShot = photos.filter((p) => p.type === 'BEFORE')[0];
-  const latestShot = photos.filter((p) => p.type !== 'BEFORE')[0] ?? photos[0];
+  const comparisons = grouped.map(([key, items]) => ({ key, before: [...items].filter(p => p.type === 'BEFORE').sort((a,b) => a.capturedAt.localeCompare(b.capturedAt))[0], after: [...items].filter(p => p.type !== 'BEFORE').sort((a,b) => b.capturedAt.localeCompare(a.capturedAt))[0] })).filter(pair => pair.before && pair.after);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={stageFilter} onValueChange={setStageFilter}>
             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -64,16 +79,18 @@ export function PhotosTab({ project }: { project: Project }) {
               {STAGE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{uiText(s)}</SelectItem>)}
             </SelectContent>
           </Select>
+          <select aria-label={uiText('Building, floor and activity')} className="min-h-11 max-w-full rounded border px-2 text-xs" value={place} onChange={e => setPlace(e.target.value)}><option value="ALL">{uiText('All locations')}</option>{places.map(p => <option key={p}>{p}</option>)}</select>
           <Button variant="outline" size="sm" onClick={() => setCompareMode((v) => !v)}><Images size={14} /> {uiText(compareMode ? 'Hide' : 'Before / After')}</Button>
         </div>
         <Button onClick={() => setUploadOpen(true)}><Upload size={15} />{uiText(" Upload Photo")}</Button>
       </div>
 
-      {compareMode && beforeShot && latestShot && (
-        <Card>
-          <CardHeader><CardTitle>{uiText("Before / After Comparison")}</CardTitle></CardHeader>
+      {compareMode && comparisons.length === 0 && <p className="text-sm text-slate-500">{uiText('Add before and progress/completion photos for the same building, floor and activity.')}</p>}
+      {compareMode && comparisons.map(({ key, before, after }) => (
+        <Card key={key}>
+          <CardHeader><CardTitle>{uiText("Before / After Comparison")} ? {key}</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {[{ label: 'BEFORE', photo: beforeShot }, { label: 'LATEST', photo: latestShot }].map(({ label, photo }) => (
+            {[{ label: 'BEFORE', photo: before }, { label: 'LATEST', photo: after }].map(({ label, photo }) => (
               <div key={label} className="overflow-hidden rounded-md border border-slate-200">
                 <img src={photoSrc(photo)} className="h-52 w-full object-cover" />
                 <div className="p-2.5">
@@ -85,7 +102,7 @@ export function PhotosTab({ project }: { project: Project }) {
             ))}
           </CardContent>
         </Card>
-      )}
+      ))}
 
       {grouped.length === 0 && <EmptyState icon={<Images size={32} />} title={uiText("No photos uploaded yet")} description={uiText("Upload before, progress, and completion photographs to build the visual construction record.")} action={<Button size="sm" onClick={() => setUploadOpen(true)}>{uiText("Upload First Photo")}</Button>} />}
 
@@ -108,7 +125,7 @@ export function PhotosTab({ project }: { project: Project }) {
         </Card>
       ))}
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+      <Dialog open={uploadOpen} onOpenChange={v => !busy && setUploadOpen(v)}>
         <DialogContent title={uiText("Upload Site Photo")} description={uiText(project.name)}>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -131,13 +148,13 @@ export function PhotosTab({ project }: { project: Project }) {
               <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Description")}</p>
               <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={uiText("Brief description of the photograph")} />
             </div>
-            <div className="flex h-32 items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-center text-xs text-slate-400">
-              <div><Upload className="mx-auto mb-1" size={20} />{uiText(" Simulated upload — a placeholder image will be generated")}<br />{uiText("Location & timestamp captured automatically")}</div>
-            </div>
+            {(['building', 'floor', 'activity'] as const).map(key => <label key={key} className="block text-xs">{uiText(key)}<input className="block min-h-11 w-full rounded border px-2" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>)}
+            <label className="block text-xs">{uiText('Site photo')}<input type="file" accept="image/jpeg,image/png" disabled={busy} onChange={e => setFile(e.target.files?.[0] ?? null)} className="mt-2 block w-full" /></label>
+            <p className="text-xs text-slate-500">{uiText('File uploads use the registered site location. The recorded time is the upload time, not verified camera capture time.')}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={submitUpload}>{uiText("Upload")}</Button>
+            <Button disabled={busy} variant="outline" onClick={() => setUploadOpen(false)}>{uiText("Cancel")}</Button>
+            <Button disabled={busy || !file} onClick={submitUpload}>{uiText(busy ? "Saving..." : "Upload")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

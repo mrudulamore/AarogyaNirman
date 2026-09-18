@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { toast } from 'sonner';
 import { savePdf } from './pdfDelivery';
 import type { PdfJob, PdfReportOptions, DocumentRecordOptions } from './pdfTypes';
@@ -6,6 +7,10 @@ export type { PdfSection, PdfKpi } from './pdfTypes';
 let exporting = false;
 
 export async function generatePdf(job: PdfJob): Promise<Blob> {
+  if (typeof document !== 'undefined' && (/^(hi|mr)/.test(i18n.language) || /[\u0900-\u097f]/.test(JSON.stringify(job.options)))) {
+    const { buildUnicodePdf } = await import('./unicodePdf');
+    return buildUnicodePdf(job);
+  }
   if (typeof Worker === 'undefined') {
     const renderer = await import('./pdfRenderer');
     return job.kind === 'report' ? renderer.buildPdfReport(job.options) : renderer.buildDocumentRecord(job.options);

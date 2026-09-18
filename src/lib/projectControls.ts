@@ -21,18 +21,18 @@ export const CERTIFICATES = ['Building / occupancy', 'Fire approval', 'Electrica
 export const PROCUREMENT = ['DPR', 'Land / site possession', 'Administrative approval', 'Expenditure sanction', 'Technical sanction', 'Approved drawings / estimate', 'Budget availability', 'Tender publication / corrigenda', 'Bidder eligibility', 'Evaluation minutes', 'Conflict declarations', 'Award approval', 'Performance security', 'Insurance'];
 export const KIND_LABELS: Record<ControlKind, string> = { CERTIFICATE: 'Certificate register', PROCUREMENT: 'Procurement file', VARIATION: 'Contract variation', EXTENSION: 'Extension of Time', CONTRACT: 'Contract terms', QUALITY: 'Quality evidence', RECEIPT: 'Government receipt', PAYMENT: 'Contractor payment', REVERSAL: 'Transaction reversal', RELEASE: 'Security release', MONTHLY: 'Monthly report', DOCUMENT: 'Submit Documents' };
 export const CONTROL_FIELDS: Record<ControlKind, string[]> = {
-  CERTIFICATE: ['authority', 'issueDate', 'expiryDate', 'applicability', 'reason'],
-  PROCUREMENT: ['authority', 'issueDate', 'expiryDate', 'portalReference', 'version', 'amount', 'reason'],
+  CERTIFICATE: ['responsibleUserId', 'responsibleRole', 'authority', 'issueDate', 'expiryDate', 'applicability', 'reason'],
+  PROCUREMENT: ['responsibleUserId', 'responsibleRole', 'authority', 'issueDate', 'expiryDate', 'portalReference', 'version', 'amount', 'reason'],
   VARIATION: ['contractClause', 'reason', 'boqItemId', 'quantityDelta', 'rate', 'scheduleDays', 'authority'],
   EXTENSION: ['contractClause', 'reason', 'scheduleDays', 'authority', 'hindranceReference'],
   CONTRACT: ['authority', 'contractClause', 'commencementDate', 'liabilityMonths', 'liabilityEndDate', 'reason'],
-  QUALITY: ['inspectionId', 'defectId', 'testPlanReference', 'sampleReference', 'laboratory', 'standardVersion', 'drawingVersion', 'result', 'reason'],
+  QUALITY: ['drawingId', 'inspectionId', 'defectId', 'testPlanReference', 'sampleReference', 'laboratory', 'standardVersion', 'drawingVersion', 'result', 'reason'],
   RECEIPT: ['transactionDate', 'accountingHead', 'amount', 'reason'],
   PAYMENT: ['billId', 'transactionDate', 'accountingHead', 'amount', 'reason'],
   REVERSAL: ['originalTransactionId', 'transactionDate', 'accountingHead', 'reason'],
   RELEASE: ['contractId', 'authority', 'reason'],
   MONTHLY: ['month', 'progress', 'workSummary', 'workforce', 'issues', 'nextMonthPlan'],
-  DOCUMENT: ['documentType', 'version', 'reason'],
+  DOCUMENT: ['documentType', 'drawingNumber', 'version', 'reason'],
 };
 const reviewers: Role[] = ['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'];
 const financeKinds: ControlKind[] = ['RECEIPT', 'PAYMENT', 'REVERSAL', 'RELEASE'];
@@ -109,6 +109,17 @@ export function validateControl(s: StoreState, input: ControlInput, reviewing = 
   if (input.kind === 'CONTRACT' && input.supersedesId && !f.reason?.trim()) throw new Error('Explain the signed amendment to the liability terms.');
   if (input.kind === 'RELEASE' && (!f.contractId || !f.authority?.trim() || !f.reason?.trim())) throw new Error('Select the verified contract, release authority and clearance details.');
   if (input.kind === 'DOCUMENT' && (!f.documentType?.trim() || !f.version?.trim())) throw new Error('Document type and version are required.');
+  if (input.kind === 'DOCUMENT' && f.documentType === 'Drawing') {
+    if (!f.drawingNumber?.trim()) throw new Error('Enter the drawing number.');
+    const same = s.controlRecords.filter(r => r.projectId === input.projectId && r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing' && r.fields.drawingNumber === f.drawingNumber);
+    if (same.some(r => r.id !== (input as ControlRecord).id && r.status !== 'REJECTED' && r.fields.version === f.version)) throw new Error('This drawing revision already exists.');
+    const current = activeControls(s, input.projectId).find(r => same.some(d => d.id === r.id));
+    if (current && current.id !== input.supersedesId) throw new Error('Link the current approved drawing before replacing it.');
+    if (input.supersedesId && !same.some(r => r.id === input.supersedesId)) throw new Error('A revision must replace the same drawing number.');
+  }
+  if (f.drawingId && !activeControls(s, input.projectId).some(r => r.id === f.drawingId && ((r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing') || (r.kind === 'PROCUREMENT' && r.category === 'Approved drawings / estimate')))) throw new Error('Select the current approved drawing revision.');
+  if (f.responsibleUserId && !s.users.some(u => u.id === f.responsibleUserId && u.role === f.responsibleRole && computeProjectScope(u, s.projects, s.contractors).projectIds.has(input.projectId))) throw new Error('Select an assigned officer with the selected responsible role.');
+  if (f.responsibleRole && !['EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'CIVIL_SURGEON', 'COMMISSIONER', 'CONTRACTOR'].includes(f.responsibleRole)) throw new Error('Select a valid responsible role.');
   if (input.kind === 'QUALITY') {
     if (!s.inspections.some(i => i.id === f.inspectionId && i.projectId === input.projectId) || ['testPlanReference', 'sampleReference', 'laboratory', 'standardVersion', 'drawingVersion'].some(k => !f[k]?.trim()) || !['PASS', 'FAIL'].includes(f.result)) throw new Error('Link the inspection, approved test plan, sample, laboratory, drawing and standard versions.');
     const inspection = s.inspections.find(i => i.id === f.inspectionId)!;

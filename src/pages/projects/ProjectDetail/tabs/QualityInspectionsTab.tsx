@@ -1,3 +1,5 @@
+import { activeControls } from '../../../../lib/projectControls';
+import { drawingWarning } from '../../../../lib/pendingWork';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -165,6 +167,8 @@ const APPOINTMENT_ACTION_LABEL: Partial<Record<string, string>> = {
 };
 
 export function InspectionsTab({ project }: { project: Project }) {
+  const controlState = useStore();
+  const drawings = activeControls(controlState, project.id).filter(r => r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing' || r.kind === 'PROCUREMENT' && r.category === 'Approved drawings / estimate');
   useUiLanguage();
   const currentUser = useStore((s) => s.currentUser);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id).sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
@@ -188,7 +192,7 @@ export function InspectionsTab({ project }: { project: Project }) {
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [checklistId, setChecklistId] = useState<string | null>(null);
-  const [schedForm, setSchedForm] = useState({ category: INSPECTION_CATEGORIES[0] as InspectionCategory, date: new Date().toISOString().slice(0, 10), inspector: users[0]?.name ?? 'Deputy Engineer' });
+  const [schedForm, setSchedForm] = useState({ drawingId: '', category: INSPECTION_CATEGORIES[0] as InspectionCategory, date: new Date().toISOString().slice(0, 10), inspector: users[0]?.name ?? 'Deputy Engineer' });
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [comments, setComments] = useState('');
 
@@ -277,11 +281,13 @@ export function InspectionsTab({ project }: { project: Project }) {
         </Table>
       </Card>
 
+      <div className="space-y-2">{inspections.filter(i => drawingWarning(controlState, project.id, i.drawingId)).map(i => <p role="alert" key={i.id} className="rounded bg-amber-50 p-3 text-sm text-amber-800">{i.id}: {uiText(drawingWarning(controlState, project.id, i.drawingId))}</p>)}</div>
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent title={uiText(appointmentActionLabel)} description={uiText(project.name)}>
           <div className="space-y-3">
             <div>
               <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Inspection Type")}</p>
+              <select aria-label={uiText('Approved drawing revision')} className="mb-3 min-h-11 w-full rounded border" value={schedForm.drawingId} onChange={e => setSchedForm({ ...schedForm, drawingId: e.target.value })}><option value="">{uiText('Not referenced')}</option>{drawings.map(d => <option key={d.id} value={d.id}>{d.reference} / {d.fields.version}</option>)}</select>
               <Select value={schedForm.category} onValueChange={(v) => setSchedForm({ ...schedForm, category: v as InspectionCategory })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{INSPECTION_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{uiText(c.replace(/_/g, ' '))}</SelectItem>)}</SelectContent>
@@ -305,7 +311,7 @@ export function InspectionsTab({ project }: { project: Project }) {
             <Button variant="outline" onClick={() => setScheduleOpen(false)}>{uiText("Cancel")}</Button>
             <Button onClick={() => {
               if (canSchedule) {
-                scheduleInspection({ projectId: project.id, category: schedForm.category, scheduledDate: schedForm.date, inspector: schedForm.inspector, comments: '' });
+                scheduleInspection({ drawingId: schedForm.drawingId || undefined, projectId: project.id, category: schedForm.category, scheduledDate: schedForm.date, inspector: schedForm.inspector, comments: '' });
                 requestAppointment({ projectId: project.id, inspectionType: schedForm.category, requestedBy: currentUser?.name ?? 'Executive Engineer', requestedByRole: currentUser?.role ?? 'EXECUTIVE_ENGINEER', assignedInspector: schedForm.inspector, date: schedForm.date, time: '10:00', site: `${project.taluka}, ${project.district}`, attendees: [], requiredDocuments: [], remarks: '' });
                 toast.success(uiText('Inspection scheduled.'));
               } else {

@@ -103,7 +103,8 @@
     "CONTRACTOR": "Contractor",
     "MEDICAL_OFFICER": "Medical Officer / Facility In-Charge",
     "VIGILANCE_AUDIT": "Vigilance & Audit Officer",
-    "IT_ADMIN": "IT / System Administrator"
+    "IT_ADMIN": "IT / System Administrator",
+    "WORKFORCE": "Workforce"
   },
   "status": {
     "ON_TRACK": "On Track",
@@ -184,21 +185,66 @@
     "daysSuffix": "{{count}} days"
   },
   "pages": {
-    "projects": { "title": "Hospital Construction Projects", "desc": "{{shown}} of {{total}} projects shown" },
-    "contractors": { "title": "Contractor Management", "desc": "{{count}} empanelled contracting agencies" },
-    "workers": { "title": "Workforce Management", "desc": "{{count}} registered workers across all projects" },
-    "staff": { "title": "Officers & Staff", "desc": "{{count}} government officers, engineers and consultants" },
-    "finance": { "title": "Financial Dashboard", "desc": "Statewide budget, expenditure and billing overview across all hospital projects" },
-    "quality": { "title": "Quality & Inspections", "desc": "Statewide construction quality monitoring across all hospital projects" },
-    "defects": { "title": "Defect Management", "desc": "Statewide non-conformance and defect tracking" },
-    "approvals": { "title": "Approval Workflow", "desc": "Government approval chain across administrative sanctions, bills, and change requests" },
-    "documents": { "title": "Document Repository", "desc": "{{count}} documents across all hospital projects" },
-    "reports": { "title": "Report Center", "desc": "Generate and export statewide monitoring reports" },
-    "notifications": { "title": "Notifications", "desc": "{{count}} unread notifications" },
-    "audit": { "title": "Audit Log", "desc": "{{count}} recorded actions across the platform" },
-    "search": { "title": "Global Search", "desc": "Search across projects, contractors, workers, engineers, bills, inspections, defects and documents" },
-    "observer": { "title": "Vigilance & Audit Desk", "desc": "Independent oversight — {{name}}" },
-    "access": { "title": "Access Management", "desc": "Grant or revoke module-level access per role, and reassign user roles" }
+    "projects": {
+      "title": "Hospital Construction Projects",
+      "desc": "{{shown}} of {{total}} projects shown"
+    },
+    "contractors": {
+      "title": "Contractor Management",
+      "desc": "{{count}} empanelled contracting agencies"
+    },
+    "workers": {
+      "title": "Workforce Management",
+      "desc": "{{count}} registered workers across all projects"
+    },
+    "staff": {
+      "title": "Officers & Staff",
+      "desc": "{{count}} government officers, engineers and consultants"
+    },
+    "finance": {
+      "title": "Financial Dashboard",
+      "desc": "Statewide budget, expenditure and billing overview across all hospital projects"
+    },
+    "quality": {
+      "title": "Quality & Inspections",
+      "desc": "Statewide construction quality monitoring across all hospital projects"
+    },
+    "defects": {
+      "title": "Defect Management",
+      "desc": "Statewide non-conformance and defect tracking"
+    },
+    "approvals": {
+      "title": "Approval Workflow",
+      "desc": "Government approval chain across administrative sanctions, bills, and change requests"
+    },
+    "documents": {
+      "title": "Document Repository",
+      "desc": "{{count}} documents across all hospital projects"
+    },
+    "reports": {
+      "title": "Report Center",
+      "desc": "Generate and export statewide monitoring reports"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "desc": "{{count}} unread notifications"
+    },
+    "audit": {
+      "title": "Audit Log",
+      "desc": "{{count}} recorded actions across the platform"
+    },
+    "search": {
+      "title": "Global Search",
+      "desc": "Search across projects, contractors, workers, engineers, bills, inspections, defects and documents"
+    },
+    "observer": {
+      "title": "Vigilance & Audit Desk",
+      "desc": "Independent oversight — {{name}}"
+    },
+    "access": {
+      "title": "Access Management",
+      "desc": "Grant or revoke module-level access per role, and reassign user roles"
+    }
   },
   "landing": {
     "brand": "AarogyaNirman",

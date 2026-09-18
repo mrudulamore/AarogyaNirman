@@ -1,3 +1,4 @@
+import { PendingWork } from '../common/PendingWork';
 import { useEffect, useState } from 'react';
 import { uiText } from '../../i18n/ui';
 import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ export function AppShell() {
   const navigate = useNavigate();
 
   const navKey = currentUser ? navKeyForPath(location.pathname) : null;
-  const allowed = currentUser ? !navKey || (rolePermissions[currentUser.role] ?? []).includes(navKey) : true;
+  const allowed = currentUser?.role === 'WORKFORCE' ? location.pathname === '/dashboard' : currentUser ? !navKey || (rolePermissions[currentUser.role] ?? []).includes(navKey) : true;
 
   useEffect(() => {
     if (currentUser && !allowed) {
@@ -35,6 +36,13 @@ export function AppShell() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, currentUser?.role]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const run = () => useStore.getState().evaluateEscalations();
+    run(); const timer = window.setInterval(run, 60000);
+    return () => window.clearInterval(timer);
+  }, [currentUser?.id, currentUser?.role]);
 
   if (!currentUser) return <Navigate to="/login" replace />;
   if (!allowed) return null;
@@ -45,6 +53,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Header onMenuClick={() => setMobileOpen(true)} />
         <main className="app-content min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+          {location.pathname === '/dashboard' && currentUser.role !== 'WORKFORCE' && <PendingWork />}
           <Outlet />
         </main>
       </div>

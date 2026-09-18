@@ -1,4 +1,4 @@
-import { activeControls, validControl, handoverGaps } from '../../../../lib/projectControls';
+import { activeControls, validControl, handoverGaps, CERTIFICATES } from '../../../../lib/projectControls';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { toast } from 'sonner';
 import { Check, Circle, Clock, PartyPopper } from 'lucide-react';
@@ -63,14 +63,12 @@ export function HandoverTab({ project }: { project: Project }) {
   const commissioningReady = commissioning.filter((c) => c.status === 'READY').length;
   const openDefects = defects.filter((d) => d.status !== 'CLOSED').length;
   const criticalDefects = defects.filter((d) => d.severity === 'CRITICAL' && d.status !== 'CLOSED').length;
-  const completionCertDoc = certificates.find(r => r.category === 'Completion certificate');
-  const asBuiltDoc = certificates.find(r => r.category === 'As-built drawings');
   const readinessComponents = [
     { label: 'Handover Steps', done: steps.length > 0 && stepsComplete === steps.length, pct: steps.length ? (stepsComplete / steps.length) * 100 : 0 },
     { label: 'Commissioning', done: commissioning.length > 0 && commissioningReady === commissioning.length, pct: commissioning.length ? (commissioningReady / commissioning.length) * 100 : 0 },
     { label: 'Open Defects Closed', done: openDefects === 0, pct: openDefects === 0 ? 100 : 0 },
-    { label: 'Completion Certificate', done: !!completionCertDoc, pct: completionCertDoc ? 100 : 0 },
-    { label: 'As-Built Drawings', done: !!asBuiltDoc, pct: asBuiltDoc ? 100 : 0 },
+    { label: 'Unresolved failed inspections', done: !gaps.includes('Unresolved failed inspections'), pct: gaps.includes('Unresolved failed inspections') ? 0 : 100 },
+    ...CERTIFICATES.map(category => ({ label: category, done: certificates.some(r => r.category === category), pct: certificates.some(r => r.category === category) ? 100 : 0 })),
   ];
   const readinessPct = Math.round(readinessComponents.reduce((s, c) => s + c.pct, 0) / readinessComponents.length);
 
@@ -79,6 +77,7 @@ export function HandoverTab({ project }: { project: Project }) {
       <Card>
         <CardHeader><CardTitle>{uiText("Handover Readiness — ")}{readinessPct}%</CardTitle></CardHeader>
         <CardContent>
+          {gaps.length > 0 && <div role="status" className="mb-4 rounded bg-amber-50 p-3"><p className="font-semibold">{uiText('Handover requirements remaining')}</p><ul className="list-inside list-disc text-sm">{gaps.map(g => <li key={g}>{uiText(g)}</li>)}</ul></div>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {readinessComponents.map((c) => (
               <div key={c.label} className={cn('rounded-md border p-3', c.done ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50')}>

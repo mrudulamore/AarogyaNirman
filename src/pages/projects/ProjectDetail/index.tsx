@@ -160,7 +160,7 @@ export function ProjectDetail() {
         <TabsContent value="boq"><BoqTab project={project} /></TabsContent>
         <TabsContent value="materials"><MaterialsTab project={project} /></TabsContent>
         <TabsContent value="milestones"><MilestonesTab project={project} /></TabsContent>
-        <TabsContent value="progress"><ProgressTab project={project} /></TabsContent>
+        <TabsContent value="progress"><ProgressTab key={project.id + currentUser?.id} project={project} /></TabsContent>
         <TabsContent value="photos"><PhotosTab project={project} /></TabsContent>
         <TabsContent value="field evidence"><FieldEvidenceTab project={project} /></TabsContent>
         <TabsContent value="team"><TeamTab project={project} /></TabsContent>

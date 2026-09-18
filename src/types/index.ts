@@ -3,6 +3,7 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'WORKFORCE'
   | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
   | 'MINISTER'            // Minister / Secretary (Public Health) — State, read-oriented oversight
   | 'COMMISSIONER'        // Commissioner / Director (Health Services) — State, full access
@@ -22,6 +23,7 @@ export type Scheme = 'NHM' | 'DPDC' | 'State Plan' | 'Central Scheme' | 'Distric
 export type FacilityType = 'Sub Centre' | 'PHC' | 'UPHC' | 'CHC' | 'Rural Hospital' | 'Sub-District Hospital' | 'District / Civil Hospital' | 'Women Hospital' | 'Specialty Hospital' | 'Medical College Hospital' | 'Other Government Health Facility';
 
 export interface User {
+  workerId?: string;
   id: string;
   name: string;
   role: Role;
@@ -147,6 +149,12 @@ export interface Milestone {
 }
 
 export interface ProgressReport {
+  clientSubmissionId?: string;
+  drawingId?: string;
+  workCompleted?: string;
+  delayReason?: string;
+  measurementsNotes?: string;
+  attachments?: BillAttachment[];
   id: string;
   projectId: string;
   date: string;
@@ -169,6 +177,9 @@ export type PhotoType = 'BEFORE' | 'PROGRESS' | 'COMPLETION';
 export type LocationSource = 'CAPTURED' | 'MANUAL';
 
 export interface SitePhoto {
+  building?: string;
+  floor?: string;
+  activity?: string;
   id: string;
   projectId: string;
   stage: string;
@@ -210,6 +221,7 @@ export interface ChecklistItem {
 }
 
 export interface Inspection {
+  drawingId?: string;
   id: string;
   projectId: string;
   category: InspectionCategory;

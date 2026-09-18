@@ -37,7 +37,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <Menu size={20} />
       </button>
 
-      <form
+      {currentUser?.role !== 'WORKFORCE' && <form
         className="hidden max-w-md flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 md:flex"
         onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/search?q=${encodeURIComponent(q)}`); }}
       >
@@ -47,7 +47,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           placeholder={uiText(t('header.searchPlaceholder') ?? undefined)}
           className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
         />
-      </form>
+      </form>}
 
       <div className="ml-auto flex items-center gap-1.5">
         <button onClick={() => navigate('/search')} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 md:hidden">
@@ -92,7 +92,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label={t('header.accountMenu')} className="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 hover:bg-slate-100">
               <Avatar name={currentUser?.name ?? '?'} size={30} />
-              <div className="hidden text-left leading-tight sm:block">
+              <div className="max-w-32 truncate text-left leading-tight sm:max-w-none">
                 <p className="text-xs font-semibold text-slate-800">{currentUser?.name}</p>
                 <p className="text-[10.5px] text-slate-400">{uiText(currentUser && t(`roles.${currentUser.role}`))}</p>
               </div>
@@ -101,7 +101,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{uiText(currentUser?.designation)}</DropdownMenuLabel>
-            <DropdownMenuItem onSelect={() => navigate('/select-role')}><UserCog size={14} /> {t('header.switchRole')}</DropdownMenuItem>
+            {currentUser?.role !== 'WORKFORCE' && <DropdownMenuItem onSelect={() => navigate('/select-role')}><UserCog size={14} /> {t('header.switchRole')}</DropdownMenuItem>}
             <DropdownMenuSeparator />
             <DropdownMenuItem destructive onSelect={switchAccount}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>
           </DropdownMenuContent>

@@ -9,6 +9,7 @@ import { useStore } from '../../store/useStore';
 import type { Role } from '../../types';
 
 const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
+  { role: 'WORKFORCE', username: 'workforce' },
   { role: 'SUPERADMIN', username: 'superadmin' },
   { role: 'MINISTER', username: 'minister.secretary' },
   { role: 'COMMISSIONER', username: 'commissioner' },
@@ -35,7 +36,7 @@ export function Login() {
 
   function quickLogin(role: Role) {
     login(role);
-    navigate('/select-role');
+    navigate('/dashboard', { replace: true });
   }
 
   function manualSubmit(e: React.FormEvent) {
@@ -74,7 +75,7 @@ export function Login() {
         <div className="h-px flex-1 bg-slate-200" /> {t('auth.demoAccounts').toUpperCase()} <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <div className="grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto pr-1">
+      <div className="login-card-grid grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto pr-1">
         {DEMO_ACCOUNTS.map((a) => (
           <button
             key={a.role}

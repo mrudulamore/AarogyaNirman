@@ -17,6 +17,7 @@ export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = {
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  WORKFORCE: 'Workforce',
   SUPERADMIN: 'Super Administrator',
   MINISTER: 'Minister / Secretary (Public Health)',
   COMMISSIONER: 'Commissioner / Director (Health Services)',
@@ -32,6 +33,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DEPARTMENTS: Record<Role, string> = {
+  WORKFORCE: 'Site workforce',
   SUPERADMIN: 'System Administration Cell, GoM',
   MINISTER: 'Ministry of Public Health, Govt. of Maharashtra',
   COMMISSIONER: 'Directorate of Health Services, GoM',

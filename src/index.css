@@ -213,3 +213,47 @@ body {
     backdrop-filter: blur(12px);
   }
 }
+
+/* Comfortable targets on touch devices without changing desktop density. */
+@media (pointer: coarse) {
+  .ui-button, [role="combobox"], input:not([type="checkbox"]):not([type="radio"]), select { min-height: 44px; }
+  .ui-button { min-width: 44px; }
+  textarea, input, select { font-size: 16px; }
+}
+
+/* Compact cards in the installed app; desktop/browser layout stays unchanged. */
+@media (max-width: 767px) {
+  .native-app .dashboard-metrics,
+  .native-app .role-card-grid,
+  .native-app .login-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .native-app .metric-card { padding: 12px; border-radius: 14px; }
+  .native-app .metric-card > div:first-child { min-height: 32px; gap: 6px; }
+  .native-app .metric-card > div:first-child > p { font-size: 10px; letter-spacing: .025em; line-height: 1.4; overflow-wrap: anywhere; }
+  .native-app .metric-card > div:first-child > div { width: 28px; height: 28px; }
+  .native-app .metric-card > p.text-2xl,
+  .native-app .metric-group > div:nth-child(2) > p:first-child { font-size: 22px; white-space: normal; overflow-wrap: anywhere; }
+  .native-app .metric-group > div:last-child { margin-top: 8px; padding-top: 8px; }
+  .native-app .metric-group > div:last-child button { max-width: 100%; text-align: left; }
+  .native-app .field-action { min-height: 112px; padding: 14px; gap: 10px; border-radius: 14px; }
+  .native-app .field-action > svg { width: 34px; height: 34px; padding: 8px; border-radius: 10px; }
+  .native-app .field-action > span { font-size: 12px; line-height: 1.4; }
+  .native-app .role-card-grid > button { flex-direction: column; gap: 8px; padding: 12px; }
+  .native-app .role-card-grid > button > svg:last-child { display: none; }
+  .native-app .role-card-grid p { white-space: normal; overflow-wrap: anywhere; }
+  .native-app .role-card-grid p:first-child { font-size: 12px; }
+  .native-app .login-card-grid > button { flex-direction: column; align-items: flex-start; gap: 5px; min-height: 72px; overflow-wrap: anywhere; }
+}
+
+/* Field shortcuts follow the zone selector's quiet bordered-card treatment. */
+.field-action { --action-accent: #3572bd; overflow: hidden; border-radius: 12px; }
+.field-action.bg-amber-600 { --action-accent: #b7791f; }
+.field-action.bg-red-600 { --action-accent: #c45145; }
+.field-action::before { content: ''; position: absolute; inset: 12px auto 12px 0; width: 4px; border-radius: 0 4px 4px 0; background: var(--action-accent); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+.field-action:is(:active, :focus-visible, [data-selected="true"]) { border-color: var(--action-accent); background: #eef4fb; box-shadow: 0 0 0 1px #b0cdec; }
+.field-action:is(:active, :focus-visible, [data-selected="true"])::before { opacity: 1; }
+.field-action.bg-amber-600:is(:active, :focus-visible, [data-selected="true"]) { background: #fff1cf; box-shadow: 0 0 0 1px #efe1bc; }
+.field-action.bg-red-600:is(:active, :focus-visible, [data-selected="true"]) { background: #ffe4dc; box-shadow: 0 0 0 1px #f0d8d0; }
+@media (hover: hover) {
+  .field-action:hover { transform: none; border-color: #88a2cb; background: #f1f7ff; box-shadow: 0 2px 8px -5px #193f7940; }
+  .field-action:hover::before { opacity: 1; }
+}

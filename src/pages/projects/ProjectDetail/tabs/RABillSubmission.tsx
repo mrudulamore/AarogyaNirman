@@ -80,12 +80,17 @@ export function RABillSubmission({ project, onClose }: { project: Project; onClo
             {lines.map((line, index) => {
               const item = boq.find(b => b.id === line.boqItemId);
               const previous = item ? previousClaimedQuantity(state, project.id, item.id) : 0;
+              const authorized = (item?.plannedQty ?? 0) + variations.filter(v => v.fields.boqItemId === line.boqItemId).reduce((n, v) => n + Number(v.fields.quantityDelta), 0);
+              const excess = !!item && previous + line.quantity > authorized + 0.000001;
+              const duplicate = !!line.measurementReference.trim() && state.measurements.some(m => m.projectId === project.id && m.boqItemId === line.boqItemId && m.measurementReference?.trim().toLowerCase() === line.measurementReference.trim().toLowerCase() && m.location?.trim().toLowerCase() === line.location.trim().toLowerCase() && (!m.billId || state.bills.some(b => b.id === m.billId && b.status !== 'REJECTED')));
               const change = (patch: Partial<typeof line>) => updateLines(lines.map((l, i) => i === index ? { ...l, ...patch } : l));
               return <div key={index} className="space-y-2 rounded bg-slate-50 p-3">
                 <label className="block text-xs">{uiText('BOQ item')}<NativeSelect required value={line.boqItemId} onChange={e => change({ boqItemId: e.target.value })}><option value="">{uiText('Select')}</option>{boq.map(b => <option key={b.id} value={b.id}>{b.item} ({b.unit})</option>)}</NativeSelect></label>
                 <div className="grid grid-cols-2 gap-2"><label className="text-xs">{uiText('Current quantity')}<Input type="number" min="0.000001" step="any" required value={line.quantity} onChange={e => change({ quantity: Number(e.target.value) })} /></label><label className="text-xs">{uiText('Work location')}<Input required value={line.location} onChange={e => change({ location: e.target.value })} /></label></div>
                 <label className="block text-xs">{uiText('Measurement reference / pages')}<Input required value={line.measurementReference} onChange={e => change({ measurementReference: e.target.value })} /></label>
                 <p className="text-xs">{uiText('Previous quantity')}: {previous} · {uiText('Cumulative quantity')}: {previous + line.quantity} · {uiText('Approved rate')}: {item?.rate ?? 0}</p>
+                {(excess || duplicate) && <p role="alert" className="rounded bg-red-50 p-2 text-xs text-red-700">{uiText(excess ? 'Cumulative quantity exceeds the authorized BOQ quantity.' : 'This measurement reference and location have already been claimed.')}</p>}
+                <p className="text-xs">{uiText('Authorized quantity')}: {authorized}</p>
                 <label className="block text-xs">{uiText('Approved variation')}<NativeSelect value={line.variationId ?? ''} onChange={e => change({ variationId: e.target.value || undefined })}><option value="">{uiText('None')}</option>{variations.filter(v => v.fields.boqItemId === line.boqItemId).map(v => <option key={v.id} value={v.id}>{v.reference}</option>)}</NativeSelect></label>
                 <Button type="button" variant="ghost" onClick={() => updateLines(lines.filter((_, i) => i !== index))}>{uiText('Remove line')}</Button>
               </div>;

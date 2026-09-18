@@ -46,6 +46,7 @@ export const PROJECT_360_TABS: Project360Tab[] = [
  * Overview instead (see MinistryOverview), and only Timeline/Tender & Contract/Field Evidence/
  * Team/Inspections/Safety & Commissioning/Approvals/Documents/Handover remain as their own tabs. */
 export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
+  WORKFORCE: [],
   SUPERADMIN: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover', 'audit'],
   IT_ADMIN: ['overview', 'documents', 'audit'],
   MINISTER: ['overview', 'timeline', 'tender', 'boq', 'milestones', 'field evidence', 'team', 'inspections', 'safety & commissioning', 'finance', 'approvals', 'documents', 'handover'],

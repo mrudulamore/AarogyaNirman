@@ -1,5 +1,5 @@
 import { uiText, useUiLanguage } from '../../i18n/ui';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Building2, Landmark, HardHat, ClipboardList, Radar, Hammer, Stethoscope, Crown, MapPinned, KeyRound, Settings2, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils';
 import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
 const ROLE_ICONS: Record<Role, typeof Building2> = {
+  WORKFORCE: HardHat,
   SUPERADMIN: KeyRound, MINISTER: Crown, COMMISSIONER: Landmark, REGIONAL_DIRECTOR: MapPinned, CIVIL_SURGEON: Building2,
   EXECUTIVE_ENGINEER: Hammer, PROJECT_MANAGER: Briefcase, DEPUTY_ENGINEER: HardHat, CONTRACTOR: ClipboardList,
   MEDICAL_OFFICER: Stethoscope, VIGILANCE_AUDIT: Radar, IT_ADMIN: Settings2,
@@ -21,13 +22,15 @@ export function SelectRole() {
   const currentUser = useStore((s) => s.currentUser);
   const login = useStore((s) => s.login);
   const logout = useStore((s) => s.logout);
-  const roles = Object.keys(ROLE_LABELS) as Role[];
+  const roles = (Object.keys(ROLE_LABELS) as Role[]).filter(role => role !== 'WORKFORCE');
+  roles.splice(roles.indexOf('DEPUTY_ENGINEER') + 1, 0, 'WORKFORCE');
 
   function choose(role: Role) {
     login(role);
     navigate('/dashboard');
   }
 
+  if (currentUser?.role === 'WORKFORCE') return <Navigate to="/dashboard" replace />;
   return (
     <div className="relative min-h-screen overflow-hidden bg-navy-950 px-6 py-10">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -55,7 +58,7 @@ export function SelectRole() {
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="role-card-grid mt-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {roles.map((role) => {
             const Icon = ROLE_ICONS[role];
             const active = currentUser?.role === role;

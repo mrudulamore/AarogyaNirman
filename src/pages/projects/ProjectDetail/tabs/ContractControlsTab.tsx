@@ -1,3 +1,5 @@
+import { computeProjectScope } from '../../../../lib/scope';
+import { drawingWarning } from '../../../../lib/pendingWork';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,18 +13,19 @@ import { Button, Card, CardContent, Input, Textarea, NativeSelect, StatusBadge }
 import { BillEvidence } from './BillEvidence';
 import { formatCurrency, formatDate } from '../../../../lib/utils';
 
-const LABELS: Record<string, string> = { authority: 'Approving authority', issueDate: 'Issue date', expiryDate: 'Expiry date', applicability: 'Applicability', reason: 'Reason / conditions', portalReference: 'Portal / source reference', version: 'Version', amount: 'Amount', contractClause: 'Contract clause', boqItemId: 'BOQ item', quantityDelta: 'Additional quantity', rate: 'Approved rate', scheduleDays: 'Schedule impact (days)', hindranceReference: 'Hindrance reference', commencementDate: 'Liability commencement', liabilityMonths: 'Contract liability months', liabilityEndDate: 'Contract liability end date', inspectionId: 'Inspection', defectId: 'Linked defect', testPlanReference: 'Approved test plan', sampleReference: 'Sample reference', laboratory: 'Laboratory / testing agency', standardVersion: 'Standard and version', drawingVersion: 'Drawing and revision', result: 'Result', transactionDate: 'Transaction date', accountingHead: 'Accounting head', billId: 'Approved bill', originalTransactionId: 'Original transaction', contractId: 'Verified contract', month: 'Reporting month', progress: 'Reported progress (%)', workSummary: 'Work completed this month', workforce: 'Monthly workforce summary', issues: 'Issues and delays', nextMonthPlan: 'Next month plan', documentType: 'Document Type' };
+const LABELS: Record<string, string> = { responsibleUserId: 'Responsible officer', responsibleRole: 'Responsible officer role', drawingId: 'Approved drawing revision', drawingNumber: 'Drawing number', authority: 'Approving authority', issueDate: 'Issue date', expiryDate: 'Expiry date', applicability: 'Applicability', reason: 'Reason / conditions', portalReference: 'Portal / source reference', version: 'Version', amount: 'Amount', contractClause: 'Contract clause', boqItemId: 'BOQ item', quantityDelta: 'Additional quantity', rate: 'Approved rate', scheduleDays: 'Schedule impact (days)', hindranceReference: 'Hindrance reference', commencementDate: 'Liability commencement', liabilityMonths: 'Contract liability months', liabilityEndDate: 'Contract liability end date', inspectionId: 'Inspection', defectId: 'Linked defect', testPlanReference: 'Approved test plan', sampleReference: 'Sample reference', laboratory: 'Laboratory / testing agency', standardVersion: 'Standard and version', drawingVersion: 'Drawing and revision', result: 'Result', transactionDate: 'Transaction date', accountingHead: 'Accounting head', billId: 'Approved bill', originalTransactionId: 'Original transaction', contractId: 'Verified contract', month: 'Reporting month', progress: 'Reported progress (%)', workSummary: 'Work completed this month', workforce: 'Monthly workforce summary', issues: 'Issues and delays', nextMonthPlan: 'Next month plan', documentType: 'Document Type' };
 
 export function ContractControlsTab({ project, monthly = false }: { project: Project; monthly?: boolean }) {
   useUiLanguage();
   const s = useStore();
   const [params] = useSearchParams();
   const [renewalDate] = useState(() => new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
-  const initialKind: ControlKind = params.get('kind') === 'DOCUMENT' ? 'DOCUMENT' : params.get('kind') === 'PAYMENT' ? 'PAYMENT' : 'CERTIFICATE';
+  const requestedKind = params.get('kind') as ControlKind;
+  const initialKind: ControlKind = Object.hasOwn(KIND_LABELS, requestedKind ?? '') ? requestedKind : 'CERTIFICATE';
   const [kind, setKind] = useState<ControlKind>(monthly ? 'MONTHLY' : initialKind);
   const [category, setCategory] = useState(CERTIFICATES[0]);
   const [reference, setReference] = useState('');
-  const [fields, setFields] = useState<Record<string, string>>({ applicability: 'APPLICABLE', month: todayDate().slice(0, 7), progress: String(project.reportedProgress), transactionDate: todayDate(), result: 'PASS', version: '1', scheduleDays: '0' });
+  const [fields, setFields] = useState<Record<string, string>>({ responsibleRole: 'EXECUTIVE_ENGINEER', applicability: 'APPLICABLE', month: todayDate().slice(0, 7), progress: String(project.reportedProgress), transactionDate: todayDate(), result: 'PASS', version: '1', scheduleDays: '0' });
   const [supersedesId, setSupersedesId] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -38,6 +41,10 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
   const finance = ['COMMISSIONER', 'EXECUTIVE_ENGINEER'].includes(user?.role ?? '');
   const editable = !!user && !['MINISTER', 'VIGILANCE_AUDIT', 'IT_ADMIN'].includes(user.role) && (!monthly || user.role === 'CONTRACTOR');
   const options = (key: string): { id: string; label: string }[] | undefined => {
+    if (key === 'documentType') return ['Drawing', 'Report', 'Contract', 'Other'].map(id => ({ id, label: id }));
+    if (key === 'responsibleUserId') return s.users.filter(u => u.role === fields.responsibleRole && computeProjectScope(u, s.projects, s.contractors).projectIds.has(project.id)).map(u => ({ id: u.id, label: u.name }));
+    if (key === 'responsibleRole') return ['EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'CIVIL_SURGEON', 'COMMISSIONER', 'CONTRACTOR'].map(id => ({ id, label: id }));
+    if (key === 'drawingId') return current.filter(r => r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing' || r.kind === 'PROCUREMENT' && r.category === 'Approved drawings / estimate').map(r => ({ id: r.id, label: r.reference + ' / ' + r.fields.version }));
     if (key === 'applicability') return ['APPLICABLE', 'NOT_APPLICABLE'].map(id => ({ id, label: id }));
     if (key === 'result') return ['PASS', 'FAIL'].map(id => ({ id, label: id }));
     if (key === 'boqItemId') return s.boqItems.filter(b => b.projectId === project.id).map(b => ({ id: b.id, label: `${b.item} (${b.unit})` }));
@@ -90,8 +97,11 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
     {[...records].reverse().map(r => {
       const reviewer = !!user && (['RECEIPT', 'PAYMENT', 'REVERSAL', 'RELEASE', 'VARIATION', 'EXTENSION', 'CONTRACT'].includes(r.kind) ? user.role === 'COMMISSIONER' : ['COMMISSIONER', 'EXECUTIVE_ENGINEER', 'CIVIL_SURGEON'].includes(user.role));
       const isCurrent = current.some(v => v.id === r.id);
+      const drawingAlert = drawingWarning(s, project.id, r.fields.drawingId);
       const expiring = isCurrent && r.fields.expiryDate && r.fields.expiryDate <= renewalDate;
       return <Card key={r.id}><CardContent className="space-y-3 p-4"><div className="flex flex-wrap justify-between gap-2"><h4 className="font-semibold">{uiText(KIND_LABELS[r.kind])} · {r.reference}</h4><StatusBadge status={r.status} /></div><p className="text-xs text-slate-500">{uiText(r.category)} · {formatDate(r.submittedAt)} · {s.users.find(u => u.id === r.submittedBy)?.name ?? r.submittedBy}</p>
+        {isCurrent && r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing' && <p className="text-sm font-semibold text-emerald-700">{uiText('Current approved drawing')} ? {r.fields.drawingNumber} ? {r.fields.version}</p>}
+        {drawingAlert && <p role="alert" className="text-sm text-amber-700">{uiText(drawingAlert)}</p>}
         {expiring && <p role="status" className="rounded bg-amber-50 p-2 text-xs text-amber-800">{uiText(validControl(r) ? 'Renewal due within 30 days' : 'Expired certificate — not ready')}</p>}
         {r.status === 'VERIFIED' && !isCurrent && <p className="text-xs text-slate-500">{uiText('Superseded — retained for audit')}</p>}
         <details><summary className="cursor-pointer text-sm text-navy-700">{uiText('View details and evidence')}</summary><dl className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(r.fields).filter(([,v]) => v).map(([k,v]) => <div key={k}><dt className="text-xs text-slate-400">{uiText(LABELS[k] ?? k)}</dt><dd className="break-words text-sm">{v}</dd></div>)}</dl><BillEvidence attachments={r.attachments} /></details>

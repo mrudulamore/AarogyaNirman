@@ -1,3 +1,5 @@
+import { ProgressDocuments } from '../../components/common/ProgressDocuments';
+import { saveBillFiles } from '../../lib/billAttachments';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +38,8 @@ export function FieldHome() {
 
   const [action, setAction] = useState<null | 'progress' | 'photo' | 'defect' | 'inspection' | 'attendance' | 'emergency'>(null);
   const [progressPct, setProgressPct] = useState(project?.reportedProgress ?? 0);
+  const [progressFiles, setProgressFiles] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
   const [capturing, setCapturing] = useState(false);
@@ -96,7 +100,7 @@ export function FieldHome() {
     <div className="field-workspace mx-auto max-w-3xl space-y-5 pb-10">
       <div>
         <p className="text-xs text-slate-400">{uiText(isContractor ? 'Contractor Dashboard' : 'Field Engineer App')}</p>
-        <Select value={projectId} onValueChange={id => { setProjectId(id); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setCapturedPhoto(null); setAction(null); }}>
+        <Select disabled={submitting} value={projectId} onValueChange={id => { setProjectId(id); setProgressFiles([]); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setCapturedPhoto(null); setAction(null); }}>
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>{myProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
         </Select>
@@ -115,8 +119,15 @@ export function FieldHome() {
       </Card>
 
       <div className="grid grid-cols-2 gap-3">
-        <ActionButton icon={ClipboardList} label={uiText("Submit Progress")} onClick={() => setAction('progress')} />
+        <ActionButton icon={ClipboardList} label={uiText("Submit Progress")} onClick={() => { setProgressFiles([]); setProgressPct(project.reportedProgress); setAction('progress'); }} />
         {isContractor ? <>
+          <ActionButton icon={ClipboardList} label={uiText('Daily site diary')} onClick={() => navigate(`/projects/${project.id}?tab=progress`)} />
+          <ActionButton icon={CameraIcon} label={uiText('Upload Site Photo')} onClick={() => setAction('photo')} />
+          <ActionButton icon={AlertTriangle} label={uiText('Manage Defects')} onClick={() => navigate(`/projects/${project.id}?tab=defects`)} tone="amber" />
+          <ActionButton icon={QrCode} label={uiText('Mark Attendance')} onClick={() => setAction('attendance')} />
+          <ActionButton icon={ClipboardList} label={uiText('Track Milestones')} onClick={() => navigate(`/projects/${project.id}?tab=milestones`)} />
+          <ActionButton icon={ClipboardList} label={uiText('Progress History')} onClick={() => navigate(`/projects/${project.id}?tab=progress`)} />
+          <ActionButton icon={ClipboardList} label={uiText('Track Bills & Payments')} onClick={() => navigate(`/projects/${project.id}?tab=finance`)} />
           <ActionButton icon={ClipboardList} label={uiText('Submit RA Bill')} onClick={() => navigate(`/projects/${project.id}?tab=finance&action=submit-bill`)} />
           <ActionButton icon={ClipboardList} label={uiText('Add Monthly Report')} onClick={() => navigate(`/projects/${project.id}?tab=monthly`)} />
           <ActionButton icon={ClipboardList} label={uiText('Submit Documents')} onClick={() => navigate(`/projects/${project.id}?tab=controls&kind=DOCUMENT`)} />
@@ -158,18 +169,23 @@ export function FieldHome() {
         )}
       </Section>
 
-      <Dialog open={action === 'progress'} onOpenChange={(v) => !v && setAction(null)}>
+      <Dialog open={action === 'progress'} onOpenChange={(v) => !v && !submitting && setAction(null)}>
         <DialogContent title={uiText("Submit Progress")}>
           <div className="space-y-3">
-            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Overall Progress %")}</p><input type="number" value={progressPct} onChange={(e) => setProgressPct(+e.target.value)} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" /></div>
+            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Overall Progress %")}</p><input type="number" min={0} max={100} value={progressPct} onChange={(e) => setProgressPct(+e.target.value)} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" /></div>
+            <ProgressDocuments files={progressFiles} onChange={setProgressFiles} disabled={submitting} />
             <Textarea rows={2} placeholder={uiText("Remarks")} value={remarks} onChange={(e) => setRemarks(e.target.value)} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAction(null)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => { try { 
-              addProgressReport({ projectId: project.id, date: new Date().toISOString().slice(0, 10), stage: 'Structure', progressPct, workersPresent: projectWorkers.filter((w) => w.attendanceStatus === 'PRESENT').length, weather: 'Clear', materialsReceived: 'None', materialsUsed: 'None', issues: remarks || 'None reported', photoIds: [], videoCount: 0, submittedBy: currentUser?.name ?? 'Deputy Engineer', location: `${project.taluka}, ${project.district}`, timestamp: new Date().toISOString() });
-              closeAndToast('Progress submitted.');
-             } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Submit")}</Button>
+            <Button disabled={submitting} variant="outline" onClick={() => setAction(null)}>{uiText("Cancel")}</Button>
+            <Button disabled={submitting || !progressFiles.length} onClick={async () => { if (submitting) return; setSubmitting(true); try {
+              if (progressFiles.length > 5) throw new Error('Attach 1 to 5 supporting documents.');
+              const account = useStore.getState().currentUser;
+              const attachments = await saveBillFiles(progressFiles.map(file => ({ file, category: 'SUPPORTING' })));
+              if (useStore.getState().currentUser !== account) throw new Error('Your account changed. Reopen the progress form.');
+              await addProgressReport({ attachments, projectId: project.id, date: new Date().toISOString().slice(0, 10), stage: 'Structure', progressPct, workersPresent: projectWorkers.filter((w) => w.attendanceStatus === 'PRESENT').length, weather: 'Clear', materialsReceived: 'None', materialsUsed: 'None', issues: remarks || 'None reported', photoIds: [], videoCount: 0, submittedBy: currentUser?.name ?? 'Deputy Engineer', location: `${project.taluka}, ${project.district}`, timestamp: new Date().toISOString() });
+              setProgressFiles([]); closeAndToast('Progress submitted.');
+             } catch (error) { toast.error(uiText((error as Error).message)); } finally { setSubmitting(false); } }}>{uiText(submitting ? "Saving..." : "Submit")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -256,9 +272,10 @@ export function FieldHome() {
 
 function ActionButton({ icon: Icon, label, onClick, tone = 'default' }: { icon: any; label: string; onClick: () => void; tone?: 'default' | 'amber' | 'red' }) {
   useUiLanguage();
-  const tones: Record<string, string> = { default: 'bg-navy-700 hover:bg-navy-800', amber: 'bg-amber-600 hover:bg-amber-700', red: 'bg-red-600 hover:bg-red-700' };
+  const [selected, setSelected] = useState(false);
+  const tones: Record<string, string> = { default: 'bg-white', amber: 'bg-amber-600', red: 'bg-red-600' };
   return (
-    <button onClick={onClick} className={`field-action flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl ${tones[tone]} px-3 py-5 text-white shadow-sm transition-colors`}>
+    <button type="button" data-selected={selected} onBlur={() => setSelected(false)} onClick={() => { setSelected(true); onClick(); }} className={`field-action flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl ${tones[tone]} px-3 py-5 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-400 focus-visible:ring-offset-2`}>
       <Icon size={22} />
       <span className="text-center text-sm font-semibold leading-snug">{uiText(label)}</span>
     </button>

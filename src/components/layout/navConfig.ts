@@ -33,6 +33,7 @@ export const NAV_ITEMS: Record<string, NavItem> = {
 };
 
 export const ROLE_NAV: Record<Role, string[]> = {
+  WORKFORCE: ['dashboard'],
   // Superadmin — full statewide visibility across every module, plus the exclusive
   // Access Management screen where role-to-feature permissions are granted/revoked.
   SUPERADMIN: ['dashboard', 'projects', 'tenders', 'contractors', 'workers', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'observer', 'notifications', 'audit', 'search', 'field', 'access'],

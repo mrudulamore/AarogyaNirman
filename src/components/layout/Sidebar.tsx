@@ -18,7 +18,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   const rolePermissions = useStore((s) => s.rolePermissions);
   const { scopeLabel } = useProjectScope();
   const counts = useNavCounts();
-  const keys = currentUser ? rolePermissions[currentUser.role] ?? [] : [];
+  const keys = currentUser?.role === 'WORKFORCE' ? ['dashboard'] : currentUser ? rolePermissions[currentUser.role] ?? [] : [];
 
   return (
     <>
@@ -52,7 +52,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
                 )}
               >
                 <item.icon size={16} className="shrink-0" />
-                <span className="flex-1">{t(`nav.${key}`)}</span>
+                <span className="flex-1">{currentUser?.role === 'WORKFORCE' ? uiText('My attendance') : t(`nav.${key}`)}</span>
                 {!!count && (
                   <span className={cn(
                     'rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none',

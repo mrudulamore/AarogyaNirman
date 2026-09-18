@@ -1,3 +1,4 @@
+import { PendingWorkPage } from './components/common/PendingWork';
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -61,6 +62,7 @@ export default function App() {
 
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/pending-work" element={<PendingWorkPage />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/contractors" element={<ContractorsList />} />
