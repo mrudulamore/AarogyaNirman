@@ -1,3 +1,4 @@
+import type { PhotoType } from '../../types';
 import { SiteCamera, type SiteCapture } from '../../components/common/SiteCamera';
 import { ProgressDocuments } from '../../components/common/ProgressDocuments';
 import { saveBillFiles } from '../../lib/billAttachments';
@@ -41,6 +42,7 @@ export function FieldHome() {
   const [submitting, setSubmitting] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
+  const [photoType, setPhotoType] = useState<PhotoType>('PROGRESS');
   const [capturedPhoto, setCapturedPhoto] = useState<SiteCapture | null>(null);
 
   const pendingInspections = inspections.filter((i) => i.projectId === project?.id && i.status === 'SCHEDULED');
@@ -54,7 +56,7 @@ export function FieldHome() {
     if (!capturedPhoto) return;
     const now = new Date().toISOString();
     try { addPhoto({
-      projectId: project.id, stage: 'Structure', type: 'PROGRESS', date: now.slice(0, 10),
+      projectId: project.id, stage: 'Structure', type: photoType, date: now.slice(0, 10),
       location: `${project.taluka}, ${project.district}`, uploadedBy: currentUser?.name ?? 'Field User',
       uploadedByRole: currentUser?.role ?? 'DEPUTY_ENGINEER', description: 'Field-captured site photo',
       seed: Math.floor(Math.random() * 99999), dataUrl: capturedPhoto.dataUrl,
@@ -91,7 +93,7 @@ export function FieldHome() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="field-shortcuts grid grid-cols-2 gap-3">
         <ActionButton icon={ClipboardList} label={uiText("Submit Progress")} onClick={() => { setProgressFiles([]); setProgressPct(project.reportedProgress); setAction('progress'); }} />
         {isContractor ? <>
           <ActionButton icon={ClipboardList} label={uiText('Daily site diary')} onClick={() => navigate(`/projects/${project.id}?tab=progress`)} />
@@ -113,6 +115,19 @@ export function FieldHome() {
         </>}
       </div>
 
+      <Section title={uiText("Recent Site Photos")} onSeeAll={() => navigate(`/projects/${project.id}?tab=photos`)}>
+        {recentSitePhotos.length === 0 && <EmptyLine text="No photos uploaded yet." />}
+        <div className="site-photo-feed">
+          {recentSitePhotos.map(ph => <article key={ph.id} className="site-photo-post">
+            <div className="photo-post-author"><span aria-hidden="true">{ph.uploadedBy.slice(0,1)}</span><div><p>{ph.uploadedBy}</p><time dateTime={ph.capturedAt}>{formatDate(ph.capturedAt)}</time></div></div>
+            <button type="button" className="photo-post-image" aria-label={uiText('View site photos')} onClick={() => navigate(`/projects/${project.id}?tab=photos`)}>
+              <GeoPhoto src={photoSrc(ph)} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-72" imgClassName="object-contain bg-slate-100" />
+            </button>
+            <div className="photo-post-caption"><p>{ph.description}</p><span>{uiText(ph.stage)}</span></div>
+          </article>)}
+        </div>
+      </Section>
+
       <Section title={uiText("Pending Inspections")} onSeeAll={() => navigate(`/projects/${project.id}?tab=inspections`)}>
         {pendingInspections.length === 0 && <EmptyLine text="No pending inspections." />}
         {pendingInspections.map((i) => (
@@ -131,16 +146,6 @@ export function FieldHome() {
         <Row primary={`${projectWorkers.filter((w) => w.attendanceStatus === 'PRESENT').length} present`} secondary={`of ${projectWorkers.length} assigned workers`} />
       </Section>
 
-      <Section title={uiText("Recent Site Photos")} onSeeAll={() => navigate(`/projects/${project.id}?tab=photos`)}>
-        {recentSitePhotos.length === 0 && <EmptyLine text="No photos uploaded yet." />}
-        {recentSitePhotos.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {recentSitePhotos.map((ph) => (
-              <GeoPhoto key={ph.id} src={photoSrc(ph)} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-24" />
-            ))}
-          </div>
-        )}
-      </Section>
 
       <Dialog open={action === 'progress'} onOpenChange={(v) => !v && !submitting && setAction(null)}>
         <DialogContent title={uiText("Submit Progress")}>
@@ -185,7 +190,7 @@ export function FieldHome() {
                 </div>
               </>
             ) : null}
-            <SiteCamera onCapture={setCapturedPhoto} />
+            <label className="block text-sm">{uiText('Photo checkpoint')}<select className="mt-1 min-h-11 w-full rounded-lg border px-3" value={photoType} onChange={e=>setPhotoType(e.target.value as PhotoType)}><option value="BEFORE">{uiText('Start / baseline')}</option><option value="PROGRESS">{uiText('Midpoint / progress')}</option><option value="COMPLETION">{uiText('Completion')}</option></select></label><SiteCamera onCapture={setCapturedPhoto} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setAction(null); setCapturedPhoto(null); }}>{uiText("Cancel")}</Button>
@@ -253,7 +258,7 @@ function Section({ title, children, onSeeAll }: { title: string; children: React
       <CardContent className="p-4">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{uiText(title)}</p>
-          {onSeeAll && <button onClick={onSeeAll} className="flex items-center text-[11px] text-navy-700"><ChevronRight size={13} /></button>}
+          {onSeeAll && <button aria-label={title} onClick={onSeeAll} className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-navy-700"><ChevronRight size={20} /></button>}
         </div>
         <div className="space-y-1">{children}</div>
       </CardContent>

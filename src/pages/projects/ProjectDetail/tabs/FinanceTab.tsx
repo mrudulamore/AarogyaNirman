@@ -166,14 +166,14 @@ export function FinanceTab({ project }: { project: Project }) {
           <CardHeader><CardTitle>{uiText("Physical vs. Financial Progress")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={progressTrend}>
+              <LineChart data={progressTrend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
                 <RTooltip formatter={(v: any) => `${v}%`} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="planned" name={uiText("Planned Physical")} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="verified" name={uiText("Verified Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="financial" name={uiText("Financial")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="planned" name={uiText("Planned Physical")} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
+                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="verified" name={uiText("Verified Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line label={{ position: 'bottom', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="financial" name={uiText("Financial")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -183,12 +183,12 @@ export function FinanceTab({ project }: { project: Project }) {
           <CardHeader><CardTitle>{uiText("Sanction to Payment")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={waterfallData} layout="vertical" margin={{ left: 10 }}>
+              <BarChart data={waterfallData} layout="vertical" margin={{ left: 10, right: 55, top: 24, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} />
                 <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-                <Bar dataKey="value" fill="#265aa0" radius={[0, 3, 3, 0]} />
+                <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="value" fill="#265aa0" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -198,11 +198,11 @@ export function FinanceTab({ project }: { project: Project }) {
           <CardHeader><CardTitle>{uiText("Bill Ageing")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={ageingBuckets}>
+              <BarChart data={ageingBuckets} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
                 <XAxis dataKey="bucket" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <RTooltip />
-                <Bar dataKey="count" name={uiText("Bills")} radius={[3, 3, 0, 0]}>
+                <Bar label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value) : String(value ?? '') }} dataKey="count" name={uiText("Bills")} radius={[3, 3, 0, 0]}>
                   {ageingBuckets.map((b, i) => <Cell key={i} fill={b.bucket === '60+ Days' || b.bucket === '31-60 Days' ? '#ef4444' : b.bucket === '16-30 Days' ? '#f59e0b' : '#3b82f6'} />)}
                 </Bar>
               </BarChart>
@@ -214,13 +214,13 @@ export function FinanceTab({ project }: { project: Project }) {
           <CardHeader><CardTitle>{uiText("Payment Trend")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={paymentTrend}>
+              <LineChart data={paymentTrend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="certified" name={uiText("Certified")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="paid" name={uiText("Paid")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} type="monotone" dataKey="certified" name={uiText("Certified")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line label={{ position: 'bottom', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} type="monotone" dataKey="paid" name={uiText("Paid")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

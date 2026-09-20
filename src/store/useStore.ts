@@ -8,7 +8,7 @@ import { todayDate } from '../lib/fundDisbursal';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
-import { ROLE_NAV } from '../components/layout/navConfig';
+import { ROLE_NAV, NAV_ITEMS } from '../components/layout/navConfig';
 import { computeProjectScope } from '../lib/scope';
 import { validateBillSubmission } from '../lib/billSubmission';
 import { readBillFile } from '../lib/billAttachments';
@@ -33,6 +33,7 @@ export interface StoreState extends ControlActions {
   assignCustomRole: (userId: string, customRoleId: string) => void;
   reviewPhoto: (id: string, status: 'APPROVED' | 'REJECTED', note: string) => void;
   addStaffUser: (input: Omit<User, 'id' | 'avatarInitials' | 'identityReview'>) => User;
+  submitKycApplication: (documentType: NonNullable<User['kycApplication']>['documentType'], declaration: boolean) => void;
   reviewStaffIdentity: (id: string, status: 'VERIFIED' | 'REJECTED', reference: string) => void;
   escalationPolicy: EscalationPolicy;
   escalationKeys: string[];
@@ -262,6 +263,15 @@ export const useStore = create<StoreState>()(
         const user: User = { ...input, name: input.name.trim(), email: input.email.trim().toLowerCase(), phone: input.phone.trim(), id: nid('USR'), avatarInitials: input.name.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase(), identityReview: { status: 'PENDING', method: 'MANUAL' } };
         set(s => ({ users: [...s.users, user] })); get().logAction(`Created staff account: ${user.name}`, undefined, undefined, user.role); return user;
       },
+      submitKycApplication: (documentType, declaration) => {
+        const user = get().users.find(u => u.id === get().currentUser?.id);
+        if (!user) throw new Error('Sign in to submit your KYC application.');
+        if (!declaration || !['EMPLOYEE_ID','CONTRACTOR_REGISTRATION','GOVERNMENT_ID'].includes(documentType)) throw new Error('Choose a document type and confirm your declaration.');
+        if (user.kycApplication && user.identityReview?.status !== 'REJECTED') throw new Error('Your application is already submitted.');
+        const updated: User = { ...user, kycApplication: { submittedAt: new Date().toISOString(), documentType, declaration: true, name: user.name, email: user.email, phone: user.phone }, identityReview: { status: 'PENDING', method: 'MANUAL' } };
+        set(s => ({ users: s.users.map(u => u.id === user.id ? updated : u), currentUser: updated }));
+        get().logAction('KYC application submitted', undefined, undefined, user.id);
+      },
       reviewStaffIdentity: (id, status, reference) => {
         const reviewer = get().currentUser;
         if (reviewer?.role !== 'SUPERADMIN') throw new Error('Only superadmins can review identities.');
@@ -272,7 +282,9 @@ export const useStore = create<StoreState>()(
       },
 
       setRoleNavAccess: (role, keys) => {
-        set((s) => ({ rolePermissions: { ...s.rolePermissions, [role]: keys } }));
+        if (get().currentUser?.role !== 'SUPERADMIN') throw new Error('Only superadmins can update access permissions.');
+        if (role === 'SUPERADMIN' && !keys.includes('access')) throw new Error('Superadmin must always retain Access Management.');
+        set((s) => ({ rolePermissions: { ...s.rolePermissions, [role]: Object.keys(NAV_ITEMS).filter(key => keys.includes(key)) } }));
         get().logAction(`Updated access permissions for role ${role}`);
       },
       updateUserRole: (userId, role) => {

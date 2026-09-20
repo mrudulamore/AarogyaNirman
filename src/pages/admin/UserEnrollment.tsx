@@ -42,6 +42,7 @@ export function IdentityReview({ user }: { user: User }) {
     {currentUser?.role === 'SUPERADMIN' && currentUser.id !== user.id && <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>{uiText('Review identity')}</Button>}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title={uiText('Manual identity review')} description={user.name}>
       <p className="mb-4 text-sm text-slate-600">{uiText('Record a completed document check. This does not perform Aadhaar, biometric, or provider-backed eKYC. Do not enter identity document numbers here.')}</p>
+      {user.kycApplication && <div className="mb-4 rounded-xl bg-blue-50 p-3 text-sm"><p>{uiText('KYC application')}: {user.kycApplication.submittedAt}</p><p>{uiText('Document type')}: {user.kycApplication.documentType}</p><p>{user.kycApplication.name} · {user.kycApplication.email}</p></div>}
       {user.identityReview?.reviewedAt && <p className="mb-3 text-xs text-slate-500">{uiText('Previous review')}: {user.identityReview.reviewedAt} · {user.identityReview.reference}</p>}
       <Label>{uiText('Internal review reference')}<Input value={reference} onChange={e => setReference(e.target.value)} maxLength={120}/></Label>
       <label className="mt-4 flex gap-2 text-sm"><input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)}/>{uiText('I have checked the identity documents and matched them to this person.')}</label>

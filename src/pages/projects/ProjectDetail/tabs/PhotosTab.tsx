@@ -62,6 +62,11 @@ export function PhotosTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{([{type:'BEFORE',label:'Start / baseline'}, {type:'PROGRESS',label:'Midpoint / progress'}, {type:'COMPLETION',label:'Completion'}] as const).map(checkpoint => {
+        const count = photos.filter(photo => photo.type === checkpoint.type && photo.dataUrl).length;
+        return <button key={checkpoint.type} className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-left" onClick={()=>{setForm({...form,type:checkpoint.type});setUploadOpen(true);}}><p className="text-sm font-semibold text-blue-900">{uiText(checkpoint.label)}</p><p className="mt-1 text-xs text-slate-600">{count} {uiText('captured photos')}</p><p className="mt-2 text-xs text-blue-700">{uiText('Capture Photo')} →</p></button>;
+      })}</div>
+      <p className="text-xs text-slate-500">{uiText('Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity. Sample photos do not count as captured evidence.')}</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Select value={stageFilter} onValueChange={setStageFilter}>
@@ -101,11 +106,11 @@ export function PhotosTab({ project }: { project: Project }) {
       {grouped.map(([stage, items]) => (
         <Card key={stage}>
           <CardHeader><CardTitle>{uiText(stage)} <span className="ml-2 font-normal text-slate-400">{items.length}{uiText(" photos")}</span></CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((ph) => (
               <button key={ph.id} onClick={() => setViewerId(ph.id)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
                 <div className="relative">
-                  <img src={photoSrc(ph)} className="h-28 w-full object-cover transition-transform group-hover:scale-105" />
+                  <img alt={ph.description} src={photoSrc(ph)} className="h-52 w-full object-cover transition-transform group-hover:scale-105" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
                 </div>
                 <div className="p-1.5">

@@ -1,7 +1,8 @@
+import { Menu } from 'lucide-react';
 import { PendingWork } from '../common/PendingWork';
 import { useEffect, useState } from 'react';
 import { uiText } from '../../i18n/ui';
-import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useStore } from '../../store/useStore';
 import { NAV_ITEMS } from './navConfig';
@@ -56,6 +57,13 @@ export function AppShell() {
           {location.pathname === '/dashboard' && currentUser.role !== 'WORKFORCE' && <PendingWork />}
           <Outlet />
         </main>
+        <nav className="mobile-dock" aria-label={uiText('Navigation')}>
+          {['dashboard', 'projects', 'field', 'notifications'].filter(key => currentUser.role === 'WORKFORCE' ? key === 'dashboard' : (rolePermissions[currentUser.role] ?? []).includes(key)).map(key => {
+            const item = NAV_ITEMS[key];
+            return <NavLink key={key} to={item.path} className={({isActive}) => isActive ? 'dock-link is-active' : 'dock-link'}><item.icon size={21}/><span>{currentUser.role === 'WORKFORCE' ? uiText('My attendance') : uiText(({ dashboard: 'Home', projects: 'Projects', field: 'Field', notifications: 'Alerts' } as Record<string, string>)[key])}</span></NavLink>;
+          })}
+          <button type="button" className="dock-link" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu size={21}/><span>{uiText('Menu')}</span></button>
+        </nav>
       </div>
     </div>
   );

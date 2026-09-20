@@ -1,3 +1,4 @@
+import { KycApplication } from '../common/KycApplication';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const notifications = useStore((s) => s.notifications).filter(n => !n.projectId || projectIds.has(n.projectId));
   const markRead = useStore((s) => s.markNotificationRead);
   const markAllRead = useStore((s) => s.markAllNotificationsRead);
+  const [kycOpen, setKycOpen] = useState(false);
   const [q, setQ] = useState('');
 
   const myNotifications = notifications.filter((n) => currentUser && n.targetRoles.includes(currentUser.role));
@@ -33,7 +35,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
   return (
     <header className="app-header sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-2 py-1 border-b border-slate-200 bg-white px-4">
-      <button onClick={onMenuClick} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
+      <button aria-label={uiText("Menu")} onClick={onMenuClick} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
         <Menu size={20} />
       </button>
 
@@ -50,7 +52,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
       </form>}
 
       <div className="ml-auto flex items-center gap-1.5">
-        <button onClick={() => navigate('/search')} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 md:hidden">
+        <button aria-label={uiText("Search")} onClick={() => navigate('/search')} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 md:hidden">
           <Search size={18} />
         </button>
 
@@ -61,7 +63,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100">
+            <button aria-label={t("header.notifications")} className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100">
               <Bell size={18} />
               {unread > 0 && <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">{uiText(unread > 9 ? '9+' : unread)}</span>}
             </button>
@@ -92,7 +94,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label={t('header.accountMenu')} className="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 hover:bg-slate-100">
               <Avatar name={currentUser?.name ?? '?'} size={30} />
-              <div className="max-w-32 truncate text-left leading-tight sm:max-w-none">
+              <div className="account-summary max-w-32 truncate text-left leading-tight sm:max-w-none">
                 <p className="text-xs font-semibold text-slate-800">{currentUser?.name}</p>
                 <p className="text-[10.5px] text-slate-400">{uiText(currentUser && t(`roles.${currentUser.role}`))}</p>
               </div>
@@ -101,12 +103,14 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{uiText(currentUser?.designation)}</DropdownMenuLabel>
+            <DropdownMenuItem onSelect={() => setKycOpen(true)}>{uiText('KYC application')}</DropdownMenuItem>
             {currentUser?.role !== 'WORKFORCE' && <DropdownMenuItem onSelect={() => navigate('/select-role')}><UserCog size={14} /> {t('header.switchRole')}</DropdownMenuItem>}
             <DropdownMenuSeparator />
             <DropdownMenuItem destructive onSelect={switchAccount}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <KycApplication open={kycOpen} onOpenChange={setKycOpen}/>
     </header>
   );
 }

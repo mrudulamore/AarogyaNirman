@@ -18,10 +18,11 @@ export function Checkbox({ checked, onCheckedChange, className }: { checked?: bo
   );
 }
 
-export function Switch({ checked, onCheckedChange }: { checked?: boolean; onCheckedChange?: (v: boolean) => void }) {
+export function Switch({ checked, onCheckedChange, 'aria-label': ariaLabel }: { checked?: boolean; onCheckedChange?: (v: boolean) => void; 'aria-label'?: string }) {
   useUiLanguage();
   return (
     <SwitchPrimitive.Root
+      aria-label={ariaLabel}
       checked={checked}
       onCheckedChange={onCheckedChange}
       className="relative h-5 w-9 rounded-full bg-slate-200 outline-none transition-colors data-[state=checked]:bg-navy-700"

@@ -40,3 +40,18 @@ Refreshed shared card surfaces, headings, borders and elevation. Verified group 
 Project cards now include blue district headers, larger names and budget/progress figures, completion dates, and keyboard-accessible project links. Shared report and metric cards have consistent blue headings, spacing, and elevation. The landing page has larger uncropped leadership portraits, a responsive hospital illustration, scroll reveals and subtle hover animations. Reduced-motion preferences disable landing animations. No workflow or authorization changes were introduced by this visual refresh.
 
 Validation: production build, localization suite, browser checks across 18 workspace routes at 390px and 1440px, landing entry navigation, loaded portraits and native-class finance layout. Corrected narrow-screen hero clipping after visual review. The latest visual refresh has not been packaged into a new APK.
+
+## 20 September review notes
+
+- Module visibility toggles now preserve canonical navigation order, including previously saved permission arrays. Added module/person searches and a pending-KYC filter.
+- Account menu includes a KYC application with declaration, document category and a profile snapshot. Administrators review applications; rejected applications can be resubmitted. This remains manual, device-local verification. No Aadhaar numbers or identity-document images are collected.
+- Zone overview cards filter the dashboard and fit the map to the selected division instead of navigating away. Existing budget/scheme groupings show project counts.
+- Street/satellite controls and attributed DataMeet Census 2011 district outlines, coloured by division. Historical boundaries are explicitly labelled and do not purport to be current legal boundaries. Source and license: public/maps/SOURCES.md.
+- Added photo-coordinate maps on dashboard and field evidence, scoped to visible projects. Photo popups distinguish illustrative samples from saved evidence.
+- Chart values appear outside marks; status doughnut retains a full count/share table. Monetary labels use existing currency formatting.
+- Start/baseline, midpoint/progress and completion capture shortcuts show actual captured-photo counts. Field capture allows checkpoint selection. Larger photo cards and varied existing illustrative photographs preserve the distinction between samples and real evidence.
+- Interpretation pending clarification: the handwritten “midpoint picture at the start” was implemented as three capture checkpoints; provider-backed eKYC and current authoritative boundary data require external inputs.
+
+Final validation status: production build, localization, module-order and KYC state tests passed. Browser KYC application, pending filtering, search and manual approval ran successfully before the test reached an incorrect minister login ID. The test ID is corrected; remaining map/chart visual checks are pending because automatic tool approval hit a usage limit. No APK containing the September review-note changes has been generated yet. Earlier APKs contain only the preceding mobile design.
+
+Push validation: browser checks at 390px and 1440px now pass for KYC submission/approval, pending application filtering, user search, zone selection without navigation, boundary rendering and satellite switching. Production build and access/KYC/localization tests passed again. No new APK containing these review-note changes has been packaged.

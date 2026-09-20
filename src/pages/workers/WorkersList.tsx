@@ -54,11 +54,11 @@ export function WorkersList() {
         <CardHeader><CardTitle>{uiText("Daily Workforce Trend")}</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={trend}>
+            <LineChart data={trend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 10 }} />
               <RTooltip />
-              <Line type="monotone" dataKey="count" stroke="#265aa0" strokeWidth={2} dot={{ r: 3 }} />
+              <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value) : String(value ?? '') }} type="monotone" dataKey="count" stroke="#265aa0" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

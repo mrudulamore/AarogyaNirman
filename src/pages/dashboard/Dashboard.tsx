@@ -1,3 +1,4 @@
+import { PhotoLocationMap } from '../../components/common/PhotoLocationMap';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo, useState } from 'react';
@@ -189,7 +190,7 @@ export function Dashboard() {
   }, [roleProjects, overviewMode, zoneFilter, budgetFilter, schemeFilter, statusFilter, allPhotos]);
   const selectedOverview = overviewMode === 'zone' ? zoneFilter : overviewMode === 'budget' ? budgetFilter : schemeFilter;
   function selectOverview(key: string) {
-    if (overviewMode === 'zone') navigate(`/projects?region=${encodeURIComponent(key)}`);
+    if (overviewMode === 'zone') setZoneFilter(values => values.includes(key) ? [] : [key]);
     else if (overviewMode === 'budget') setBudgetFilter((values) => toggleSelection(values, key));
     else setSchemeFilter((values) => toggleSelection(values, key));
   }
@@ -378,7 +379,7 @@ export function Dashboard() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader><CardTitle>{t('dashboard.mapTitle')}</CardTitle></CardHeader>
-          <CardContent><ProjectMap projects={projects} focusDivision={focusDivision} onDivisionSelect={selectZone} /></CardContent>
+          <CardContent><ProjectMap projects={projects} focusDivision={focusDivision} onDivisionSelect={selectZone} /><details className="mt-4"><summary className="cursor-pointer py-3 text-sm font-semibold text-blue-800">{uiText("Photo locations")}</summary><PhotoLocationMap photos={allPhotos.filter(photo => projects.some(project => project.id === photo.projectId))}/></details></CardContent>
         </Card>
 
         <Card>
@@ -471,12 +472,11 @@ export function Dashboard() {
             <div className="relative">
             <ResponsiveContainer width="100%" height={240}>
               <PieChart style={{ fontSize: 10 }}>
-                <Pie data={statusDist.filter((status) => status.value > 0)} dataKey="value" nameKey="name" innerRadius={62} outerRadius={100} paddingAngle={2} labelLine={false}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    if ((percent ?? 0) < 0.08) return null;
+                <Pie data={statusDist.filter((status) => status.value > 0)} dataKey="value" nameKey="name" innerRadius={52} outerRadius={78} paddingAngle={3} labelLine={true}
+                  label={({ cx, cy, midAngle, outerRadius, value }) => {
                     const angle = -(midAngle ?? 0) * Math.PI / 180;
-                    const radius = (Number(innerRadius) + Number(outerRadius)) / 2;
-                    return <text x={Number(cx) + radius * Math.cos(angle)} y={Number(cy) + radius * Math.sin(angle)} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={12} fontWeight={700} stroke="#0f172a" strokeWidth={2} paintOrder="stroke">{uiText(((percent ?? 0) * 100).toFixed(1))}%</text>;
+                    const radius = Number(outerRadius) + 22;
+                    return <text x={Number(cx) + radius * Math.cos(angle)} y={Number(cy) + radius * Math.sin(angle)} textAnchor="middle" dominantBaseline="central" fill="#334155" fontSize={12} fontWeight={700}>{value}</text>;
                   }}>
                   {statusDist.filter((status) => status.value > 0).map((s) => <Cell key={s.key} fill={STATUS_HEX[s.key]} />)}
                 </Pie>
@@ -524,14 +524,14 @@ export function Dashboard() {
           <CardHeader><CardTitle>{t('dashboard.districtBudget')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={Math.max(260, districtBudget.length * 64)}>
-              <BarChart data={districtBudget} layout="vertical" margin={{ left: 10 }}>
+              <BarChart data={districtBudget} layout="vertical" margin={{ left: 10, right: 55, top: 24, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eef2f8" />
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <YAxis type="category" dataKey="district" width={70} tick={{ fontSize: 10 }} />
                 <RTooltip formatter={(v: any) => formatCurrency(v)} />
-                <Bar dataKey="sanctioned" fill="#3b82f6" name={uiText("Sanctioned Amount")} radius={[0, 3, 3, 0]} />
-                <Bar dataKey="spent" fill="#f59e0b" name={uiText("Amount Spent")} radius={[0, 3, 3, 0]} />
-                <Bar dataKey="disbursed" fill="#10b981" name={uiText("Amount Disbursed")} radius={[0, 3, 3, 0]} />
+                <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="sanctioned" fill="#3b82f6" name={uiText("Sanctioned Amount")} radius={[0, 3, 3, 0]} />
+                <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="spent" fill="#f59e0b" name={uiText("Amount Spent")} radius={[0, 3, 3, 0]} />
+                <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="disbursed" fill="#10b981" name={uiText("Amount Disbursed")} radius={[0, 3, 3, 0]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               </BarChart>
             </ResponsiveContainer>

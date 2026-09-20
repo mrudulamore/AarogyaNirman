@@ -44,6 +44,9 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
   navigateRef.current = navigate;
   const onDivisionSelectRef = useRef(onDivisionSelect);
   onDivisionSelectRef.current = onDivisionSelect;
+  const boundsRef = useRef<Record<string, L.LatLngBounds>>({});
+  const [boundaries, setBoundaries] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [boundaryError, setBoundaryError] = useState(false);
   const [zoomedIn, setZoomedIn] = useState(false);
 
   useEffect(() => {
@@ -54,16 +57,48 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
       scrollWheelZoom: false,
       zoomControl: true,
     });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
       subdomains: 'abc',
     }).addTo(map);
+    const satellite = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community', maxZoom: 19,
+    });
+    L.control.layers({ [uiText('Street map')]: streets, [uiText('Satellite')]: satellite }, {}, { collapsed: false, position: 'topright' }).addTo(map);
+    const resize = new ResizeObserver(() => map.invalidateSize()); resize.observe(containerRef.current);
     map.zoomControl.setPosition('bottomright');
     map.on('zoomend', () => setZoomedIn(map.getZoom() > STATEWIDE_ZOOM + 1));
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { resize.disconnect(); map.remove(); mapRef.current = null; };
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/maps/maharashtra-districts.geojson', { signal: controller.signal }).then(r => { if (!r.ok) throw new Error('Boundaries unavailable'); return r.json(); }).then(setBoundaries).catch(e => { if (e.name !== 'AbortError') setBoundaryError(true); });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !boundaries) return;
+    const divisions = Object.keys(DIVISION_ANCHORS);
+    const colors = ['#2563eb','#7c3aed','#0891b2','#ea580c','#059669','#db2777'];
+    boundsRef.current = {};
+    const layer = L.geoJSON(boundaries, {
+      style: feature => ({ color: colors[divisions.indexOf(feature?.properties.division)] ?? '#64748b', weight: 2, fillOpacity: focusDivision === feature?.properties.division ? .18 : .04 }),
+      onEachFeature: (feature, polygon) => {
+        const division = feature.properties.division;
+        const bounds = (polygon as L.Polygon).getBounds();
+        if (boundsRef.current[division]) boundsRef.current[division].extend(bounds); else boundsRef.current[division] = bounds;
+        const count = projects.filter(p => p.division === division).length;
+        polygon.bindTooltip(`${escapeHtml(uiText(division))} · ${count} ${escapeHtml(uiText('Projects'))}`);
+        polygon.on('click', () => onDivisionSelectRef.current?.(division));
+      },
+    }).addTo(map);
+    layer.bringToBack();
+    return () => { layer.remove(); };
+  }, [boundaries, projects, focusDivision, language]);
 
   // Project markers (real registered site coordinates).
   useEffect(() => {
@@ -80,7 +115,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
         className: '',
         html: `
           <div style="position: relative; width: ${size}px; height: ${size}px;">
-            ${pulse ? `<span style="position:absolute; inset:0; border-radius:9999px; background:${color}; opacity:0.35; animation: proj-pulse 1.8s ease-out infinite;"></span>` : ''}
+            ${pulse ? `<span style="position:absolute; inset:0; border-radius:9999px; background:${color}; opacity:0.35; animation: proj-pulse 1.8s ease-out 3;"></span>` : ''}
             <span style="position:absolute; inset:5px; border-radius:9999px; background:${color}; border:2px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.35);"></span>
           </div>`,
         iconSize: [size, size],
@@ -141,7 +176,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
       });
       const marker = L.marker([coord.lat, coord.lng], { icon, zIndexOffset: 1000 }).addTo(map);
       marker.on('click', () => {
-        map.flyTo([coord.lat, coord.lng], DIVISION_ZOOM, { duration: 0.8 });
+        if (boundsRef.current[division]) map.fitBounds(boundsRef.current[division], { padding: [20, 20] }); else map.setView([coord.lat, coord.lng], DIVISION_ZOOM);
         onDivisionSelectRef.current?.(division);
       });
       return marker;
@@ -154,11 +189,11 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
     if (!map) return;
     if (focusDivision && DIVISION_ANCHORS[focusDivision]) {
       const coord = DIVISION_ANCHORS[focusDivision];
-      map.flyTo([coord.lat, coord.lng], DIVISION_ZOOM, { duration: 0.8 });
+      if (boundsRef.current[focusDivision]) map.fitBounds(boundsRef.current[focusDivision], { padding: [20, 20] }); else map.setView([coord.lat, coord.lng], DIVISION_ZOOM);
     } else if (focusDivision === null) {
       map.flyTo(MAHARASHTRA_CENTER, STATEWIDE_ZOOM, { duration: 0.8 });
     }
-  }, [focusDivision]);
+  }, [focusDivision, boundaries]);
 
   function resetToStatewide() {
     mapRef.current?.flyTo(MAHARASHTRA_CENTER, STATEWIDE_ZOOM, { duration: 0.8 });
@@ -167,7 +202,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
 
   return (
     <div>
-      <style>{`@keyframes proj-pulse { 0% { transform: scale(0.6); opacity: 0.5; } 100% { transform: scale(1.9); opacity: 0; } }`}</style>
+      <style>{`@media(prefers-reduced-motion:reduce){.leaflet-marker-icon span{animation:none!important}} @keyframes proj-pulse { 0% { transform: scale(0.6); opacity: 0.5; } 100% { transform: scale(1.9); opacity: 0; } }`}</style>
       <div className="relative h-[380px] w-full overflow-hidden rounded-lg border border-slate-200 shadow-sm">
         <div ref={containerRef} className="h-full w-full" />
         {zoomedIn && (
@@ -178,6 +213,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
             <ArrowLeft size={13} />{uiText(" All Maharashtra")}</button>
         )}
       </div>
+      <p className="mt-2 text-xs text-slate-500">{uiText(boundaryError ? 'Boundary outlines could not load. Project markers remain available.' : 'Reference boundaries: DataMeet, Census 2011 · CC BY 2.5 IN. Historical district outlines; not legal boundaries.')}</p>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-500">
         {Object.entries({ ON_TRACK: 'On Track', AT_RISK: 'At Risk', DELAYED: 'Delayed', COMPLETED: 'Completed' }).map(([k, label]) => (
           <span key={k} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_HEX[k] }} />{uiText(label)}</span>

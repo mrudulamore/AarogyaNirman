@@ -1,3 +1,4 @@
+import { PhotoLocationMap } from '../../../../components/common/PhotoLocationMap';
 import { PhotoReview } from '../../../../components/common/PhotoReview';
 import { ROLE_LABELS } from '../../../../lib/constants';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
@@ -46,6 +47,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
         <StatCard label={uiText("Geo-Fence Radius")} value={`${GEOFENCE_RADIUS_M} m`} icon={ShieldCheck} />
       </div>
 
+      <Card className="p-4"><PhotoLocationMap photos={filtered.map(r => r.photo)}/></Card>
       <Card>
         <CardHeader>
           <CardTitle>{uiText("Evidence distance overview")}</CardTitle>

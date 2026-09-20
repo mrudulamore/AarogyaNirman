@@ -51,7 +51,7 @@ const FOUNDATION_STAGE_HINTS = ['foundation', 'structural', 'rcc', 'column', 're
 
 export function seededImageUrl(seed: number, _w = 640, _h = 420, label?: string): string {
   const hint = (label ?? '').toLowerCase();
-  if (FOUNDATION_STAGE_HINTS.some((h) => hint.includes(h))) return SITE_PHOTOS[0];
+  if (FOUNDATION_STAGE_HINTS.some((h) => hint.includes(h))) return [SITE_PHOTOS[0], SITE_PHOTOS[2], SITE_PHOTOS[3]][Math.abs(seed) % 3];
   return SITE_PHOTOS[(Math.abs(seed) % (SITE_PHOTOS.length - 1)) + 1];
 }
 

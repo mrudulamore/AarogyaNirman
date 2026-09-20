@@ -201,7 +201,7 @@ export function Landing() {
             <div><p className="mb-3 text-xs font-bold uppercase tracking-[.2em] text-blue-600">{t('landing.brand')}</p><h2 className="text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl">{uiText('Leadership')}</h2></div>
             <Landmark size={40} className="text-blue-300" aria-hidden="true" />
           </Reveal>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">{LEADERS.map((person, i) => <Reveal key={person.name} delay={i * 80}>
+          <div className="leadership-hierarchy">{LEADERS.map((person, i) => <Reveal key={person.name} delay={i * 80} className={`leader-rank leader-rank-${i === 0 ? "chief" : i < 3 ? "deputy" : "health"}`}>
             <article className="leadership-card">
               <div className="leadership-portrait"><img src={`/leadership/${person.image}`} alt={person.name} loading="lazy" /></div>
               <div className="leadership-caption"><span className="mb-4 block h-1 w-9 rounded-full bg-blue-500" aria-hidden="true"/><h3 className="text-lg font-bold tracking-tight text-blue-950">{uiText(person.name)}</h3><p className="mt-2 text-sm leading-relaxed text-slate-600">{uiText(person.title)}</p></div>

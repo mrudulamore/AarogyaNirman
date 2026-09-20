@@ -35,12 +35,12 @@ export function ExpensesTab({ project }: { project: Project }) {
         <CardHeader><CardTitle>{uiText("Budget vs Actual")}</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
               <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-              <Bar dataKey="value" fill="#265aa0" radius={[4, 4, 0, 0]} />
+              <Bar label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="value" fill="#265aa0" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

@@ -18,7 +18,8 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   const rolePermissions = useStore((s) => s.rolePermissions);
   const { scopeLabel } = useProjectScope();
   const counts = useNavCounts();
-  const keys = currentUser?.role === 'WORKFORCE' ? ['dashboard'] : currentUser ? rolePermissions[currentUser.role] ?? [] : [];
+  const grantedKeys = currentUser?.role === 'WORKFORCE' ? ['dashboard'] : currentUser ? rolePermissions[currentUser.role] ?? [] : [];
+  const keys = Object.keys(NAV_ITEMS).filter(key => grantedKeys.includes(key));
 
   return (
     <>

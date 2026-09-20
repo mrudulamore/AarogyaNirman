@@ -160,7 +160,7 @@
     "सर्व पुरावे"
   ],
   "All Maharashtra": [
-    "संपूर्ण महाराष्ट्र",
+    "पूरा महाराष्ट्र",
     "संपूर्ण महाराष्ट्र"
   ],
   "All Projects": [
@@ -3057,7 +3057,7 @@
   ],
   "Completion": [
     "पूर्णता",
-    "पूर्णत्व"
+    "पूर्तता"
   ],
   "Completion Certificate": [
     "पूर्णता प्रमाणपत्र",
@@ -3984,8 +3984,8 @@
     "विलंब (दिवस)"
   ],
   "Device GPS": [
-    "उपकरण का GPS",
-    "उपकरणाचा GPS"
+    "डिवाइस GPS",
+    "उपकरण GPS"
   ],
   "Device photo / GPS captured": [
     "उपकरण फोटो / GPS दर्ज",
@@ -5990,5 +5990,141 @@
   "Project reports": [
     "परियोजना रिपोर्ट",
     "प्रकल्प अहवाल"
+  ],
+  "Menu": [
+    "मेनू",
+    "मेनू"
+  ],
+  "Navigation": [
+    "नेविगेशन",
+    "नेव्हिगेशन"
+  ],
+  "Home": [
+    "होम",
+    "मुख्यपृष्ठ"
+  ],
+  "Field": [
+    "साइट",
+    "साइट"
+  ],
+  "Alerts": [
+    "सूचनाएँ",
+    "सूचना"
+  ],
+  "View site photos": [
+    "साइट की तस्वीरें देखें",
+    "साइटची छायाचित्रे पहा"
+  ],
+  "Search modules": [
+    "मॉड्यूल खोजें",
+    "मॉड्यूल शोधा"
+  ],
+  "Search people": [
+    "लोगों को खोजें",
+    "व्यक्ती शोधा"
+  ],
+  "No matching users": [
+    "कोई उपयोगकर्ता नहीं मिला",
+    "जुळणारे वापरकर्ते नाहीत"
+  ],
+  "Street map": [
+    "सड़क मानचित्र",
+    "रस्त्यांचा नकाशा"
+  ],
+  "Satellite": [
+    "उपग्रह",
+    "उपग्रह"
+  ],
+  "Photo locations": [
+    "तस्वीरों के स्थान",
+    "छायाचित्रांची ठिकाणे"
+  ],
+  "Boundary outlines could not load. Project markers remain available.": [
+    "सीमाएँ लोड नहीं हुईं। परियोजना चिह्न उपलब्ध हैं।",
+    "सीमा लोड झाल्या नाहीत. प्रकल्प चिन्हे उपलब्ध आहेत."
+  ],
+  "Reference boundaries: DataMeet, Census 2011 · CC BY 2.5 IN. Historical district outlines; not legal boundaries.": [
+    "संदर्भ सीमाएँ: DataMeet, जनगणना 2011 · CC BY 2.5 IN. ऐतिहासिक जिला सीमाएँ; कानूनी सीमाएँ नहीं।",
+    "संदर्भ सीमा: DataMeet, जनगणना 2011 · CC BY 2.5 IN. ऐतिहासिक जिल्हा सीमा; कायदेशीर सीमा नाहीत."
+  ],
+  "Blue markers: saved evidence. Grey markers: illustrative samples. Select a marker for coordinates and photo details.": [
+    "नीले चिह्न: सहेजे साक्ष्य। धूसर चिह्न: उदाहरण। निर्देशांक और विवरण के लिए चिह्न चुनें।",
+    "निळी चिन्हे: जतन केलेले पुरावे. राखाडी चिन्हे: नमुने. निर्देशांक व तपशीलांसाठी चिन्ह निवडा."
+  ],
+  "Illustrative sample": [
+    "उदाहरण चित्र",
+    "नमुना छायाचित्र"
+  ],
+  "KYC application": [
+    "KYC आवेदन",
+    "KYC अर्ज"
+  ],
+  "KYC application submitted": [
+    "KYC आवेदन जमा किया गया",
+    "KYC अर्ज सादर झाला"
+  ],
+  "Application status": [
+    "आवेदन की स्थिति",
+    "अर्जाची स्थिती"
+  ],
+  "Pending KYC applications": [
+    "लंबित KYC आवेदन",
+    "प्रलंबित KYC अर्ज"
+  ],
+  "Document type": [
+    "दस्तावेज़ का प्रकार",
+    "दस्तऐवजाचा प्रकार"
+  ],
+  "Employee ID": [
+    "कर्मचारी पहचान पत्र",
+    "कर्मचारी ओळखपत्र"
+  ],
+  "Contractor registration": [
+    "ठेकेदार पंजीकरण",
+    "कंत्राटदार नोंदणी"
+  ],
+  "Government identity document": [
+    "सरकारी पहचान दस्तावेज",
+    "शासकीय ओळखपत्र"
+  ],
+  "Submit application": [
+    "आवेदन जमा करें",
+    "अर्ज सादर करा"
+  ],
+  "Submit your profile for manual identity review. Present the selected document to your administrator; do not enter identity document numbers here.": [
+    "अपनी प्रोफाइल पहचान समीक्षा हेतु भेजें। चुना दस्तावेज प्रशासक को दिखाएँ; यहाँ पहचान दस्तावेज संख्या न भरें।",
+    "ओळख तपासणीसाठी प्रोफाइल सादर करा. निवडलेला दस्तऐवज प्रशासकाला दाखवा; येथे ओळखपत्र क्रमांक भरू नका."
+  ],
+  "I confirm my profile is accurate and will present the document for manual verification.": [
+    "मैं पुष्टि करता हूँ कि मेरी प्रोफाइल सही है और सत्यापन हेतु दस्तावेज प्रस्तुत करूँगा।",
+    "माझे प्रोफाइल अचूक असल्याची पुष्टी करतो आणि पडताळणीसाठी दस्तऐवज सादर करेन."
+  ],
+  "Applications and reviews are stored on this device. This is manual KYC, not automated eKYC.": [
+    "आवेदन और समीक्षाएँ इस डिवाइस पर सहेजी जाती हैं। यह मैनुअल KYC है, स्वचालित eKYC नहीं।",
+    "अर्ज आणि तपासण्या या उपकरणावर जतन होतात. हे मानवी KYC आहे, स्वयंचलित eKYC नाही."
+  ],
+  "KYC applications are available for registered staff accounts.": [
+    "KYC आवेदन पंजीकृत कर्मचारियों के लिए उपलब्ध हैं।",
+    "KYC अर्ज नोंदणीकृत कर्मचारी खात्यांसाठी उपलब्ध आहेत."
+  ],
+  "Start / baseline": [
+    "शुरुआत / आधार स्थिति",
+    "सुरुवात / मूळ स्थिती"
+  ],
+  "Midpoint / progress": [
+    "मध्य चरण / प्रगति",
+    "मध्य टप्पा / प्रगती"
+  ],
+  "captured photos": [
+    "खींची गई तस्वीरें",
+    "काढलेली छायाचित्रे"
+  ],
+  "Photo checkpoint": [
+    "तस्वीर का चरण",
+    "छायाचित्राचा टप्पा"
+  ],
+  "Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity. Sample photos do not count as captured evidence.": [
+    "हर भवन, मंजिल और गतिविधि की शुरुआत, मध्य चरण और पूर्णता के साक्ष्य लें। उदाहरण चित्र वास्तविक साक्ष्य में नहीं गिने जाते।",
+    "प्रत्येक इमारत, मजला आणि कामाची सुरुवात, मध्य टप्पा आणि पूर्ततेचे पुरावे घ्या. नमुना छायाचित्रे प्रत्यक्ष पुरावे म्हणून मोजली जात नाहीत."
   ]
 }

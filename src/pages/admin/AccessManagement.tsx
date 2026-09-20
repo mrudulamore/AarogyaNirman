@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { KeyRound, Users, LayoutGrid, ShieldAlert } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
-import { Card, CardHeader, CardTitle, CardContent, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
+import { Card, CardHeader, CardTitle, CardContent, Input, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch, Avatar } from '../../components/ui/forms';
 import { KpiCard } from '../../components/common/KpiCard';
@@ -26,6 +26,9 @@ export function AccessManagement() {
   const rolePermissions = useStore((s) => s.rolePermissions);
   const setRoleNavAccess = useStore((s) => s.setRoleNavAccess);
   const updateUserRole = useStore((s) => s.updateUserRole);
+  const [applicationsOnly, setApplicationsOnly] = useState(false);
+  const [search, setSearch] = useState('');
+  const [moduleSearch, setModuleSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
 
   function toggleModule(role: Role, key: string, enabled: boolean) {
@@ -44,7 +47,7 @@ export function AccessManagement() {
     toast.success(uiText('User role updated.'));
   }
 
-  const filteredUsers = roleFilter === 'ALL' ? users : users.filter((u) => u.role === roleFilter);
+  const filteredUsers = users.filter(u => (!applicationsOnly || (!!u.kycApplication && u.identityReview?.status === 'PENDING')) && (roleFilter === 'ALL' || u.role === roleFilter) && [u.name,u.email,u.department,ROLE_LABELS[u.role]].some(value => value.toLowerCase().includes(search.toLowerCase().trim())));
   const superadminCount = users.filter((u) => u.role === 'SUPERADMIN').length;
 
   return (
@@ -60,7 +63,7 @@ export function AccessManagement() {
 
       <Card className="mb-5">
         <CardHeader>
-          <CardTitle>{uiText("Role Access Matrix")}</CardTitle>
+          <CardTitle>{uiText("Role Access Matrix")}</CardTitle><Input aria-label={uiText("Search modules")} placeholder={uiText("Search modules")} value={moduleSearch} onChange={e => setModuleSearch(e.target.value)} className="max-w-xs"/>
         </CardHeader>
         <CardContent className="p-0">
           {/* Plain grid, not a <table> — position:sticky on a <td>/<th> inside a
@@ -75,7 +78,7 @@ export function AccessManagement() {
                 </div>
               ))}
 
-              {ALL_NAV_KEYS.map((key) => (
+              {ALL_NAV_KEYS.filter(key => uiText(NAV_ITEMS[key].label).toLowerCase().includes(moduleSearch.toLowerCase().trim())).map((key) => (
                 <Fragment key={key}>
                   <div className="sticky left-0 z-10 flex items-center border-b border-r border-slate-100 bg-white px-4 py-2.5 font-medium text-slate-800 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.08)]">
                     {uiText(NAV_ITEMS[key].label)}
@@ -83,6 +86,7 @@ export function AccessManagement() {
                   {ALL_ROLES.map((r) => (
                     <div key={r} className="flex items-center justify-center border-b border-slate-100 px-3 py-2.5">
                       <Switch
+                        aria-label={`${uiText(NAV_ITEMS[key].label)}: ${uiText(ROLE_LABELS[r])}`}
                         checked={(rolePermissions[r] ?? []).includes(key)}
                         onCheckedChange={(v) => toggleModule(r, key, v)}
                       />
@@ -98,7 +102,7 @@ export function AccessManagement() {
       <CustomRoles />
       <Card>
         <CardHeader className="flex-wrap gap-2">
-          <CardTitle>{uiText("User Role Assignments")}</CardTitle><AddUserButton />
+          <CardTitle>{uiText("User Role Assignments")}</CardTitle><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={applicationsOnly} onChange={e=>setApplicationsOnly(e.target.checked)}/>{uiText("Pending KYC applications")}</label><AddUserButton /><Input aria-label={uiText("Search people")} placeholder={uiText("Search people")} value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs"/>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -113,6 +117,7 @@ export function AccessManagement() {
               <Tr><Th>{uiText("User")}</Th><Th>{uiText("Department")}</Th><Th>{uiText("Identity verification")}</Th><Th>{uiText("Current Role")}</Th><Th>{uiText("Reassign Role")}</Th></Tr>
             </THead>
             <TBody>
+              {filteredUsers.length === 0 && <Tr><Td colSpan={5}>{uiText("No matching users")}</Td></Tr>}
               {filteredUsers.map((u) => (
                 <Tr key={u.id}>
                   <Td>

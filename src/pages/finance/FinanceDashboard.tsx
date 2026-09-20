@@ -73,14 +73,14 @@ export function FinanceDashboard() {
           <CardHeader><CardTitle>{uiText("District-wise Expenditure")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={districtData}>
+              <BarChart data={districtData} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
                 <XAxis dataKey="district" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={60} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="sanctioned" fill="#d7e0ee" name={uiText("Sanctioned")} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="spent" fill="#265aa0" name={uiText("Spent")} radius={[3, 3, 0, 0]} />
+                <Bar label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="sanctioned" fill="#d7e0ee" name={uiText("Sanctioned")} radius={[3, 3, 0, 0]} />
+                <Bar label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="spent" fill="#265aa0" name={uiText("Spent")} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -90,11 +90,11 @@ export function FinanceDashboard() {
           <CardHeader><CardTitle>{uiText("Monthly Expenditure (Paid Bills)")}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={monthlyTrend}>
+              <LineChart data={monthlyTrend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
                 <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-                <Line type="monotone" dataKey="amount" stroke="#265aa0" strokeWidth={2} dot={{ r: 3 }} />
+                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} type="monotone" dataKey="amount" stroke="#265aa0" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -105,13 +105,13 @@ export function FinanceDashboard() {
         <CardHeader><CardTitle>{uiText("Project-wise Expenditure (Top 10)")}</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={projectData} layout="vertical" margin={{ left: 10 }}>
+            <BarChart data={projectData} layout="vertical" margin={{ left: 10, right: 55, top: 24, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
               <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} />
               <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-              <Bar dataKey="sanctioned" fill="#d7e0ee" name={uiText("Sanctioned")} radius={[0, 3, 3, 0]} />
-              <Bar dataKey="spent" fill="#265aa0" name={uiText("Spent")} radius={[0, 3, 3, 0]} />
+              <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="sanctioned" fill="#d7e0ee" name={uiText("Sanctioned")} radius={[0, 3, 3, 0]} />
+              <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="spent" fill="#265aa0" name={uiText("Spent")} radius={[0, 3, 3, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

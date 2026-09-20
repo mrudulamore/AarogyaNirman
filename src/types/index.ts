@@ -24,6 +24,7 @@ export type FacilityType = 'Sub Centre' | 'PHC' | 'UPHC' | 'CHC' | 'Rural Hospit
 
 export interface User {
   customRoleId?: string;
+  kycApplication?: { submittedAt: string; documentType: 'EMPLOYEE_ID' | 'CONTRACTOR_REGISTRATION' | 'GOVERNMENT_ID'; declaration: true; name: string; email: string; phone: string };
   identityReview?: { status: 'PENDING' | 'VERIFIED' | 'REJECTED'; method: 'MANUAL'; reference?: string; reviewedBy?: string; reviewedAt?: string };
   workerId?: string;
   id: string;
