@@ -9,32 +9,31 @@ export interface Project360Tab {
 }
 
 export const PROJECT_360_TABS: Project360Tab[] = [
-
-  { label: 'Overview', value: 'overview' },              // What is happening?
-  { label: 'Contract controls', value: 'controls' },
-  { label: 'Monthly reports', value: 'monthly' },
-  { label: 'Governance', value: 'governance' },           // What has been approved or changed?
-  { label: 'Timeline', value: 'timeline' },                // Are we on time?
+  { label: 'Overview', value: 'overview' },
+  { label: 'Governance', value: 'governance' },
   { label: 'Tender / Contract', value: 'tender' },
-  { label: 'BOQ', value: 'boq' },                          // What has physically been completed?
+  { label: 'Contract controls', value: 'controls' },
+  { label: 'Project lifecycle', value: 'timeline' },
+  { label: 'Construction milestones', value: 'milestones' },
+  { label: 'BOQ', value: 'boq' },
   { label: 'Materials', value: 'materials' },
-  { label: 'Milestones', value: 'milestones' },
   { label: 'Progress', value: 'progress' },
+  { label: 'Monthly reports', value: 'monthly' },
+  { label: 'Field Evidence', value: 'field evidence' },
   { label: 'Photos', value: 'photos' },
-  { label: 'Field Evidence', value: 'field evidence' },    // What evidence proves progress?
-  { label: 'Team', value: 'team' },                        // Who is accountable?
+  { label: 'Team', value: 'team' },
   { label: 'Contractor', value: 'contractor' },
   { label: 'Workers', value: 'workers' },
-  { label: 'Quality', value: 'quality' },                  // Is work acceptable?
-  { label: 'Inspections', value: 'inspections' },          // What has been inspected / needs inspection?
-  { label: 'Safety & Commissioning', value: 'safety & commissioning' }, // Is the site/system safe and ready?
-  { label: 'Defects', value: 'defects' },                  // What is wrong and who must fix it?
+  { label: 'Inspections', value: 'inspections' },
+  { label: 'Quality', value: 'quality' },
+  { label: 'Safety & Commissioning', value: 'safety & commissioning' },
+  { label: 'Defects', value: 'defects' },
   { label: 'Risks', value: 'risks' },
-  { label: 'Finance', value: 'finance' },                  // How much has been certified/paid?
-  { label: 'Approvals', value: 'approvals' },               // What decisions are waiting?
-  { label: 'Documents', value: 'documents' },               // What evidence/documentation exists?
+  { label: 'Finance', value: 'finance' },
+  { label: 'Approvals', value: 'approvals' },
+  { label: 'Documents', value: 'documents' },
   { label: 'Handover', value: 'handover' },
-  { label: 'Audit', value: 'audit' },                       // Who changed/approved what?
+  { label: 'Audit', value: 'audit' },
 ];
 
 /** Which tabs each role sees on Project 360. Executive/oversight roles get a governance +

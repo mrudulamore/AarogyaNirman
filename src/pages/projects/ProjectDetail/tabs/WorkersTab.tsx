@@ -89,7 +89,7 @@ function StatBox({ label, value, icon: Icon, tone = 'default' }: { label: string
   useUiLanguage();
   const tones: Record<string, string> = { default: 'text-slate-600', red: 'text-red-600', blue: 'text-blue-600', amber: 'text-amber-600' };
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3.5">
+    <div className="ui-card rounded-lg border border-slate-200 bg-white p-3.5">
       <p className="flex items-center gap-1 text-[10.5px] font-medium uppercase text-slate-400"><Icon size={11} /> {uiText(label)}</p>
       <p className={`mt-1 text-2xl font-bold ${tones[tone]}`}>{value}</p>
     </div>

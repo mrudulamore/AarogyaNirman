@@ -1,3 +1,4 @@
+import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
 import { workforceAccount } from '../lib/workforceAccount';
 import { DEFAULT_ESCALATION, pendingWork, daysLate, drawingWarning, type EscalationPolicy } from '../lib/pendingWork';
 import { ROLE_LABELS } from '../lib/constants';
@@ -22,11 +23,17 @@ import type {
   ContractorPoc, QualityFailure, QualityReport, InspectionAppointment,
 } from '../types';
 
-const seed = generateMockData();
+const seed = extendDemoPortfolio(generateMockData());
 let auditSeq = 0;
 const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toString(36)}`;
 
 export interface StoreState extends ControlActions {
+  customRoles: { id: string; name: string; baseRole: Role }[];
+  createCustomRole: (name: string, baseRole: Role) => void;
+  assignCustomRole: (userId: string, customRoleId: string) => void;
+  reviewPhoto: (id: string, status: 'APPROVED' | 'REJECTED', note: string) => void;
+  addStaffUser: (input: Omit<User, 'id' | 'avatarInitials' | 'identityReview'>) => User;
+  reviewStaffIdentity: (id: string, status: 'VERIFIED' | 'REJECTED', reference: string) => void;
   escalationPolicy: EscalationPolicy;
   escalationKeys: string[];
   setEscalationPolicy: (policy: EscalationPolicy) => void;
@@ -181,6 +188,22 @@ export interface StoreState extends ControlActions {
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
+      customRoles: [],
+      createCustomRole: (name, baseRole) => {
+        if (get().currentUser?.role !== 'SUPERADMIN') throw new Error('Only superadmins can create roles.');
+        if (name.trim().length < 3 || !ROLE_LABELS[baseRole] || ['SUPERADMIN','WORKFORCE','CONTRACTOR'].includes(baseRole)) throw new Error('Choose an eligible staff role and a name of at least three characters.');
+        if (get().customRoles.some(r => r.name.toLowerCase() === name.trim().toLowerCase())) throw new Error('Role name already exists.');
+        set(s => ({ customRoles: [...s.customRoles, { id: nid('ROLE'), name: name.trim(), baseRole }] }));
+        get().logAction(`Created custom role: ${name.trim()}`, undefined, undefined, baseRole);
+      },
+      assignCustomRole: (userId, customRoleId) => {
+        const role = get().customRoles.find(r => r.id === customRoleId);
+        if (get().currentUser?.role !== 'SUPERADMIN' || userId === get().currentUser?.id || !role) throw new Error('Only superadmins can assign custom roles to other users.');
+        const user = get().users.find(u => u.id === userId);
+        if (!user || ['SUPERADMIN','CONTRACTOR','WORKFORCE'].includes(user.role)) throw new Error('Choose an eligible staff account.');
+        set(s => ({ users: s.users.map(u => u.id === userId ? { ...u, role: role.baseRole, customRoleId, designation: role.name } : u) }));
+        get().logAction(`Assigned custom role ${role.name} to ${user.name}`);
+      },
       currentUser: null,
       escalationPolicy: DEFAULT_ESCALATION,
       escalationKeys: [],
@@ -227,6 +250,27 @@ export const useStore = create<StoreState>()(
       },
       logout: () => set({ currentUser: null }),
 
+      addStaffUser: (input) => {
+        if (get().currentUser?.role !== 'SUPERADMIN') throw new Error('Only superadmins can add users.');
+        if (input.role === 'WORKFORCE') throw new Error('Create workforce accounts in the workforce module.');
+        if (!ROLE_LABELS[input.role] || !input.name.trim() || !input.department.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim()) || !/^[+\d ()-]{7,20}$/.test(input.phone.trim())) throw new Error('Enter a name, department, valid email and phone.');
+        if (get().users.some(u => u.email.toLowerCase() === input.email.trim().toLowerCase())) throw new Error('This email already has an account.');
+        if (input.assignedProjectIds.some(id => !get().projects.some(p => p.id === id))) throw new Error('Select valid projects.');
+        if (input.role === 'REGIONAL_DIRECTOR' && !get().projects.some(p => p.division === input.division)) throw new Error('Select a valid division.');
+        if (input.role === 'CIVIL_SURGEON' && !get().projects.some(p => p.district === input.district)) throw new Error('Select a valid district.');
+        if (input.role === 'CONTRACTOR' && !get().contractors.some(c => c.id === input.contractorId)) throw new Error('Select a registered contractor firm.');
+        const user: User = { ...input, name: input.name.trim(), email: input.email.trim().toLowerCase(), phone: input.phone.trim(), id: nid('USR'), avatarInitials: input.name.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase(), identityReview: { status: 'PENDING', method: 'MANUAL' } };
+        set(s => ({ users: [...s.users, user] })); get().logAction(`Created staff account: ${user.name}`, undefined, undefined, user.role); return user;
+      },
+      reviewStaffIdentity: (id, status, reference) => {
+        const reviewer = get().currentUser;
+        if (reviewer?.role !== 'SUPERADMIN') throw new Error('Only superadmins can review identities.');
+        if (id === reviewer.id) throw new Error('You cannot verify your own identity.');
+        if (!get().users.some(u => u.id === id) || !['VERIFIED', 'REJECTED'].includes(status) || reference.trim().length < 5) throw new Error('Enter a review reference of at least five characters.');
+        set(s => ({ users: s.users.map(u => u.id === id ? { ...u, identityReview: { status, method: 'MANUAL', reference: reference.trim(), reviewedBy: reviewer.id, reviewedAt: new Date().toISOString() } } : u) }));
+        get().logAction(`Manual identity review: ${id}`, undefined, undefined, status);
+      },
+
       setRoleNavAccess: (role, keys) => {
         set((s) => ({ rolePermissions: { ...s.rolePermissions, [role]: keys } }));
         get().logAction(`Updated access permissions for role ${role}`);
@@ -234,7 +278,7 @@ export const useStore = create<StoreState>()(
       updateUserRole: (userId, role) => {
         const user = get().users.find((u) => u.id === userId);
         set((s) => ({
-          users: s.users.map((u) => (u.id === userId ? { ...u, role, designation: ROLE_LABELS[role] } : u)),
+          users: s.users.map((u) => (u.id === userId ? { ...u, role, customRoleId: undefined, designation: ROLE_LABELS[role] } : u)),
           currentUser: s.currentUser?.id === userId ? null : s.currentUser,
         }));
         if (user) get().logAction(`Changed ${user.name}'s role from ${user.role} to ${role}`);
@@ -295,11 +339,23 @@ export const useStore = create<StoreState>()(
       },
       addPhoto: (p) => {
         assertProjectAccess(get(), p.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
-        const photo: SitePhoto = { ...p, id: nid('PHO') };
+        const actor = get().currentUser!;
+        const photo: SitePhoto = { ...p, id: nid('PHO'), uploadedById: actor.id, uploadedBy: actor.name, uploadedByRole: actor.role, review: undefined, reviewHistory: [] };
         set((s) => ({ photos: [photo, ...s.photos] }));
         const project = get().projects.find((pr) => pr.id === p.projectId);
         get().logAction(`Uploaded ${p.type.toLowerCase()} site photograph — ${p.stage}`, project?.name);
         return photo;
+      },
+      reviewPhoto: (id, status, note) => {
+        const photo = get().photos.find(p => p.id === id);
+        if (!photo) throw new Error('Photo not found.');
+        const actor = assertProjectAccess(get(), photo.projectId, ['PROJECT_MANAGER', 'EXECUTIVE_ENGINEER']);
+        if (photo.uploadedById === actor.id || (!photo.uploadedById && photo.uploadedBy === actor.name)) throw new Error('You cannot approve your own evidence.');
+        if (!['APPROVED', 'REJECTED'].includes(status) || note.trim().length < 5) throw new Error('Enter review comments of at least five characters.');
+        if (!photo.dataUrl) throw new Error('Illustrative demo photos cannot be approved as site evidence.');
+        const review = { status, reviewerId: actor.id, reviewerName: actor.name, reviewerRole: actor.role, reviewedAt: new Date().toISOString(), note: note.trim() };
+        set(s => ({ photos: s.photos.map(p => p.id === id ? { ...p, review, reviewHistory: [...(p.reviewHistory ?? []), review] } : p) }));
+        get().logAction(`Photo evidence ${status.toLowerCase()}: ${id}`, get().projects.find(p => p.id === photo.projectId)?.name, photo.review?.status ?? 'PENDING', status);
       },
       deletePhoto: (id) => set((s) => ({ photos: s.photos.filter((p) => p.id !== id) })),
 
@@ -835,7 +891,7 @@ export const useStore = create<StoreState>()(
           const user = (saved.users ?? current.users).find(u => u.id === saved.currentUser?.id && u.role === saved.currentUser?.role);
           saved.currentUser = user ?? null;
         }
-        return { ...current, ...saved, currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+        return { ...current, ...saved, ...mergeDemoSamples({ ...current, ...saved }, current), currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;

@@ -1,7 +1,10 @@
+import { PhotoReview } from '../../../../components/common/PhotoReview';
+import { ROLE_LABELS } from '../../../../lib/constants';
+import { SiteCamera, type SiteCapture } from '../../../../components/common/SiteCamera';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Upload, Trash2, ChevronLeft, ChevronRight, Images } from 'lucide-react';
+import { Camera, Trash2, ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import type { Project, PhotoType } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, EmptyState, Textarea } from '../../../../components/ui/primitives';
@@ -26,7 +29,7 @@ export function PhotosTab({ project }: { project: Project }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [stageFilter, setStageFilter] = useState('ALL');
-  const [file, setFile] = useState<File | null>(null);
+  const [capture, setCapture] = useState<SiteCapture | null>(null);
   const [busy, setBusy] = useState(false);
   const [place, setPlace] = useState('ALL');
   const [form, setForm] = useState({ building: '', floor: '', activity: '', stage: STAGE_OPTIONS[0], type: 'PROGRESS' as PhotoType, description: '' });
@@ -46,24 +49,13 @@ export function PhotosTab({ project }: { project: Project }) {
   async function submitUpload() {
     if (busy) return; setBusy(true);
     try {
-      if (!file || !['image/jpeg', 'image/png'].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024) throw new Error('Select a JPEG or PNG photo up to 5 MB.');
+      if (!capture) throw new Error('Capture a new site photo with GPS first.');
       if (!form.building.trim() || !form.floor.trim() || !form.activity.trim()) throw new Error('Enter building, floor and activity to group the photo.');
-      const account = useStore.getState().currentUser;
-      const url = URL.createObjectURL(file);
-      let dataUrl: string;
-      try {
-        const image = new Image(); image.src = url; await image.decode();
-        const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
-        const canvas = document.createElement('canvas'); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale);
-        const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Photo processing is unavailable.');
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height); dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      } finally { URL.revokeObjectURL(url); }
-      if (useStore.getState().currentUser !== account) throw new Error('Your account changed. Reopen the photo form.');
       const now = new Date().toISOString();
       addPhoto({ projectId: project.id, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
         location: form.building + ' / ' + form.floor, uploadedBy: currentUser?.name ?? '', uploadedByRole: currentUser!.role,
-        description: form.description, seed: 0, dataUrl, lat: project.siteLat, lng: project.siteLng, locationSource: 'MANUAL', capturedAt: now, uploadedAt: now, deviceInfo: 'File upload; source capture time unverified' });
-      toast.success(uiText('Photo saved on this device.')); setFile(null); setUploadOpen(false);
+        description: form.description, seed: 0, ...capture, locationSource: 'CAPTURED', uploadedAt: now, deviceInfo: navigator.userAgent.slice(0, 120) });
+      toast.success(uiText('Photo saved on this device.')); setCapture(null); setUploadOpen(false);
     } catch(e) { toast.error(uiText((e as Error).message)); } finally { setBusy(false); }
   }
   const comparisons = grouped.map(([key, items]) => ({ key, before: [...items].filter(p => p.type === 'BEFORE').sort((a,b) => a.capturedAt.localeCompare(b.capturedAt))[0], after: [...items].filter(p => p.type !== 'BEFORE').sort((a,b) => b.capturedAt.localeCompare(a.capturedAt))[0] })).filter(pair => pair.before && pair.after);
@@ -82,7 +74,7 @@ export function PhotosTab({ project }: { project: Project }) {
           <select aria-label={uiText('Building, floor and activity')} className="min-h-11 max-w-full rounded border px-2 text-xs" value={place} onChange={e => setPlace(e.target.value)}><option value="ALL">{uiText('All locations')}</option>{places.map(p => <option key={p}>{p}</option>)}</select>
           <Button variant="outline" size="sm" onClick={() => setCompareMode((v) => !v)}><Images size={14} /> {uiText(compareMode ? 'Hide' : 'Before / After')}</Button>
         </div>
-        <Button onClick={() => setUploadOpen(true)}><Upload size={15} />{uiText(" Upload Photo")}</Button>
+        <Button onClick={() => setUploadOpen(true)}><Camera size={18} />{uiText(" Capture Photo")}</Button>
       </div>
 
       {compareMode && comparisons.length === 0 && <p className="text-sm text-slate-500">{uiText('Add before and progress/completion photos for the same building, floor and activity.')}</p>}
@@ -104,7 +96,7 @@ export function PhotosTab({ project }: { project: Project }) {
         </Card>
       ))}
 
-      {grouped.length === 0 && <EmptyState icon={<Images size={32} />} title={uiText("No photos uploaded yet")} description={uiText("Upload before, progress, and completion photographs to build the visual construction record.")} action={<Button size="sm" onClick={() => setUploadOpen(true)}>{uiText("Upload First Photo")}</Button>} />}
+      {grouped.length === 0 && <EmptyState icon={<Images size={32} />} title={uiText("No photos uploaded yet")} description={uiText("Capture before, progress, and completion photographs to build the visual construction record.")} action={<Button size="sm" onClick={() => setUploadOpen(true)}>{uiText("Capture First Photo")}</Button>} />}
 
       {grouped.map(([stage, items]) => (
         <Card key={stage}>
@@ -125,8 +117,8 @@ export function PhotosTab({ project }: { project: Project }) {
         </Card>
       ))}
 
-      <Dialog open={uploadOpen} onOpenChange={v => !busy && setUploadOpen(v)}>
-        <DialogContent title={uiText("Upload Site Photo")} description={uiText(project.name)}>
+      <Dialog open={uploadOpen} onOpenChange={v => !busy && (setUploadOpen(v), !v && setCapture(null))}>
+        <DialogContent title={uiText("Capture Site Photo")} description={uiText(project.name)}>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -149,12 +141,12 @@ export function PhotosTab({ project }: { project: Project }) {
               <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={uiText("Brief description of the photograph")} />
             </div>
             {(['building', 'floor', 'activity'] as const).map(key => <label key={key} className="block text-xs">{uiText(key)}<input className="block min-h-11 w-full rounded border px-2" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>)}
-            <label className="block text-xs">{uiText('Site photo')}<input type="file" accept="image/jpeg,image/png" disabled={busy} onChange={e => setFile(e.target.files?.[0] ?? null)} className="mt-2 block w-full" /></label>
-            <p className="text-xs text-slate-500">{uiText('File uploads use the registered site location. The recorded time is the upload time, not verified camera capture time.')}</p>
+            {capture && <GeoPhoto src={capture.dataUrl} lat={capture.lat} lng={capture.lng} timestamp={capture.capturedAt} location={project.name} className="h-52" />}
+            <SiteCamera key={`${project.id}-${uploadOpen}`} onCapture={setCapture} />
           </div>
           <DialogFooter>
             <Button disabled={busy} variant="outline" onClick={() => setUploadOpen(false)}>{uiText("Cancel")}</Button>
-            <Button disabled={busy || !file} onClick={submitUpload}>{uiText(busy ? "Saving..." : "Upload")}</Button>
+            <Button disabled={busy || !capture} onClick={submitUpload}>{uiText(busy ? "Saving..." : "Upload")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -176,7 +168,7 @@ export function PhotosTab({ project }: { project: Project }) {
               {viewerIndex < filtered.length - 1 && <button onClick={() => setViewerId(filtered[viewerIndex + 1].id)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronRight size={16} /></button>}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
-              <div><p className="text-slate-400">{uiText("Uploaded By")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.uploadedBy)}</p></div>
+              <div><p className="text-slate-400">{uiText("Uploaded By")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.uploadedBy)}</p><p>{uiText(ROLE_LABELS[viewerPhoto.uploadedByRole])}</p></div>
               <div><p className="text-slate-400">{uiText("Location")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.location)}</p></div>
               <div><p className="text-slate-400">{uiText("Captured")}</p><p className="font-medium text-slate-700">{uiText(formatDateTime(viewerPhoto.capturedAt))}</p></div>
               <div><p className="text-slate-400">{uiText("Stage")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.stage)}</p></div>
@@ -199,6 +191,7 @@ export function PhotosTab({ project }: { project: Project }) {
               <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-700">{uiText("This evidence is flagged for review: ")}{uiText(viewerPhoto.locationSource === 'MANUAL' ? 'coordinates were manually entered rather than device-captured' : 'the captured GPS location falls outside the project geo-fence')}.
               </p>
             )}
+            <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
             <DialogFooter>
               <Button variant="destructive" size="sm" onClick={() => { setDeleteId(viewerPhoto.id); setViewerId(null); }}><Trash2 size={13} />{uiText(" Delete")}</Button>
             </DialogFooter>

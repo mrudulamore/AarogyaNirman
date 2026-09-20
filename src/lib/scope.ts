@@ -90,7 +90,7 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
     }
 
     case 'PROJECT_MANAGER': {
-      const assigned = allProjects.filter((p) => p.projectManagerId === user.id);
+      const assigned = allProjects.filter((p) => p.projectManagerId === user.id || user.assignedProjectIds.includes(p.id));
       return scoped(assigned, `${assigned.length} managed project${assigned.length === 1 ? '' : 's'} (Portfolio)`);
     }
 

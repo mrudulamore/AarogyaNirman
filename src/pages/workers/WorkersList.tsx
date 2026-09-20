@@ -104,7 +104,7 @@ export function WorkersList() {
 function MiniStat({ label, value, icon: Icon, tone = 'default' }: { label: string; value: number; icon?: any; tone?: 'default' | 'amber' }) {
   useUiLanguage();
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3.5">
+    <div className="ui-card rounded-lg border border-slate-200 bg-white p-3.5">
       <p className="flex items-center gap-1 text-[10.5px] font-medium uppercase text-slate-400">{Icon && <Icon size={11} />} {uiText(label)}</p>
       <p className={`mt-1 text-2xl font-bold ${tone === 'amber' ? 'text-amber-600' : 'text-slate-800'}`}>{value}</p>
     </div>

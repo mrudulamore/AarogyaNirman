@@ -189,7 +189,7 @@ export function Dashboard() {
   }, [roleProjects, overviewMode, zoneFilter, budgetFilter, schemeFilter, statusFilter, allPhotos]);
   const selectedOverview = overviewMode === 'zone' ? zoneFilter : overviewMode === 'budget' ? budgetFilter : schemeFilter;
   function selectOverview(key: string) {
-    if (overviewMode === 'zone') setZoneFilter((values) => toggleSelection(values, key));
+    if (overviewMode === 'zone') navigate(`/projects?region=${encodeURIComponent(key)}`);
     else if (overviewMode === 'budget') setBudgetFilter((values) => toggleSelection(values, key));
     else setSchemeFilter((values) => toggleSelection(values, key));
   }

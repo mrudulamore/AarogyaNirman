@@ -23,6 +23,8 @@ export type Scheme = 'NHM' | 'DPDC' | 'State Plan' | 'Central Scheme' | 'Distric
 export type FacilityType = 'Sub Centre' | 'PHC' | 'UPHC' | 'CHC' | 'Rural Hospital' | 'Sub-District Hospital' | 'District / Civil Hospital' | 'Women Hospital' | 'Specialty Hospital' | 'Medical College Hospital' | 'Other Government Health Facility';
 
 export interface User {
+  customRoleId?: string;
+  identityReview?: { status: 'PENDING' | 'VERIFIED' | 'REJECTED'; method: 'MANUAL'; reference?: string; reviewedBy?: string; reviewedAt?: string };
   workerId?: string;
   id: string;
   name: string;
@@ -177,6 +179,9 @@ export type PhotoType = 'BEFORE' | 'PROGRESS' | 'COMPLETION';
 export type LocationSource = 'CAPTURED' | 'MANUAL';
 
 export interface SitePhoto {
+  uploadedById?: string;
+  review?: { status: 'APPROVED' | 'REJECTED'; reviewerId: string; reviewerName: string; reviewerRole: Role; reviewedAt: string; note: string };
+  reviewHistory?: NonNullable<SitePhoto['review']>[];
   building?: string;
   floor?: string;
   activity?: string;

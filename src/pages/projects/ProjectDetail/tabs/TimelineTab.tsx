@@ -66,6 +66,7 @@ export function TimelineTab({ project }: { project: Project }) {
   return (
     <Card>
       <CardContent className="p-5">
+        <h2 className="mb-2 text-lg font-semibold">{uiText("Project lifecycle")}</h2><p className="mb-6 text-sm text-slate-500">{uiText("Administrative approvals, contracting, delivery and handover. Detailed construction dates are available in Construction milestones.")}</p>
         <div className="space-y-0">
           {steps.map((step, i) => {
             const stepPhotos = photos.filter((p) => step.photoStages.includes(p.stage));
@@ -76,7 +77,7 @@ export function TimelineTab({ project }: { project: Project }) {
                 className="group flex cursor-pointer gap-3 rounded-md px-2 py-1 -mx-2 transition-colors hover:bg-slate-50"
                 onMouseEnter={() => setHoverIndex(i)}
                 onMouseLeave={() => setHoverIndex((v) => (v === i ? null : v))}
-                onClick={() => setOpenIndex(i)}
+                role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenIndex(i); } }} onClick={() => setOpenIndex(i)}
               >
                 <div className="flex flex-col items-center">
                   <div className={cn(
@@ -93,7 +94,7 @@ export function TimelineTab({ project }: { project: Project }) {
                     <p className={cn('text-sm font-semibold', step.state === 'PENDING' ? 'text-slate-400' : 'text-slate-800')}>{uiText(step.label)}</p>
                     {step.date && <span className="text-[11px] text-slate-400">{uiText(formatDate(step.date))}</span>}
                     {stepPhotos.length > 0 && <span className="flex items-center gap-1 text-[10.5px] text-slate-400"><Camera size={11} /> {stepPhotos.length}</span>}
-                    <ChevronDown size={13} className="text-slate-300 opacity-0 transition-opacity group-hover:opacity-100" />
+                    <ChevronDown size={22} className="text-slate-300 opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
                   {/* Description reveals below the title only on hover, per the "hover to preview" request — full detail + photos open on click. */}
                   <div className={cn('grid transition-all duration-150', isHovered ? 'mt-1 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>

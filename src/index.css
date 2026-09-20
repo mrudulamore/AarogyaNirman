@@ -257,3 +257,145 @@ body {
   .field-action:hover { transform: none; border-color: #88a2cb; background: #f1f7ff; box-shadow: 0 2px 8px -5px #193f7940; }
   .field-action:hover::before { opacity: 1; }
 }
+
+/* Readable field typography and consistent card rhythm. */
+body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.ui-card { background-image: linear-gradient(155deg, #ffffff, #fbfdff); }
+.ui-card-header h3 { font-weight: 650; }
+.field-project { background-image: linear-gradient(120deg, #204781, #3983d4); }
+.field-workspace .ui-card:not(.field-project) { border-color: #dce8f8; }
+.field-action { min-height: 152px; border-radius: 22px; }
+.evidence-card:focus-visible, .construction-timeline button:focus-visible { outline: 3px solid #3b82f6; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .evidence-card:hover { transform: none; } }
+
+@font-face { font-family: Manrope; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/manrope-400.ttf') format('truetype'); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/manrope-500.ttf') format('truetype'); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/manrope-600.ttf') format('truetype'); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/manrope-700.ttf') format('truetype'); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 800; font-display: swap; src: url('/fonts/manrope-800.ttf') format('truetype'); }
+
+/* Readable metric labels across desktop and native phone layouts. */
+.metric-card > div:first-child > p,
+.native-app .metric-card > div:first-child > p { font-size: .8125rem; letter-spacing: .025em; line-height: 1.5; color: #425c80; }
+.metric-card { background: linear-gradient(135deg, #ffffff 55%, #eaf3ff); border-top: 3px solid #a8cbf7; }
+.metric-group > div:last-child button { font-size: .75rem; min-height: 34px; }
+.native-app .field-action > span { font-size: .875rem; }
+
+/* Shared report surfaces: brighter edges, generous headings, restrained elevation. */
+.ui-card:not(.field-project), .metric-card, .report-group-panel {
+  border-color: #dce7f7;
+  box-shadow: 0 2px 3px #193f7903, 0 12px 32px -24px #193f7960;
+  background-image: linear-gradient(135deg, #ffffff 65%, #f3f8ff);
+}
+.ui-card-header {
+  background: linear-gradient(100deg, #f0f6ff80, #ffffff00);
+  border-bottom-color: #e7eef9;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  padding-block: 1.25rem;
+}
+.ui-card-header h3 { font-size: 1rem; letter-spacing: -.025em; }
+.metric-card { border-top-width: 3px; border-top-color: #83b5f6; }
+.project-tile { border-top-width: 3px; border-top-color: #83b5f6; }
+.ui-card .table-scroll thead { background: #edf4fd; }
+@media (hover: hover) {
+  .project-tile:hover, .evidence-card:hover { border-color: #8bb6ec; box-shadow: 0 14px 32px -20px #193f7970; }
+}
+
+/* Hospital portfolio: architectural header, readable metrics and a clear entry point. */
+.hospital-project-card { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid #dbe6f5; border-radius: 24px; background: white; box-shadow: 0 5px 18px -12px #16366b35; transition: border-color 180ms, box-shadow 180ms, transform 180ms; }
+.hospital-card-banner { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; padding: 20px; overflow: hidden; background: linear-gradient(115deg,#173e79,#2865ab); }
+.hospital-card-banner > :not(.hospital-card-lines) { position: relative; z-index: 1; }
+.hospital-card-symbol { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; flex-shrink: 0; border-radius: 16px; color: #e4f2ff; border: 1px solid #ffffff30; background: #ffffff12; }
+.hospital-card-lines { position: absolute; right: -30px; top: -50px; width: 190px; height: 190px; border: 1px solid #ffffff18; transform: rotate(30deg); box-shadow: 0 0 0 24px #ffffff06, 0 0 0 48px #ffffff05; border-radius: 30px; }
+.hospital-card-body { flex: 1; padding: 22px; }
+.hospital-card-body h2 { min-height: 3rem; }
+.hospital-card-metrics { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 16px; padding: 18px 0; margin: 16px 0; border-top: 1px solid #edf2f9; border-bottom: 1px solid #edf2f9; }
+.hospital-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 22px; background: #f6f9fe; border-top: 1px solid #e9eff8; }
+.hospital-card-open { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #e3eeff; color: #245cab; transition: background-color 180ms, color 180ms; }
+@media (hover: hover) { .hospital-project-card:hover { transform: translateY(-3px); border-color: #9cbae6; box-shadow: 0 18px 32px -20px #143a7860; } .hospital-project-card:hover .hospital-card-open { background: #245cab; color: white; } }
+@media (max-width: 639px) { .hospital-card-banner { padding: 16px; gap: 10px; } .hospital-card-body { padding: 20px; } .hospital-card-symbol { width: 44px; height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .hospital-project-card:hover { transform: none; } }
+
+.hospital-project-card:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
+
+/* Unified surfaces for every workspace: blue section headers and quiet, readable bodies. */
+.ui-card:not(.field-project), .report-group-panel {
+  border: 1px solid #d7e4f5;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #fff 72%, #f5f9ff);
+  box-shadow: 0 3px 5px #173f7804, 0 14px 36px -26px #173f7855;
+}
+.ui-card-header {
+  padding: 20px 24px;
+  background: linear-gradient(110deg, #e8f1ff, #f5f9ff 75%);
+  border-bottom: 1px solid #dce8f8;
+}
+.ui-card-header h3 { color: #173e79; font-size: 1.0625rem; font-weight: 700; line-height: 1.5; }
+.ui-card-header h3::before { content: ''; display: inline-block; width: 4px; height: 16px; margin-right: 10px; border-radius: 3px; background: #4384d8; vertical-align: -2px; }
+.metric-card {
+  border-radius: 22px;
+  border: 1px solid #ccddf3;
+  border-top: 4px solid #6098e1;
+  background: radial-gradient(ellipse at top right, #e3eeff, transparent 75%), #fff;
+  box-shadow: 0 10px 26px -21px #1c437c66;
+}
+.metric-card > div:first-child { gap: 14px; align-items: center; }
+.metric-card > div:first-child > div { width: 42px; height: 42px; border-radius: 14px; }
+.metric-card > div:first-child > div svg { width: 20px; height: 20px; }
+.metric-card > div:first-child > p { text-transform: none; font-size: .875rem; letter-spacing: 0; font-weight: 600; }
+.metric-group > div:last-child { border-color: #dce7f5; padding-top: 12px; gap: 8px; }
+.metric-group > div:last-child button { border-radius: 9px; background: #edf4ff; padding: 8px; }
+.metric-group > div:last-child button[disabled] { background: #f5f8fc; }
+.evidence-card, .field-action { border-radius: 22px; box-shadow: 0 10px 25px -21px #163b7560; }
+.role-card-grid > button, .login-card-grid > button { border-radius: 20px; }
+.ui-card[onclick], .ui-card.cursor-pointer { transition: box-shadow 180ms, border-color 180ms; }
+@media (hover: hover) {
+  .ui-card.cursor-pointer:hover { border-color: #8fb4e5; box-shadow: 0 16px 32px -22px #173f7880; }
+}
+
+/* Landing: spacious editorial layout, large portraits and a hospital blueprint. */
+.landing-page { background: #fafcff; }
+.landing-hero { background: linear-gradient(150deg, #fff 12%, #f0f6ff 65%, #e5f0ff); }
+.landing-hero h1 { max-width: 680px; color: #163b70; line-height: 1.1; }
+.landing-hero h1 + p { line-height: 1.9; }
+.landing-hospital { position: relative; background: linear-gradient(135deg,#143765,#235799 65%,#327ac0); border-color: #7ba5d640; box-shadow: 0 30px 65px -28px #163f7870; }
+.hospital-buildings > div { transform-origin: bottom; animation: hospital-rise 900ms ease-out both; }
+.hospital-buildings > div:nth-child(2) { animation-delay: 140ms; }
+.hospital-buildings > div:nth-child(3) { animation-delay: 280ms; }
+.landing-leadership { background: #edf4ff; border-top: 1px solid #dfebfb; border-bottom: 1px solid #dfebfb; }
+.leadership-card { height: 100%; overflow: hidden; border-radius: 24px; border: 1px solid #d2e1f5; background: #fff; box-shadow: 0 14px 30px -23px #1b467966; transition: box-shadow 250ms, transform 250ms; }
+.leadership-portrait { height: 310px; padding: 22px 14px 0; overflow: hidden; background: radial-gradient(ellipse at center bottom,#bfd6f5,#e7f0ff 70%); border-bottom: 1px solid #e2ebf9; }
+.leadership-portrait img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; transition: transform 450ms ease; }
+.leadership-caption { padding: 24px; }
+.landing-quote { display: flex; align-items: flex-start; gap: 28px; padding: 48px; border-radius: 28px; color: #fff; background: linear-gradient(115deg,#173b72,#2861a3); box-shadow: 0 18px 40px -28px #173b7266; }
+.landing-feature { border-radius: 24px; border-color: #d8e5f6; box-shadow: 0 12px 30px -24px #234b8055; background: linear-gradient(145deg,#fff 50%,#f0f6ff); }
+.landing-page button:focus-visible, .landing-page a:focus-visible { outline: 3px solid #60a5fa; outline-offset: 4px; }
+@media (hover: hover) {
+  .leadership-card:hover { transform: translateY(-5px); box-shadow: 0 22px 40px -25px #1b467980; }
+  .leadership-card:hover img { transform: scale(1.035); }
+  .landing-feature:hover { transform: translateY(-5px); }
+}
+@keyframes hospital-rise { from { opacity: 0; transform: translateY(20px) scaleY(.92); } to { opacity: 1; transform: none; } }
+@media (max-width: 639px) {
+  .ui-card-header { padding: 18px; }
+  .ui-card-header h3 { font-size: .9375rem; }
+  .landing-nav { flex-wrap: wrap; justify-content: center; }
+  .landing-nav > div:last-child { flex-wrap: wrap; justify-content: center; }
+  .leadership-portrait { height: 340px; }
+  .landing-quote { flex-direction: column; gap: 20px; padding: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *, .landing-page *::before, .landing-page *::after { animation: none !important; transition: none !important; }
+  .landing-reveal { opacity: 1 !important; transform: none !important; }
+  .landing-feature:hover, .leadership-card:hover, .leadership-card:hover img { transform: none; }
+}
+/* Allow the illustration and hero copy to shrink within narrow phone screens. */
+.landing-hero > .grid { grid-template-columns: minmax(0, 1fr); }
+.landing-hero > .grid > * { min-width: 0; }
+.hospital-buildings > div { min-width: 0; }
+@media (min-width: 1024px) { .landing-hero > .grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); } }
+@media (max-width: 639px) {
+  .hospital-buildings > div { gap: 7px; padding: 12px; }
+  .landing-hospital h2 { font-size: 1.25rem; }
+}

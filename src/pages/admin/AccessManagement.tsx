@@ -1,3 +1,5 @@
+import { CustomRoles } from './CustomRoles';
+import { AddUserButton, IdentityReview } from './UserEnrollment';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -93,9 +95,10 @@ export function AccessManagement() {
         </CardContent>
       </Card>
 
+      <CustomRoles />
       <Card>
         <CardHeader className="flex-wrap gap-2">
-          <CardTitle>{uiText("User Role Assignments")}</CardTitle>
+          <CardTitle>{uiText("User Role Assignments")}</CardTitle><AddUserButton />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -107,7 +110,7 @@ export function AccessManagement() {
         <CardContent className="p-0">
           <Table>
             <THead>
-              <Tr><Th>{uiText("User")}</Th><Th>{uiText("Department")}</Th><Th>{uiText("Current Role")}</Th><Th>{uiText("Reassign Role")}</Th></Tr>
+              <Tr><Th>{uiText("User")}</Th><Th>{uiText("Department")}</Th><Th>{uiText("Identity verification")}</Th><Th>{uiText("Current Role")}</Th><Th>{uiText("Reassign Role")}</Th></Tr>
             </THead>
             <TBody>
               {filteredUsers.map((u) => (
@@ -122,6 +125,7 @@ export function AccessManagement() {
                     </div>
                   </Td>
                   <Td className="max-w-[220px] truncate">{uiText(u.department)}</Td>
+                  <Td><IdentityReview user={u} /></Td>
                   <Td>{t(`roles.${u.role}`, { defaultValue: ROLE_LABELS[u.role] })}</Td>
                   <Td>
                     <Select

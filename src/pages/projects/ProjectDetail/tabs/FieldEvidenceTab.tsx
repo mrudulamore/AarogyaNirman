@@ -1,9 +1,11 @@
+import { PhotoReview } from '../../../../components/common/PhotoReview';
+import { ROLE_LABELS } from '../../../../lib/constants';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useMemo, useState } from 'react';
-import { MapPin, ShieldAlert, ShieldCheck, Smartphone, PenLine } from 'lucide-react';
+import { MapPin, ShieldAlert, ShieldCheck } from 'lucide-react';
 import type { Project, SitePhoto } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
-import { Card, CardHeader, CardTitle, StatusBadge, Table, THead, TBody, Tr, Th, Td, EmptyState } from '../../../../components/ui/primitives';
+import { Card, CardHeader, CardTitle, StatusBadge, EmptyState, Button } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
@@ -24,15 +26,16 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
     photo: p,
     distanceM: Math.round(distanceMeters(p, site)),
     within: isWithinGeofence(p, site),
-  })).sort((a, b) => (a.photo.capturedAt < b.photo.capturedAt ? 1 : -1)), [photos, site]);
+  })).sort((a, b) => (a.photo.capturedAt.localeCompare(b.photo.capturedAt) || a.photo.id.localeCompare(b.photo.id))), [photos, site]);
 
   const filtered = rows.filter((r) => {
     if (filter === 'ALL') return true;
     if (filter === 'MANUAL') return r.photo.locationSource === 'MANUAL';
-    if (filter === 'WITHIN') return r.within;
+    if (filter === 'WITHIN') return r.within && r.photo.locationSource === 'CAPTURED';
     return !r.within;
   });
 
+  const viewerIndex = filtered.findIndex(r => r.photo.id === viewerId);
   const flaggedCount = rows.filter((r) => !r.within || r.photo.locationSource === 'MANUAL').length;
 
   return (
@@ -45,7 +48,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>{uiText("Evidence Radar (distance from registered site)")}</CardTitle>
+          <CardTitle>{uiText("Evidence distance overview")}</CardTitle>
         </CardHeader>
         <div className="p-4">
           <EvidenceRadar rows={filtered} />
@@ -64,58 +67,30 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
         </Select>
       </div>
 
-      <Card>
-        {filtered.length === 0 ? <EmptyState icon={<MapPin size={32} />} title={uiText("No field evidence matches this filter")} /> : (
-          <Table>
-            <THead><Tr><Th>{uiText("Evidence")}</Th><Th>{uiText("Captured")}</Th><Th>{uiText("Stage")}</Th><Th>{uiText("Uploaded By")}</Th><Th>{uiText("Source")}</Th><Th>{uiText("Accuracy")}</Th><Th>{uiText("Distance from Site")}</Th><Th>{uiText("Geo-Fence")}</Th></Tr></THead>
-            <TBody>
-              {filtered.map(({ photo, distanceM, within }) => (
-                <Tr key={photo.id} onClick={() => setViewerId(photo.id)}>
-                  <Td>
-                    <button className="group block overflow-hidden rounded-md border border-slate-200" title={uiText("Click to view photo evidence")}>
-                      <img src={photoSrc(photo)} className="h-12 w-16 object-cover transition-transform group-hover:scale-105" />
-                    </button>
-                  </Td>
-                  <Td>{uiText(formatDateTime(photo.capturedAt))}</Td>
-                  <Td className="font-medium text-slate-800">{uiText(photo.stage)}</Td>
-                  <Td>{uiText(photo.uploadedBy)}</Td>
-                  <Td>
-                    <span className="inline-flex items-center gap-1">
-                      {photo.locationSource === 'CAPTURED' ? <Smartphone size={12} className="text-slate-400" /> : <PenLine size={12} className="text-amber-500" />}
-                      {uiText(photo.locationSource === 'CAPTURED' ? 'Device GPS' : 'Manual entry')}
-                    </span>
-                  </Td>
-                  <Td>{uiText(photo.gpsAccuracyM ? `±${photo.gpsAccuracyM}m` : '—')}</Td>
-                  <Td>{uiText(distanceM.toLocaleString('en-IN'))} m</Td>
-                  <Td>
-                    {photo.locationSource === 'MANUAL' ? (
-                      <StatusBadge status="REJECTED" label={uiText("Unverifiable")} />
-                    ) : within ? (
-                      <StatusBadge status="APPROVED" label={uiText("Within Geo-Fence")} />
-                    ) : (
-                      <StatusBadge status="REJECTED" label={uiText("Outside Geo-Fence")} />
-                    )}
-                  </Td>
-                </Tr>
-              ))}
-            </TBody>
-          </Table>
-        )}
-      </Card>
+      {filtered.length === 0 ? <EmptyState icon={<MapPin size={32} />} title={uiText("No field evidence matches this filter")} /> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {filtered.map(({ photo, distanceM, within }, index) => <button key={photo.id} onClick={() => setViewerId(photo.id)} className="evidence-card overflow-hidden rounded-3xl border border-blue-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+          <p className="px-5 py-3 text-sm font-semibold text-blue-800">{uiText("Photo")} {index + 1} / {filtered.length}</p><GeoPhoto src={photoSrc(photo)} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-64 rounded-none" />
+          <div className="space-y-3 p-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-slate-900">{uiText(photo.stage)}</h3><StatusBadge status={photo.locationSource === 'MANUAL' || !within ? 'PENDING' : 'APPROVED'} label={uiText(photo.locationSource === 'MANUAL' ? 'Location unverified' : within ? 'Within site boundary' : 'Outside site boundary')} /></div>
+          <StatusBadge status={photo.review?.status ?? 'PENDING'} label={uiText(photo.review?.status === 'APPROVED' ? 'Approved by reviewer' : photo.review?.status === 'REJECTED' ? 'Rejected by reviewer' : 'Awaiting review')} /><p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{photo.description}</p>
+          <div className="grid grid-cols-2 gap-3 rounded-xl bg-blue-50/70 p-3 text-xs"><div><p className="text-slate-500">{uiText('Location source')}</p><p className="mt-1 font-medium text-slate-800">{uiText(photo.locationSource === 'CAPTURED' ? 'Device GPS' : 'Manual entry')}</p></div><div><p className="text-slate-500">{uiText('Distance from site')}</p><p className="mt-1 font-medium text-slate-800">{distanceM} m</p></div></div>
+          <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{photo.uploadedBy}<span className="block mt-1">{uiText(ROLE_LABELS[photo.uploadedByRole])}</span></span><span>{photo.gpsAccuracyM === undefined ? uiText('Accuracy unavailable') : `±${photo.gpsAccuracyM} m`}</span></div></div>
+        </button>)}
+      </div>}
 
       <Dialog open={!!viewerId} onOpenChange={(v) => !v && setViewerId(null)}>
         {viewerPhoto && (
-          <DialogContent title={uiMessage("{{0}} — Field Evidence", [viewerPhoto.stage])} description={uiText(formatDateTime(viewerPhoto.capturedAt))} size="lg">
+          <DialogContent title={uiMessage("{{0}} — Field Evidence", [viewerPhoto.stage])} description={uiText(formatDateTime(viewerPhoto.capturedAt))} size="xl">
+            <div className="mb-3 flex items-center justify-between gap-2"><Button variant="outline" disabled={viewerIndex <= 0} onClick={() => setViewerId(filtered[viewerIndex-1].photo.id)}>{uiText("Previous photo")}</Button><span className="text-sm font-semibold">{viewerIndex+1} / {filtered.length}</span><Button variant="outline" disabled={viewerIndex < 0 || viewerIndex >= filtered.length-1} onClick={() => setViewerId(filtered[viewerIndex+1].photo.id)}>{uiText("Next photo")}</Button></div>
             <GeoPhoto
               src={photoSrc(viewerPhoto)}
               lat={viewerPhoto.lat}
               lng={viewerPhoto.lng}
               timestamp={viewerPhoto.capturedAt}
               location={viewerPhoto.location}
-              className="h-72 w-full"
+              className="w-full bg-slate-950" imgClassName="h-[55vh] !object-contain"
             />
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
-              <div><p className="text-slate-400">{uiText("Uploaded By")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.uploadedBy)}</p></div>
+              <div><p className="text-slate-400">{uiText("Uploaded By")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.uploadedBy)}</p><p>{uiText(ROLE_LABELS[viewerPhoto.uploadedByRole])}</p></div>
               <div><p className="text-slate-400">{uiText("Uploaded At")}</p><p className="font-medium text-slate-700">{uiText(formatDateTime(viewerPhoto.uploadedAt))}</p></div>
               <div>
                 <p className="text-slate-400">{uiText("Location Source")}</p>
@@ -123,7 +98,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
               </div>
               <div>
                 <p className="text-slate-400">{uiText("Geo-Fence")}</p>
-                {isWithinGeofence(viewerPhoto, site) ? (
+                {viewerPhoto.locationSource === 'MANUAL' ? <StatusBadge status="PENDING" label={uiText('Location unverified')} /> : isWithinGeofence(viewerPhoto, site) ? (
                   <StatusBadge status="APPROVED" label={uiText("Within Geo-Fence")} />
                 ) : (
                   <StatusBadge status="REJECTED" label={uiText("Outside Geo-Fence")} />
@@ -132,6 +107,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
               <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Description")}</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
               {viewerPhoto.remarks && <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Remarks")}</p><p className="font-medium text-slate-700">{viewerPhoto.remarks}</p></div>}
             </div>
+            <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
           </DialogContent>
         )}
       </Dialog>
@@ -139,36 +115,18 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
   );
 }
 
-/** A lightweight radial scatter — no external map dependency. Each point's distance from the
- * center is proportional to its real distance from the registered site (capped for legibility),
- * so a reviewer can see at a glance how tightly evidence clusters around the site vs. straying
- * outside the fence ring. */
+/** Quantitative distances, without invented geographic bearings. */
 function EvidenceRadar({ rows }: { rows: { photo: SitePhoto; distanceM: number; within: boolean }[] }) {
   useUiLanguage();
-  const maxRadiusPx = 42; // radius representing GEOFENCE_RADIUS_M
-  const capM = GEOFENCE_RADIUS_M * 4;
-  return (
-    <div className="mx-auto flex max-w-md items-center justify-center">
-      <svg viewBox="0 0 100 100" className="h-64 w-64">
-        <circle cx={50} cy={50} r={maxRadiusPx / 2} fill="#ecfdf5" stroke="#6ee7b7" strokeWidth="0.6" />
-        <circle cx={50} cy={50} r={2} fill="#0f766e" />
-        {rows.map(({ photo, distanceM, within }, i) => {
-          const angle = (i * 137.5 * Math.PI) / 180; // golden-angle spread so points don't overlap
-          const r = Math.min(48, (Math.min(distanceM, capM) / capM) * 48);
-          const cx = 50 + r * Math.cos(angle);
-          const cy = 50 + r * Math.sin(angle);
-          const color = photo.locationSource === 'MANUAL' ? '#f59e0b' : within ? '#10b981' : '#ef4444';
-          return <circle key={photo.id} cx={cx} cy={cy} r={photo.locationSource === 'MANUAL' ? 1.6 : within ? 1.4 : 1.8} fill={color} opacity={0.85} />;
-        })}
-      </svg>
-      <div className="ml-4 space-y-1.5 text-[11px] text-slate-500">
-        <p className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />{uiText(" Within geo-fence")}</p>
-        <p className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" />{uiText(" Outside geo-fence")}</p>
-        <p className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" />{uiText(" Manually entered")}</p>
-        <p className="mt-2 max-w-[10rem] text-slate-400">{uiText("Shaded ring = registered geo-fence radius (")}{GEOFENCE_RADIUS_M}{uiText("m). Distance from center is proportional, capped for legibility.")}</p>
-      </div>
-    </div>
-  );
+  const maximum = Math.max(GEOFENCE_RADIUS_M * 2, ...rows.map(r => r.distanceM));
+  return <div className="space-y-4">
+    <p className="text-xs text-slate-500">{uiText('Distance from the registered site. The marker indicates the site boundary.')} ({GEOFENCE_RADIUS_M} m)</p>
+    <div className="max-h-72 space-y-4 overflow-y-auto pr-2">{rows.map(({photo,distanceM,within}) => <div key={photo.id}>
+      <div className="mb-1 flex justify-between gap-2 text-xs"><span className="truncate text-slate-600">{uiText(photo.stage)} · {photo.uploadedBy}</span><span className="shrink-0 font-semibold text-slate-800">{distanceM} m</span></div>
+      <div className="relative h-2 rounded-full bg-slate-100"><div className={`h-2 rounded-full ${photo.locationSource === 'MANUAL' ? 'bg-amber-400' : within ? 'bg-blue-500' : 'bg-red-400'}`} style={{width: `${Math.max(1,distanceM / maximum * 100)}%`}}/><span className="absolute -top-1 h-4 w-0.5 bg-slate-500" style={{left:`${GEOFENCE_RADIUS_M / maximum * 100}%`}}/></div>
+    </div>)}</div>
+    <p className="text-xs text-slate-500">{uiText('Blue: device GPS within boundary · Red: outside boundary · Amber: manually entered, unverified')}</p>
+  </div>;
 }
 
 function StatCard({ label, value, icon: Icon, tone }: { label: string; value: string | number; icon: any; tone?: 'red' }) {

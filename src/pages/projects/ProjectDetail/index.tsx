@@ -1,3 +1,4 @@
+import { reportGroupsForRole, reportNavigation } from '../../../lib/projectReportGroups';
 import { uiText, useUiLanguage } from '../../../i18n/ui';
 import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -57,6 +58,10 @@ export function ProjectDetail() {
   const visibleTabs = tabsForRole(currentUser?.role);
   const requestedTab = params.get('tab') ?? 'overview';
   const tab = visibleTabs.some((t) => t.value === requestedTab) ? requestedTab : (visibleTabs[0]?.value ?? 'overview');
+
+  const reportGroups = reportGroupsForRole(currentUser?.role);
+  const activeReportGroup = reportGroups.find(group => group.sections.some(section => section.value === tab));
+  const navigationTabs = reportNavigation(currentUser?.role, tab);
 
   if (!project) {
     return <div className="py-20 text-center text-sm text-slate-500">{uiText("Project not found. ")}<button className="text-navy-700 underline" onClick={() => navigate('/projects')}>{uiText("Back to projects")}</button></div>;
@@ -151,7 +156,12 @@ export function ProjectDetail() {
       </Card>
 
       <Tabs value={tab} onValueChange={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })}>
-        <ProjectNavigation tabs={visibleTabs} value={tab} onSelect={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })} />
+        <ProjectNavigation tabs={navigationTabs} value={tab} onSelect={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })} />
+
+        {activeReportGroup && activeReportGroup.sections.length > 1 && <section className="report-group-panel mt-4 rounded-2xl border border-blue-100 bg-white p-4 sm:p-5" aria-label={uiText(activeReportGroup.label)}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-semibold text-blue-950">{uiText(activeReportGroup.label)}</h2><span className="text-xs text-slate-500">{activeReportGroup.sections.length} {uiText('related reports')}</span></div>
+          <nav aria-label={uiText('Reports in this section')} className="flex flex-wrap gap-2">{activeReportGroup.sections.map(section => <button key={section.value} type="button" aria-current={section.value === tab ? 'page' : undefined} onClick={() => setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', section.value); return next; })} className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${section.value === tab ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : 'border-blue-100 bg-blue-50/60 text-blue-900 hover:bg-blue-100'}`}>{uiText(section.label)}</button>)}</nav>
+        </section>}
 
         <TabsContent value="overview">{currentUser?.role === 'MINISTER' ? <MinistryOverviewTab project={project} /> : <OverviewTab project={project} />}</TabsContent>
         <TabsContent value="governance"><GovernanceTab project={project} /></TabsContent>

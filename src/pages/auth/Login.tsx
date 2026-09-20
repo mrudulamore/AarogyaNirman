@@ -42,8 +42,12 @@ export function Login() {
   function manualSubmit(e: React.FormEvent) {
     e.preventDefault();
     const match = DEMO_ACCOUNTS.find((a) => a.username === username.trim().toLowerCase());
-    if (!match) { setError(true); return; }
-    login(match.role);
+    const entered = username.trim().toLowerCase();
+    const user = useStore.getState().users.find(u => u.email.toLowerCase() === entered || u.id.toLowerCase() === entered);
+    if (user) login(user.role, user.id);
+    else if (match) login(match.role);
+    else { setError(true); return; }
+    if (!useStore.getState().currentUser) { setError(true); return; }
     navigate('/dashboard', { replace: true });
   }
 

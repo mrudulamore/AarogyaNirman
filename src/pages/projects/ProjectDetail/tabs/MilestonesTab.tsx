@@ -47,6 +47,18 @@ export function MilestonesTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
+      <Card className="construction-timeline"><CardContent>
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900">{uiText('Construction milestone timeline')}</h2>
+        <p className="mt-1 text-sm text-slate-500">{uiText('Planned and actual delivery, separate from the administrative lifecycle. Select a milestone to review its details.')}</p>
+        <ol className="mt-6 space-y-3">{milestones.map((m, index) => <li key={m.id}>
+          <button type="button" onClick={() => openMilestone(m.id)} className="flex w-full items-start gap-4 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/70 to-white p-4 text-left transition hover:border-blue-300">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white font-semibold text-blue-700 shadow-sm">{String(index + 1).padStart(2, '0')}</span>
+            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-slate-900">{uiText(m.name)}</span><span className="mt-2 grid gap-2 text-xs text-slate-500 sm:grid-cols-2"><span>{uiText('Planned')}: {formatDate(m.plannedStart)} — {formatDate(m.plannedDate)}</span><span>{uiText('Actual')}: {m.actualStart ? formatDate(m.actualStart) : uiText('Not started')} — {m.actualDate ? formatDate(m.actualDate) : uiText('Not completed')}</span></span><span className="mt-2 block"><StatusBadge status={m.status}/></span></span>
+            <span aria-hidden="true" className="text-2xl text-blue-600">›</span>
+          </button>
+        </li>)}</ol>
+      </CardContent></Card>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card><CardContent className="p-4">
           <p className="text-[11px] font-medium uppercase text-slate-400">{uiText("Certified Contract Value")}</p>

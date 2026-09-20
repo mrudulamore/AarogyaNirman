@@ -1,6 +1,6 @@
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, LayoutGrid, List as ListIcon, ArrowRight, ChevronRight, Landmark, Building2, Map, MapPinned, Hospital, RotateCcw } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -27,6 +27,7 @@ function riskStatus(p: Project): 'High Risk' | 'Medium Risk' | 'Low Risk' | 'Clo
 export function ProjectsList() {
   useUiLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const { projects: scopedProjects, scopeLabel, isStatewide } = useProjectScope();
@@ -41,7 +42,8 @@ export function ProjectsList() {
   // Cascading hierarchy: Scheme -> Facility Type -> Region -> District -> Project/Hospital.
   const [scheme, setScheme] = useState('ALL');
   const [facilityType, setFacilityType] = useState('ALL');
-  const [region, setRegion] = useState('ALL');
+  const [region, setRegion] = useState(searchParams.get('region') ?? 'ALL');
+  useEffect(() => { setRegion(searchParams.get('region') ?? 'ALL'); }, [searchParams]);
   const [district, setDistrict] = useState('ALL');
   const [projectId, setProjectId] = useState('ALL');
   const [quickFilters, setQuickFilters] = useState<Set<QuickFilter>>(new Set());
@@ -125,6 +127,7 @@ export function ProjectsList() {
 
   return (
     <div>
+      <p className="mb-3 text-xs font-medium text-blue-700">{uiText("Demonstration portfolio · fictional project records")}</p>
       <PageHeader
         title={uiText(t('pages.projects.title'))}
         description={uiText(t('pages.projects.desc', { shown: filtered.length, total: scopedProjects.length }))}
@@ -184,33 +187,30 @@ export function ProjectsList() {
       </Card>
 
       {view === 'grid' ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3">
           {filtered.map((p) => {
             const risk = riskStatus(p);
             return (
-              <Card key={p.id} className="project-tile cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate(`/projects/${p.id}`)}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold leading-snug text-slate-800">{p.name}</p>
-                    <StatusBadge status={p.status} />
+              <Link key={p.id} to={`/projects/${p.id}`} className="hospital-project-card group" aria-label={`${uiText('View project')}: ${p.name}`}>
+                <div className="hospital-card-banner">
+                  <div className="hospital-card-symbol"><Hospital size={28} strokeWidth={1.5} /></div>
+                  <div className="min-w-0 flex-1"><p className="text-[11px] font-semibold uppercase tracking-widest text-blue-100">{uiText(p.district)}</p><p className="mt-1 text-xs text-blue-200">{p.id}</p></div>
+                  <StatusBadge status={p.status} />
+                  <div className="hospital-card-lines" aria-hidden="true" />
+                </div>
+                <div className="hospital-card-body">
+                  <div className="flex flex-wrap gap-2"><span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{uiText(p.scheme)}</span><span className={cn('rounded-md px-2.5 py-1 text-xs font-medium', risk === 'High Risk' ? 'bg-red-50 text-red-700' : risk === 'Medium Risk' ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-600')}>{uiText(risk)}</span></div>
+                  <h2 className="mt-4 text-lg font-semibold leading-snug tracking-tight text-slate-900 group-hover:text-blue-800">{p.name}</h2>
+                  <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500"><MapPinned size={15} className="mt-0.5 shrink-0"/>{uiText(p.taluka)} · {uiText(p.facilityType)} · {p.bedCount} {uiText('beds')}</p>
+                  <div className="hospital-card-metrics">
+                    <div><p className="text-xs font-medium text-slate-500">{uiText('Sanctioned Budget')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-950">{formatCurrency(p.sanctionedBudget)}</p></div>
+                    <div className="text-right"><p className="text-xs font-medium text-slate-500">{uiText('Physical Progress')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-700">{p.physicalProgress}<span className="ml-0.5 text-sm text-slate-500">%</span></p></div>
+                    <div className="col-span-2"><ProgressBar value={p.physicalProgress} className="h-1.5" /></div>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{uiText(p.taluka)}, {uiText(p.district)} · {uiText(p.facilityType)}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full border border-navy-200 bg-navy-50 px-2 py-0.5 text-[10px] font-medium text-navy-700">{uiText(p.scheme)}</span>
-                    <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold', risk === 'High Risk' ? 'border-red-200 bg-red-50 text-red-700' : risk === 'Medium Risk' ? 'border-amber-200 bg-amber-50 text-amber-700' : risk === 'Closed' ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>{uiText(risk)}</span>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    <div>
-                      <div className="mb-1 flex justify-between text-[11px] text-slate-500"><span>{uiText("Physical Progress")}</span><span className="font-semibold">{p.physicalProgress}%</span></div>
-                      <ProgressBar value={p.physicalProgress} />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                    <span className="text-slate-500">{uiText(formatCurrency(p.sanctionedBudget))} · {p.contractorId && contractors.find((c) => c.id === p.contractorId)?.company}</span>
-                    <span className="flex items-center gap-1 font-medium text-navy-700">{uiText("View ")}<ArrowRight size={12} /></span>
-                  </div>
-                </CardContent>
-              </Card>
+                  <div className="flex items-center justify-between gap-4 text-xs"><span className="text-slate-500">{uiText('Planned Completion')}</span><span className="font-semibold text-slate-700">{formatDate(p.plannedCompletionDate)}</span></div>
+                </div>
+                <div className="hospital-card-footer"><div className="min-w-0"><p className="text-[11px] text-slate-500">{uiText('Contractor')}</p><p className="mt-1 truncate text-xs font-semibold text-slate-700">{contractors.find(c => c.id === p.contractorId)?.company ?? '—'}</p></div><span className="hospital-card-open" aria-hidden="true"><ArrowRight size={20}/></span></div>
+              </Link>
             );
           })}
           {filtered.length === 0 && <p className="col-span-full py-16 text-center text-sm text-slate-400">{uiText("No projects match the selected filters.")}</p>}

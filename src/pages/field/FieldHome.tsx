@@ -1,3 +1,4 @@
+import { SiteCamera, type SiteCapture } from '../../components/common/SiteCamera';
 import { ProgressDocuments } from '../../components/common/ProgressDocuments';
 import { saveBillFiles } from '../../lib/billAttachments';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
@@ -5,8 +6,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Camera as CameraIcon, ClipboardList, AlertTriangle, ShieldCheck, QrCode, Siren, ChevronRight } from 'lucide-react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Geolocation } from '@capacitor/geolocation';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { Card, CardContent, Button, StatusBadge, Textarea } from '../../components/ui/primitives';
@@ -14,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlays';
 import { GeoPhoto } from '../../components/common/GeoPhoto';
 import { formatDate, photoSrc } from '../../lib/utils';
-import { isWithinGeofence, distanceMeters } from '../../lib/geo';
+import { isWithinGeofence } from '../../lib/geo';
 
 export function FieldHome() {
   useUiLanguage();
@@ -42,8 +41,7 @@ export function FieldHome() {
   const [submitting, setSubmitting] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
-  const [capturing, setCapturing] = useState(false);
-  const [capturedPhoto, setCapturedPhoto] = useState<{ dataUrl: string; lat: number; lng: number; gpsAccuracyM?: number; capturedAt: string } | null>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<SiteCapture | null>(null);
 
   const pendingInspections = inspections.filter((i) => i.projectId === project?.id && i.status === 'SCHEDULED');
   const openDefects = defects.filter((d) => d.projectId === project?.id && d.status !== 'CLOSED');
@@ -52,46 +50,21 @@ export function FieldHome() {
 
   function closeAndToast(msg: string) { toast.success(uiText(msg)); setAction(null); setRemarks(''); setDefectDesc(''); }
 
-  async function capturePhoto() {
-    setCapturing(true);
-    try {
-      const photo = await Camera.getPhoto({ quality: 70, resultType: CameraResultType.DataUrl, source: CameraSource.Camera, saveToGallery: false });
-      if (!photo.dataUrl) return;
-      // Real device GPS when available; the project's registered site coordinates otherwise —
-      // never block the capture on location permission.
-      let lat = project.siteLat, lng = project.siteLng, gpsAccuracyM: number | undefined;
-      try {
-        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-        lat = pos.coords.latitude; lng = pos.coords.longitude; gpsAccuracyM = Math.round(pos.coords.accuracy);
-      } catch {
-        toast.warning(uiText('Location unavailable — using the project’s registered site coordinates.'));
-      }
-      setCapturedPhoto({ dataUrl: photo.dataUrl, lat, lng, gpsAccuracyM, capturedAt: new Date().toISOString() });
-      if (gpsAccuracyM !== undefined && !isWithinGeofence({ lat, lng }, { lat: project.siteLat, lng: project.siteLng })) {
-        const meters = Math.round(distanceMeters({ lat, lng }, { lat: project.siteLat, lng: project.siteLng }));
-        toast.warning(uiMessage("You're {{0}}m from the registered site — this photo will be flagged outside the geo-fence.", [meters]));
-      }
-    } catch {
-      // camera cancelled or permission denied — nothing to do
-    } finally {
-      setCapturing(false);
-    }
-  }
-
   function uploadCapturedPhoto() {
     if (!capturedPhoto) return;
     const now = new Date().toISOString();
-    addPhoto({
+    try { addPhoto({
       projectId: project.id, stage: 'Structure', type: 'PROGRESS', date: now.slice(0, 10),
       location: `${project.taluka}, ${project.district}`, uploadedBy: currentUser?.name ?? 'Field User',
       uploadedByRole: currentUser?.role ?? 'DEPUTY_ENGINEER', description: 'Field-captured site photo',
       seed: Math.floor(Math.random() * 99999), dataUrl: capturedPhoto.dataUrl,
       lat: capturedPhoto.lat, lng: capturedPhoto.lng, gpsAccuracyM: capturedPhoto.gpsAccuracyM,
-      locationSource: capturedPhoto.gpsAccuracyM !== undefined ? 'CAPTURED' : 'MANUAL',
+      locationSource: 'CAPTURED',
       deviceInfo: navigator.userAgent.slice(0, 60), capturedAt: capturedPhoto.capturedAt, uploadedAt: now,
     });
     setCapturedPhoto(null);
     closeAndToast('Photo captured and uploaded with geotag.');
+    } catch(e) { toast.error(uiText((e as Error).message)); }
   }
 
   if (!project) return <p className="p-6 text-sm text-slate-400">{uiText("No project assigned.")}</p>;
@@ -210,17 +183,9 @@ export function FieldHome() {
                       : <StatusBadge status="REJECTED" label={uiText("Outside Geo-Fence")} />
                   )}
                 </div>
-                <button onClick={capturePhoto} className="text-[11px] font-medium text-navy-700 hover:underline">{uiText("Retake photo")}</button>
               </>
-            ) : (
-              <button
-                onClick={capturePhoto}
-                disabled={capturing}
-                className="flex h-32 w-full items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-60"
-              >
-                <CameraIcon className="mr-2" size={18} /> {uiText(capturing ? 'Opening camera…' : 'Tap to capture photo')}
-              </button>
-            )}
+            ) : null}
+            <SiteCamera onCapture={setCapturedPhoto} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setAction(null); setCapturedPhoto(null); }}>{uiText("Cancel")}</Button>
