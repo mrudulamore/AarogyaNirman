@@ -52,7 +52,7 @@ export function Login() {
   }
 
   return (
-    <AuthLayout title={uiText(t('auth.signInTitle'))} subtitle={t('auth.signInSubtitle')}>
+    <AuthLayout title={uiText(t('auth.signInTitle'))} subtitle={t('auth.signInSubtitle')} backTo="/">
       <form onSubmit={manualSubmit} className="space-y-3.5">
         <div>
           <Label htmlFor="login-id">{t('auth.userId')}</Label>
