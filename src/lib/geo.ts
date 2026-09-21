@@ -52,6 +52,63 @@ export function distanceMeters(a: { lat: number; lng: number }, b: { lat: number
 /** Registered project geo-fence radius — evidence captured beyond this is flagged for review. */
 export const GEOFENCE_RADIUS_M = 400;
 
+export type GeoFenceAssessment = {
+  status: 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN';
+  distanceM: number;
+  accuracyM: number;
+  radiusM: number;
+};
+
+export function pointInPolygon(point: { lat: number; lng: number }, polygon: { lat: number; lng: number }[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i]; const b = polygon[j];
+    const intersects = ((a.lat > point.lat) !== (b.lat > point.lat)) && point.lng < ((b.lng - a.lng) * (point.lat - a.lat)) / (b.lat - a.lat) + a.lng;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointToSegmentMeters(point: { lat: number; lng: number }, a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const latScale = 111_000;
+  const lngScale = 111_000 * Math.cos(point.lat * Math.PI / 180);
+  const ax = (a.lng - point.lng) * lngScale; const ay = (a.lat - point.lat) * latScale;
+  const bx = (b.lng - point.lng) * lngScale; const by = (b.lat - point.lat) * latScale;
+  const dx = bx - ax; const dy = by - ay;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSquared)) : 0;
+  return Math.hypot(ax + t * dx, ay + t * dy);
+}
+
+export function assessPolygonGeoFence(point: { lat: number; lng: number; gpsAccuracyM?: number }, polygon: { lat: number; lng: number }[]): GeoFenceAssessment {
+  const accuracyM = Math.max(0, Math.ceil(point.gpsAccuracyM ?? 0));
+  const edgeDistance = Math.round(Math.min(...polygon.map((vertex, index) => pointToSegmentMeters(point, vertex, polygon[(index + 1) % polygon.length]))));
+  const geometricallyInside = pointInPolygon(point, polygon);
+  const status = edgeDistance <= accuracyM ? 'UNCERTAIN' : geometricallyInside ? 'INSIDE' : 'OUTSIDE';
+  return { status, distanceM: edgeDistance, accuracyM, radiusM: 0 };
+}
+
+export function assessProjectGeoFence(point: { lat: number; lng: number; gpsAccuracyM?: number }, project: { siteLat: number; siteLng: number; siteBoundary?: { lat: number; lng: number }[]; geoFenceRadiusM?: number }): GeoFenceAssessment {
+  if (!project.siteBoundary || project.siteBoundary.length < 3) return assessGeoFence(point, { lat: project.siteLat, lng: project.siteLng }, project.geoFenceRadiusM ?? GEOFENCE_RADIUS_M);
+  const polygonAssessment = assessPolygonGeoFence(point, project.siteBoundary);
+  return { ...polygonAssessment, distanceM: Math.round(distanceMeters(point, { lat: project.siteLat, lng: project.siteLng })) };
+}
+
+/** Accuracy-aware classification. If the GPS accuracy circle crosses the site radius,
+ * the result is uncertain instead of pretending the point is definitely inside/outside. */
+export function assessGeoFence(
+  point: { lat: number; lng: number; gpsAccuracyM?: number },
+  projectSite: { lat: number; lng: number },
+  radiusM = GEOFENCE_RADIUS_M,
+): GeoFenceAssessment {
+  const distanceM = Math.round(distanceMeters(point, projectSite));
+  const accuracyM = Math.max(0, Math.ceil(point.gpsAccuracyM ?? 0));
+  const status = distanceM + accuracyM <= radiusM ? 'INSIDE'
+    : distanceM - accuracyM > radiusM ? 'OUTSIDE'
+    : 'UNCERTAIN';
+  return { status, distanceM, accuracyM, radiusM };
+}
+
 export function isWithinGeofence(point: { lat: number; lng: number }, projectSite: { lat: number; lng: number }): boolean {
   return distanceMeters(point, projectSite) <= GEOFENCE_RADIUS_M;
 }

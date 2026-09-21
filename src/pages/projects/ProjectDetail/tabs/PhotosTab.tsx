@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogFooter, ConfirmDialog } from '../../../../
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { photoSrc, formatDate, formatDateTime } from '../../../../lib/utils';
 import { isWithinGeofence } from '../../../../lib/geo';
+import { deleteEvidenceMedia, readEvidenceMedia } from '../../../../lib/evidenceMedia';
+import { SiteBoundaryEditor } from '../../../../components/common/SiteBoundaryEditor';
 
 const STAGE_OPTIONS = ['Foundation', 'Structure', 'Roofing', 'MEP', 'Finishing', 'Medical Infrastructure'];
 const TYPES: PhotoType[] = ['BEFORE', 'PROGRESS', 'COMPLETION'];
@@ -31,6 +33,7 @@ export function PhotosTab({ project }: { project: Project }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [capture, setCapture] = useState<SiteCapture | null>(null);
   const [busy, setBusy] = useState(false);
+  const [locationReason, setLocationReason] = useState('');
   const [place, setPlace] = useState('ALL');
   const [form, setForm] = useState({ building: '', floor: '', activity: '', stage: STAGE_OPTIONS[0], type: 'PROGRESS' as PhotoType, description: '' });
 
@@ -46,16 +49,38 @@ export function PhotosTab({ project }: { project: Project }) {
   const viewerIndex = filtered.findIndex((p) => p.id === viewerId);
   const viewerPhoto = filtered[viewerIndex];
 
+  function discardCapture() {
+    if (capture?.mediaKey) void deleteEvidenceMedia(capture.mediaKey);
+    setCapture(null); setLocationReason('');
+  }
+
+  function acceptCapture(next: SiteCapture) {
+    if (capture?.mediaKey) void deleteEvidenceMedia(capture.mediaKey);
+    setCapture(next); setLocationReason('');
+  }
+
+  async function downloadStampedEvidence() {
+    if (!viewerPhoto?.mediaKey) return;
+    try {
+      const blob = await readEvidenceMedia(viewerPhoto.mediaKey, 'stamped');
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = `${project.id}-${viewerPhoto.id}-geotagged.jpg`; anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (cause) { toast.error(uiText((cause as Error).message)); }
+  }
+
   async function submitUpload() {
     if (busy) return; setBusy(true);
     try {
       if (!capture) throw new Error('Capture a new site photo with GPS first.');
       if (!form.building.trim() || !form.floor.trim() || !form.activity.trim()) throw new Error('Enter building, floor and activity to group the photo.');
+      if (capture.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10) throw new Error('Explain why this outside or uncertain location should be submitted.');
       const now = new Date().toISOString();
       addPhoto({ projectId: project.id, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
         location: form.building + ' / ' + form.floor, uploadedBy: currentUser?.name ?? '', uploadedByRole: currentUser!.role,
-        description: form.description, seed: 0, ...capture, locationSource: 'CAPTURED', uploadedAt: now, deviceInfo: navigator.userAgent.slice(0, 120) });
-      toast.success(uiText('Photo saved on this device.')); setCapture(null); setUploadOpen(false);
+        description: form.description, remarks: locationReason.trim() || undefined, seed: 0, ...capture, locationSource: 'CAPTURED', uploadedAt: now, deviceInfo: navigator.userAgent.slice(0, 120) });
+      toast.success(uiText('Photo saved on this device.')); setCapture(null); setLocationReason(''); setUploadOpen(false);
     } catch(e) { toast.error(uiText((e as Error).message)); } finally { setBusy(false); }
   }
   const comparisons = grouped.map(([key, items]) => ({ key, before: [...items].filter(p => p.type === 'BEFORE').sort((a,b) => a.capturedAt.localeCompare(b.capturedAt))[0], after: [...items].filter(p => p.type !== 'BEFORE').sort((a,b) => b.capturedAt.localeCompare(a.capturedAt))[0] })).filter(pair => pair.before && pair.after);
@@ -67,6 +92,7 @@ export function PhotosTab({ project }: { project: Project }) {
         return <button key={checkpoint.type} className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-left" onClick={()=>{setForm({...form,type:checkpoint.type});setUploadOpen(true);}}><p className="text-sm font-semibold text-blue-900">{uiText(checkpoint.label)}</p><p className="mt-1 text-xs text-slate-600">{count} {uiText('captured photos')}</p><p className="mt-2 text-xs text-blue-700">{uiText('Capture Photo')} →</p></button>;
       })}</div>
       <p className="text-xs text-slate-500">{uiText('Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity. Sample photos do not count as captured evidence.')}</p>
+      <details className="rounded-2xl border border-blue-100 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold text-blue-900">{uiText('Site boundary and geofence')}</summary><div className="mt-4"><SiteBoundaryEditor project={project}/></div></details>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Select value={stageFilter} onValueChange={setStageFilter}>
@@ -122,7 +148,7 @@ export function PhotosTab({ project }: { project: Project }) {
         </Card>
       ))}
 
-      <Dialog open={uploadOpen} onOpenChange={v => !busy && (setUploadOpen(v), !v && setCapture(null))}>
+      <Dialog open={uploadOpen} onOpenChange={v => !busy && (setUploadOpen(v), !v && discardCapture())}>
         <DialogContent title={uiText("Capture Site Photo")} description={uiText(project.name)}>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -146,12 +172,13 @@ export function PhotosTab({ project }: { project: Project }) {
               <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={uiText("Brief description of the photograph")} />
             </div>
             {(['building', 'floor', 'activity'] as const).map(key => <label key={key} className="block text-xs">{uiText(key)}<input className="block min-h-11 w-full rounded border px-2" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>)}
-            {capture && <GeoPhoto src={capture.dataUrl} lat={capture.lat} lng={capture.lng} timestamp={capture.capturedAt} location={project.name} className="h-52" />}
-            <SiteCamera key={`${project.id}-${uploadOpen}`} onCapture={setCapture} />
+            {capture && <GeoPhoto src={capture.dataUrl} mediaKey={capture.mediaKey} lat={capture.lat} lng={capture.lng} timestamp={capture.capturedAt} location={project.name} className="h-52" />}
+            {capture && capture.geoFenceStatus !== 'INSIDE' && <label className="block text-xs font-medium text-amber-900">{uiText('Location exception reason')}<Textarea rows={2} value={locationReason} onChange={event => setLocationReason(event.target.value)} placeholder={uiText('Explain why evidence was captured outside or near the site boundary')}/></label>}
+            <SiteCamera key={`${project.id}-${uploadOpen}`} project={project} onCapture={acceptCapture} />
           </div>
           <DialogFooter>
-            <Button disabled={busy} variant="outline" onClick={() => setUploadOpen(false)}>{uiText("Cancel")}</Button>
-            <Button disabled={busy || !capture} onClick={submitUpload}>{uiText(busy ? "Saving..." : "Upload")}</Button>
+            <Button disabled={busy} variant="outline" onClick={() => { discardCapture(); setUploadOpen(false); }}>{uiText("Cancel")}</Button>
+            <Button disabled={busy || !capture || (capture.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10)} onClick={submitUpload}>{uiText(busy ? "Saving..." : "Submit evidence")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -162,6 +189,7 @@ export function PhotosTab({ project }: { project: Project }) {
             <div className="relative">
               <GeoPhoto
                 src={photoSrc(viewerPhoto)}
+                mediaKey={viewerPhoto.mediaKey}
                 lat={viewerPhoto.lat}
                 lng={viewerPhoto.lng}
                 timestamp={viewerPhoto.capturedAt}
@@ -183,21 +211,26 @@ export function PhotosTab({ project }: { project: Project }) {
               </div>
               <div>
                 <p className="text-slate-400">{uiText("Geo-Fence")}</p>
-                {isWithinGeofence(viewerPhoto, { lat: project.siteLat, lng: project.siteLng }) ? (
+                {(viewerPhoto.geoFenceStatus ?? (isWithinGeofence(viewerPhoto, { lat: project.siteLat, lng: project.siteLng }) ? 'INSIDE' : 'OUTSIDE')) === 'INSIDE' ? (
                   <Badge className="mt-0.5 border-emerald-200 bg-emerald-50 text-emerald-700">{uiText("Within Project Geo-Fence")}</Badge>
+                ) : viewerPhoto.geoFenceStatus === 'UNCERTAIN' ? (
+                  <Badge className="mt-0.5 border-amber-200 bg-amber-50 text-amber-700">{uiText("Location uncertain")}</Badge>
                 ) : (
                   <Badge className="mt-0.5 border-red-200 bg-red-50 text-red-700">{uiText("Outside Project Geo-Fence")}</Badge>
                 )}
               </div>
+              {viewerPhoto.distanceFromSiteM !== undefined && <div><p className="text-slate-400">{uiText('Distance / accuracy')}</p><p className="font-medium text-slate-700">{viewerPhoto.distanceFromSiteM}m · ±{viewerPhoto.gpsAccuracyM}m</p></div>}
+              {viewerPhoto.gpsCapturedAt && <div><p className="text-slate-400">{uiText('GPS fix time')}</p><p className="font-medium text-slate-700">{uiText(formatDateTime(viewerPhoto.gpsCapturedAt))}</p></div>}
               <div><p className="text-slate-400">{uiText("Device")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.deviceInfo ?? 'Not captured by device')}</p></div>
               <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Description")}</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
             </div>
-            {(viewerPhoto.locationSource === 'MANUAL' || !isWithinGeofence(viewerPhoto, { lat: project.siteLat, lng: project.siteLng })) && (
-              <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-700">{uiText("This evidence is flagged for review: ")}{uiText(viewerPhoto.locationSource === 'MANUAL' ? 'coordinates were manually entered rather than device-captured' : 'the captured GPS location falls outside the project geo-fence')}.
+            {(viewerPhoto.locationSource === 'MANUAL' || viewerPhoto.geoFenceStatus === 'OUTSIDE' || viewerPhoto.geoFenceStatus === 'UNCERTAIN' || !isWithinGeofence(viewerPhoto, { lat: project.siteLat, lng: project.siteLng })) && (
+              <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-700">{uiText("This evidence is flagged for review: ")}{uiText(viewerPhoto.locationSource === 'MANUAL' ? 'coordinates were manually entered rather than device-captured' : viewerPhoto.geoFenceStatus === 'UNCERTAIN' ? 'GPS accuracy overlaps the project boundary' : 'the captured GPS location falls outside the project geo-fence')}. {viewerPhoto.remarks && <strong>{viewerPhoto.remarks}</strong>}
               </p>
             )}
             <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
             <DialogFooter>
+              {viewerPhoto.mediaKey && <Button variant="outline" size="sm" onClick={downloadStampedEvidence}>{uiText('Download geotagged copy')}</Button>}
               <Button variant="destructive" size="sm" onClick={() => { setDeleteId(viewerPhoto.id); setViewerId(null); }}><Trash2 size={13} />{uiText(" Delete")}</Button>
             </DialogFooter>
           </DialogContent>
@@ -207,7 +240,7 @@ export function PhotosTab({ project }: { project: Project }) {
       <ConfirmDialog
         open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)} destructive
         title={uiText("Delete photograph?")} description={uiText("This will permanently remove the photograph and its metadata from the project record.")}
-        confirmLabel="Delete" onConfirm={() => { if (deleteId) { deletePhoto(deleteId); toast.success(uiText('Photo deleted.')); } }}
+        confirmLabel="Delete" onConfirm={() => { if (deleteId) { const photo = photos.find(item => item.id === deleteId); if (photo?.mediaKey) void deleteEvidenceMedia(photo.mediaKey); deletePhoto(deleteId); toast.success(uiText('Photo deleted.')); } }}
       />
     </div>
   );

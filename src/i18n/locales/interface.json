@@ -6126,5 +6126,129 @@
   "Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity. Sample photos do not count as captured evidence.": [
     "हर भवन, मंजिल और गतिविधि की शुरुआत, मध्य चरण और पूर्णता के साक्ष्य लें। उदाहरण चित्र वास्तविक साक्ष्य में नहीं गिने जाते।",
     "प्रत्येक इमारत, मजला आणि कामाची सुरुवात, मध्य टप्पा आणि पूर्ततेचे पुरावे घ्या. नमुना छायाचित्रे प्रत्यक्ष पुरावे म्हणून मोजली जात नाहीत."
+  ],
+  "Capture-time location": [
+    "फोटो लेते समय स्थान",
+    "छायाचित्र घेतानाचे स्थान"
+  ],
+  "Acquire a fresh GPS fix before taking a new site photo. Gallery uploads are unavailable.": [
+    "नई साइट तस्वीर लेने से पहले नया GPS स्थान प्राप्त करें। गैलरी अपलोड उपलब्ध नहीं है।",
+    "नवीन साइट छायाचित्र घेण्यापूर्वी ताजे GPS स्थान मिळवा. गॅलरी अपलोड उपलब्ध नाही."
+  ],
+  "Inside site boundary": [
+    "साइट सीमा के अंदर",
+    "साइट सीमेत"
+  ],
+  "Outside site boundary": [
+    "साइट सीमा के बाहर",
+    "साइट सीमेबाहेर"
+  ],
+  "Location uncertain": [
+    "स्थान अनिश्चित",
+    "स्थान अनिश्चित"
+  ],
+  "from registered site": [
+    "पंजीकृत साइट से",
+    "नोंदणीकृत साइटपासून"
+  ],
+  "GPS accuracy": [
+    "GPS सटीकता",
+    "GPS अचूकता"
+  ],
+  "Preparing evidence…": [
+    "साक्ष्य तैयार हो रहा है…",
+    "पुरावा तयार होत आहे…"
+  ],
+  "Get location & open camera": [
+    "स्थान प्राप्त करें और कैमरा खोलें",
+    "स्थान मिळवा आणि कॅमेरा उघडा"
+  ],
+  "Refresh GPS": [
+    "GPS फिर से प्राप्त करें",
+    "GPS पुन्हा मिळवा"
+  ],
+  "Location exception reason": [
+    "स्थान अपवाद का कारण",
+    "स्थान अपवादाचे कारण"
+  ],
+  "Explain why evidence was captured outside or near the site boundary": [
+    "बताएँ कि साक्ष्य साइट सीमा के बाहर या पास क्यों लिया गया",
+    "पुरावा साइट सीमेबाहेर किंवा जवळ का घेतला हे स्पष्ट करा"
+  ],
+  "Submit evidence": [
+    "साक्ष्य जमा करें",
+    "पुरावा सादर करा"
+  ],
+  "Download geotagged copy": [
+    "जियोटैग प्रति डाउनलोड करें",
+    "जिओटॅग प्रत डाउनलोड करा"
+  ],
+  "Distance / accuracy": [
+    "दूरी / सटीकता",
+    "अंतर / अचूकता"
+  ],
+  "GPS fix time": [
+    "GPS स्थान का समय",
+    "GPS स्थानाची वेळ"
+  ],
+  "GPS accuracy overlaps the project boundary": [
+    "GPS सटीकता परियोजना सीमा को काटती है",
+    "GPS अचूकता प्रकल्प सीमेला छेदते"
+  ],
+  "Registered site boundary": [
+    "पंजीकृत साइट सीमा",
+    "नोंदणीकृत साइट सीमा"
+  ],
+  "Registered site": [
+    "पंजीकृत साइट",
+    "नोंदणीकृत साइट"
+  ],
+  "Open this photo": [
+    "यह तस्वीर खोलें",
+    "हे छायाचित्र उघडा"
+  ],
+  "Site boundary and geofence": [
+    "साइट सीमा और जियोफेंस",
+    "साइट सीमा आणि जिओफेन्स"
+  ],
+  "Tap around the site in sequence. The polygon must contain the registered site marker.": [
+    "साइट के चारों ओर क्रम से टैप करें। बहुभुज में पंजीकृत साइट चिह्न होना चाहिए।",
+    "साइटभोवती क्रमाने टॅप करा. बहुभुजात नोंदणीकृत साइट चिन्ह असणे आवश्यक आहे."
+  ],
+  "This boundary is read-only for your role.": [
+    "यह सीमा आपकी भूमिका के लिए केवल पढ़ने योग्य है।",
+    "ही सीमा तुमच्या भूमिकेसाठी फक्त वाचता येते."
+  ],
+  "Fallback radius (metres)": [
+    "वैकल्पिक त्रिज्या (मीटर)",
+    "पर्यायी त्रिज्या (मीटर)"
+  ],
+  "Undo point": [
+    "पिछला बिंदु हटाएँ",
+    "मागील बिंदू काढा"
+  ],
+  "Clear boundary": [
+    "सीमा साफ करें",
+    "सीमा साफ करा"
+  ],
+  "Save boundary": [
+    "सीमा सहेजें",
+    "सीमा जतन करा"
+  ],
+  "boundary points": [
+    "सीमा बिंदु",
+    "सीमा बिंदू"
+  ],
+  "Last saved": [
+    "अंतिम बार सहेजा",
+    "शेवटचे जतन"
+  ],
+  "Using fallback radius until a polygon is saved": [
+    "बहुभुज सहेजे जाने तक वैकल्पिक त्रिज्या उपयोग में है",
+    "बहुभुज जतन होईपर्यंत पर्यायी त्रिज्या वापरली जाते"
+  ],
+  "Site boundary saved on this device.": [
+    "साइट सीमा इस डिवाइस पर सहेजी गई।",
+    "साइट सीमा या उपकरणावर जतन झाली."
   ]
 }

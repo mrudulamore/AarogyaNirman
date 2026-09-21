@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlays';
 import { GeoPhoto } from '../../components/common/GeoPhoto';
 import { formatDate, photoSrc } from '../../lib/utils';
-import { isWithinGeofence } from '../../lib/geo';
+import { deleteEvidenceMedia } from '../../lib/evidenceMedia';
 
 export function FieldHome() {
   useUiLanguage();
@@ -43,6 +43,7 @@ export function FieldHome() {
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
   const [photoType, setPhotoType] = useState<PhotoType>('PROGRESS');
+  const [locationReason, setLocationReason] = useState('');
   const [capturedPhoto, setCapturedPhoto] = useState<SiteCapture | null>(null);
 
   const pendingInspections = inspections.filter((i) => i.projectId === project?.id && i.status === 'SCHEDULED');
@@ -52,19 +53,32 @@ export function FieldHome() {
 
   function closeAndToast(msg: string) { toast.success(uiText(msg)); setAction(null); setRemarks(''); setDefectDesc(''); }
 
+  function discardCapturedPhoto() {
+    if (capturedPhoto?.mediaKey) void deleteEvidenceMedia(capturedPhoto.mediaKey);
+    setCapturedPhoto(null); setLocationReason('');
+  }
+
+  function acceptCapturedPhoto(next: SiteCapture) {
+    if (capturedPhoto?.mediaKey) void deleteEvidenceMedia(capturedPhoto.mediaKey);
+    setCapturedPhoto(next); setLocationReason('');
+  }
+
   function uploadCapturedPhoto() {
     if (!capturedPhoto) return;
+    if (capturedPhoto.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10) { toast.error(uiText('Explain why this outside or uncertain location should be submitted.')); return; }
     const now = new Date().toISOString();
     try { addPhoto({
       projectId: project.id, stage: 'Structure', type: photoType, date: now.slice(0, 10),
       location: `${project.taluka}, ${project.district}`, uploadedBy: currentUser?.name ?? 'Field User',
       uploadedByRole: currentUser?.role ?? 'DEPUTY_ENGINEER', description: 'Field-captured site photo',
-      seed: Math.floor(Math.random() * 99999), dataUrl: capturedPhoto.dataUrl,
+      remarks: locationReason.trim() || undefined, seed: Math.floor(Math.random() * 99999), dataUrl: capturedPhoto.dataUrl, mediaKey: capturedPhoto.mediaKey,
       lat: capturedPhoto.lat, lng: capturedPhoto.lng, gpsAccuracyM: capturedPhoto.gpsAccuracyM,
+      gpsCapturedAt: capturedPhoto.gpsCapturedAt, gpsAgeMs: capturedPhoto.gpsAgeMs, geoFenceStatus: capturedPhoto.geoFenceStatus,
+      distanceFromSiteM: capturedPhoto.distanceFromSiteM, geoFenceRadiusM: capturedPhoto.geoFenceRadiusM,
       locationSource: 'CAPTURED',
       deviceInfo: navigator.userAgent.slice(0, 60), capturedAt: capturedPhoto.capturedAt, uploadedAt: now,
     });
-    setCapturedPhoto(null);
+    setCapturedPhoto(null); setLocationReason('');
     closeAndToast('Photo captured and uploaded with geotag.');
     } catch(e) { toast.error(uiText((e as Error).message)); }
   }
@@ -121,7 +135,7 @@ export function FieldHome() {
           {recentSitePhotos.map(ph => <article key={ph.id} className="site-photo-post">
             <div className="photo-post-author"><span aria-hidden="true">{ph.uploadedBy.slice(0,1)}</span><div><p>{ph.uploadedBy}</p><time dateTime={ph.capturedAt}>{formatDate(ph.capturedAt)}</time></div></div>
             <button type="button" className="photo-post-image" aria-label={uiText('View site photos')} onClick={() => navigate(`/projects/${project.id}?tab=photos`)}>
-              <GeoPhoto src={photoSrc(ph)} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-72" imgClassName="object-contain bg-slate-100" />
+              <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-72" imgClassName="object-contain bg-slate-100" />
             </button>
             <div className="photo-post-caption"><p>{ph.description}</p><span>{uiText(ph.stage)}</span></div>
           </article>)}
@@ -168,13 +182,13 @@ export function FieldHome() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={action === 'photo'} onOpenChange={(v) => { if (!v) { setAction(null); setCapturedPhoto(null); } }}>
+      <Dialog open={action === 'photo'} onOpenChange={(v) => { if (!v) { setAction(null); discardCapturedPhoto(); } }}>
         <DialogContent title={uiText("Upload Site Photo")}>
           <div className="space-y-3">
             {capturedPhoto ? (
               <>
                 <GeoPhoto
-                  src={capturedPhoto.dataUrl} lat={capturedPhoto.lat} lng={capturedPhoto.lng}
+                  src={capturedPhoto.dataUrl} mediaKey={capturedPhoto.mediaKey} lat={capturedPhoto.lat} lng={capturedPhoto.lng}
                   timestamp={capturedPhoto.capturedAt} location={`${project.taluka}, ${project.district}`}
                   className="h-56"
                 />
@@ -182,19 +196,16 @@ export function FieldHome() {
                   <p className="text-[11px] text-slate-400">
                     {uiText(capturedPhoto.gpsAccuracyM !== undefined ? `Live GPS · ±${capturedPhoto.gpsAccuracyM}m accuracy` : 'Location unavailable — using project site coordinates')}
                   </p>
-                  {capturedPhoto.gpsAccuracyM !== undefined && (
-                    isWithinGeofence(capturedPhoto, { lat: project.siteLat, lng: project.siteLng })
-                      ? <StatusBadge status="APPROVED" label={uiText("Within Geo-Fence")} />
-                      : <StatusBadge status="REJECTED" label={uiText("Outside Geo-Fence")} />
-                  )}
+                  <StatusBadge status={capturedPhoto.geoFenceStatus === 'INSIDE' ? 'APPROVED' : capturedPhoto.geoFenceStatus === 'OUTSIDE' ? 'REJECTED' : 'PENDING'} label={uiText(capturedPhoto.geoFenceStatus === 'INSIDE' ? 'Inside site boundary' : capturedPhoto.geoFenceStatus === 'OUTSIDE' ? 'Outside site boundary' : 'Location uncertain')} />
                 </div>
+                {capturedPhoto.geoFenceStatus !== 'INSIDE' && <label className="block text-xs font-medium text-amber-900">{uiText('Location exception reason')}<Textarea rows={2} value={locationReason} onChange={event => setLocationReason(event.target.value)} placeholder={uiText('Explain why evidence was captured outside or near the site boundary')}/></label>}
               </>
             ) : null}
-            <label className="block text-sm">{uiText('Photo checkpoint')}<select className="mt-1 min-h-11 w-full rounded-lg border px-3" value={photoType} onChange={e=>setPhotoType(e.target.value as PhotoType)}><option value="BEFORE">{uiText('Start / baseline')}</option><option value="PROGRESS">{uiText('Midpoint / progress')}</option><option value="COMPLETION">{uiText('Completion')}</option></select></label><SiteCamera onCapture={setCapturedPhoto} />
+            <label className="block text-sm">{uiText('Photo checkpoint')}<select className="mt-1 min-h-11 w-full rounded-lg border px-3" value={photoType} onChange={e=>setPhotoType(e.target.value as PhotoType)}><option value="BEFORE">{uiText('Start / baseline')}</option><option value="PROGRESS">{uiText('Midpoint / progress')}</option><option value="COMPLETION">{uiText('Completion')}</option></select></label><SiteCamera project={project} onCapture={acceptCapturedPhoto} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAction(null); setCapturedPhoto(null); }}>{uiText("Cancel")}</Button>
-            <Button onClick={uploadCapturedPhoto} disabled={!capturedPhoto}>{uiText("Upload")}</Button>
+            <Button variant="outline" onClick={() => { setAction(null); discardCapturedPhoto(); }}>{uiText("Cancel")}</Button>
+            <Button onClick={uploadCapturedPhoto} disabled={!capturedPhoto || (capturedPhoto.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10)}>{uiText("Submit evidence")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -111,6 +111,10 @@ export interface Project {
   lng: number;
   siteLat: number; // real WGS84 coordinates — registered site location, used for Google Maps + geofencing
   siteLng: number;
+  siteBoundary?: { lat: number; lng: number }[]; // locally registered site polygon, WGS84
+  geoFenceRadiusM?: number;
+  boundaryUpdatedAt?: string;
+  boundaryUpdatedBy?: string;
   description: string;
   qualityScore: number;
   imageSeed: number; // for deterministic placeholder image variety
@@ -178,6 +182,7 @@ export interface ProgressReport {
 export type PhotoType = 'BEFORE' | 'PROGRESS' | 'COMPLETION';
 
 export type LocationSource = 'CAPTURED' | 'MANUAL';
+export type GeoFenceStatus = 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN';
 
 export interface SitePhoto {
   uploadedById?: string;
@@ -197,9 +202,15 @@ export interface SitePhoto {
   description: string;
   seed: number;         // fallback stock-photo picker — used only when dataUrl is absent (seed data)
   dataUrl?: string;      // actual captured image (base64 data URL) from device camera, when present
+  mediaKey?: string;     // full-resolution original and stamped export live in IndexedDB
   lat: number; // real WGS84 — device-captured (or manually entered) coordinate
   lng: number;
   gpsAccuracyM?: number;      // only present when locationSource is CAPTURED
+  gpsCapturedAt?: string;     // ISO datetime of the device location fix
+  gpsAgeMs?: number;          // age of the location fix when the shutter was pressed
+  geoFenceStatus?: GeoFenceStatus;
+  distanceFromSiteM?: number;
+  geoFenceRadiusM?: number;
   locationSource: LocationSource;
   deviceInfo?: string;
   capturedAt: string;         // ISO datetime — when the photo was taken

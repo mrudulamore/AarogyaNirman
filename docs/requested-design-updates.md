@@ -55,3 +55,14 @@ Validation: production build, localization suite, browser checks across 18 works
 Final validation status: production build, localization, module-order and KYC state tests passed. Browser KYC application, pending filtering, search and manual approval ran successfully before the test reached an incorrect minister login ID. The test ID is corrected; remaining map/chart visual checks are pending because automatic tool approval hit a usage limit. No APK containing the September review-note changes has been generated yet. Earlier APKs contain only the preceding mobile design.
 
 Push validation: browser checks at 390px and 1440px now pass for KYC submission/approval, pending application filtering, user search, zone selection without navigation, boundary rendering and satellite switching. Production build and access/KYC/localization tests passed again. No new APK containing these review-note changes has been packaged.
+
+## Frontend geotagging phase
+
+- Field evidence now acquires a fresh high-accuracy GPS fix before opening the camera and records the coordinate, accuracy, fix time, fix age, distance and geofence result with each photo.
+- Geofence decisions account for GPS uncertainty. A fix whose accuracy circle crosses the boundary is marked `UNCERTAIN` instead of being treated as definitively inside or outside.
+- Deputy engineers, executive engineers and project managers can draw a 3–50 point site polygon over street or satellite imagery. The registered site must fall inside the polygon. Projects without a polygon use their configured circular fallback radius.
+- Evidence outside or uncertain at the boundary requires a location-exception reason before submission.
+- Full-resolution originals and stamped exports are stored in device IndexedDB; only a compact thumbnail is kept in the main local application state. Evidence detail screens can open the original and download the stamped copy.
+- Evidence maps show the site polygon or radius, GPS accuracy circles, numbered evidence markers, and direct links from a map marker to its corresponding photo.
+
+This is frontend/device-local enforcement. Server synchronization, signed evidence hashes, trusted server timestamps, audit immutability and administrator-managed authoritative boundaries remain backend work. Physical Android camera/GPS acceptance testing is still required.

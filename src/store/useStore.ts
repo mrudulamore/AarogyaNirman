@@ -5,6 +5,7 @@ import { ROLE_LABELS } from '../lib/constants';
 import { contractorAccount } from '../lib/contractorAccount';
 import { generateFundInstallments } from '../mock/fundInstallments';
 import { todayDate } from '../lib/fundDisbursal';
+import { pointInPolygon } from '../lib/geo';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
@@ -97,6 +98,7 @@ export interface StoreState extends ControlActions {
   // progress
   addProgressReport: (r: Omit<ProgressReport, 'id'>) => Promise<void>;
   addPhoto: (p: Omit<SitePhoto, 'id'>) => SitePhoto;
+  updateSiteBoundary: (projectId: string, points: { lat: number; lng: number }[], radiusM: number) => void;
   deletePhoto: (id: string) => void;
 
   // milestones — certification workflow (submit -> verify/inspect -> certify -> bill-eligible -> paid)
@@ -357,6 +359,17 @@ export const useStore = create<StoreState>()(
         const project = get().projects.find((pr) => pr.id === p.projectId);
         get().logAction(`Uploaded ${p.type.toLowerCase()} site photograph — ${p.stage}`, project?.name);
         return photo;
+      },
+      updateSiteBoundary: (projectId, points, radiusM) => {
+        const actor = assertProjectAccess(get(), projectId, ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        const project = get().projects.find(item => item.id === projectId);
+        if (!project) throw new Error('Project not found.');
+        if ((points.length > 0 && points.length < 3) || points.length > 50 || points.some(point => !Number.isFinite(point.lat) || !Number.isFinite(point.lng) || point.lat < 15 || point.lat > 23 || point.lng < 72 || point.lng > 82)) throw new Error('Draw a valid site boundary with 3 to 50 points, or clear it to use the fallback radius.');
+        if (points.length >= 3 && !pointInPolygon({ lat: project.siteLat, lng: project.siteLng }, points)) throw new Error('The boundary must contain the registered site location.');
+        if (!Number.isFinite(radiusM) || radiusM < 25 || radiusM > 2000) throw new Error('Set a fallback radius between 25 and 2,000 metres.');
+        const now = new Date().toISOString();
+        set(state => ({ projects: state.projects.map(item => item.id === projectId ? { ...item, siteBoundary: points.length ? points : undefined, geoFenceRadiusM: Math.round(radiusM), boundaryUpdatedAt: now, boundaryUpdatedBy: actor.id } : item) }));
+        get().logAction('Updated registered site boundary', project.name, undefined, points.length ? `${points.length} points` : `${Math.round(radiusM)}m circular radius`);
       },
       reviewPhoto: (id, status, note) => {
         const photo = get().photos.find(p => p.id === id);
