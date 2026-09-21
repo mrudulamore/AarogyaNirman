@@ -1,7 +1,8 @@
+import { BrandLogo } from '../common/BrandLogo';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Landmark, MapPinned } from 'lucide-react';
+import { MapPinned } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { useNavCounts } from '../../lib/navCounts';
@@ -29,9 +30,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
         <div className="sidebar-brand flex items-center gap-2.5 border-b border-navy-800/70 px-5 py-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-govblue-600 shadow-lg shadow-black/15">
-            <Landmark size={18} className="text-white" />
-          </div>
+          <BrandLogo className="h-14 w-14" />
           <div className="leading-tight">
             <p className="text-[13px] font-semibold text-white">{t('sidebar.govName')}</p>
             <p className="text-[11px] text-navy-200">{t('sidebar.govTagline')}</p>

@@ -1,6 +1,7 @@
+import { BrandLogo } from '../../components/common/BrandLogo';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Landmark, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
@@ -14,9 +15,7 @@ export function AuthLayout({ children, title, subtitle, backTo }: { children: Re
           backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '28px 28px',
         }} />
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md bg-govblue-600">
-            <Landmark size={22} />
-          </div>
+          <BrandLogo className="h-14 w-14" />
           <div>
             <p className="text-sm font-semibold">{t('auth.orgLine1')}</p>
             <p className="text-xs text-navy-300">{t('auth.orgLine2')}</p>
@@ -45,9 +44,7 @@ export function AuthLayout({ children, title, subtitle, backTo }: { children: Re
           )}
           <div className="mb-4 flex items-center justify-between lg:justify-end">
             <div className="flex items-center gap-2 lg:hidden">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-navy-800">
-                <Landmark size={18} className="text-white" />
-              </div>
+              <BrandLogo className="h-14 w-14" />
               <p className="text-xs font-semibold text-navy-900">{t('auth.orgLine1')}</p>
             </div>
             <LanguageSwitcher variant="inline" />

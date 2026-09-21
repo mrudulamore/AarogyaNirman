@@ -1,3 +1,4 @@
+import { BrandLogo } from '../../components/common/BrandLogo';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -99,7 +100,7 @@ export function LandingPage() {
     <a className="an-skip" href="#landingpage-main">Skip to content</a>
     <header className="an-header">
       <Link to="/landingpage" className="an-brand" aria-label={t('landing.brand')}>
-        <span className="an-brand-icon"><Landmark size={21} aria-hidden="true" /></span>
+        <BrandLogo className="h-14 w-14" />
         <span>{t('landing.brand')}</span>
       </Link>
       <nav className="an-navigation" aria-label="Main navigation"><LanguageSwitcher variant="inline" />{actions}</nav>
