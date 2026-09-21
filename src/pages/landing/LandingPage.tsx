@@ -1,3 +1,4 @@
+import { BrandLogo } from '../../components/common/BrandLogo';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +36,7 @@ function HospitalStatistics() {
       if (started) return;
       started = true;
       if (reducedMotion.matches) { setProgress(1); return; }
+      setProgress(0);
       const beginning = performance.now();
       const tick = (now: number) => {
         const elapsed = Math.min((now - beginning) / 1800, 1);
@@ -44,20 +46,28 @@ function HospitalStatistics() {
       frame = requestAnimationFrame(tick);
     };
     const onPreferenceChange = () => {
-      if (reducedMotion.matches) { cancelAnimationFrame(frame); setProgress(1); started = true; }
+      if (reducedMotion.matches) { cancelAnimationFrame(frame); setProgress(1); }
     };
     reducedMotion.addEventListener('change', onPreferenceChange);
     const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) { start(); observer?.disconnect(); }
-    }, { threshold: 0.25 }) : null;
-    if (reducedMotion.matches || !observer) start();
+      for (const entry of entries) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.25) start();
+        else if (!entry.isIntersecting) {
+          cancelAnimationFrame(frame);
+          started = false;
+          setProgress(reducedMotion.matches ? 1 : 0);
+        }
+      }
+    }, { threshold: [0, 0.25] }) : null;
+    if (reducedMotion.matches) setProgress(1);
+    if (!observer) start();
     else observer.observe(element);
     return () => { observer?.disconnect(); cancelAnimationFrame(frame); reducedMotion.removeEventListener('change', onPreferenceChange); };
   }, []);
   const format = (value: number) => new Intl.NumberFormat(language === 'en' ? 'en' : `${language || 'en'}-u-nu-deva`, { minimumIntegerDigits: 2, useGrouping: false }).format(value);
-  return <div ref={ref} className="an-statistics" aria-labelledby="an-statistics-title">
+  return <div className="an-statistics" aria-labelledby="an-statistics-title">
     <h2 id="an-statistics-title">{uiText('From foundation to better care')}</h2>
-    <div className="an-statistics-grid">{bannerStats.map(stat => <div className="an-statistic" key={stat.label}>
+    <div ref={ref} className="an-statistics-grid">{bannerStats.map(stat => <div className="an-statistic" key={stat.label}>
       <span className="an-statistic-icon"><stat.icon size={26} aria-hidden="true" /></span>
       <div><strong aria-label={format(stat.value)}><span aria-hidden="true">{format(Math.floor(stat.value * progress))}</span></strong><p>{uiText(stat.label)}</p></div>
     </div>)}</div>
@@ -99,7 +109,7 @@ export function LandingPage() {
     <a className="an-skip" href="#landingpage-main">Skip to content</a>
     <header className="an-header">
       <Link to="/landingpage" className="an-brand" aria-label={t('landing.brand')}>
-        <span className="an-brand-icon"><Landmark size={21} aria-hidden="true" /></span>
+        <BrandLogo className="h-14 w-14" />
         <span>{t('landing.brand')}</span>
       </Link>
       <nav className="an-navigation" aria-label="Main navigation"><LanguageSwitcher variant="inline" />{actions}</nav>

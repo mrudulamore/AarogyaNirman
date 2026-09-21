@@ -1,3 +1,4 @@
+import { BrandLogo } from '../../components/common/BrandLogo';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -134,9 +135,7 @@ export function Landing() {
       <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/85 backdrop-blur-md">
         <div className="landing-nav mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-govblue-500 to-blue-700 shadow-md shadow-govblue-200">
-              <Landmark size={18} className="text-white" />
-            </div>
+            <BrandLogo className="h-14 w-14" />
             <span className="text-sm font-bold tracking-wide text-slate-900">{t('landing.brand')}</span>
           </div>
           <div className="flex items-center gap-2">
