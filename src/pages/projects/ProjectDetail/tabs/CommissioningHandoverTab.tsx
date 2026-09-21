@@ -1,11 +1,13 @@
 import { activeControls, validControl, handoverGaps, CERTIFICATES } from '../../../../lib/projectControls';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { Check, Circle, Clock, PartyPopper } from 'lucide-react';
 import type { Project } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge } from '../../../../components/ui/primitives';
 import { cn, formatDate } from '../../../../lib/utils';
+import { RegulatoryCertificateGrid } from '../../../../components/common/RegulatoryCertificateGrid';
 
 export function CommissioningTab({ project }: { project: Project }) {
   useUiLanguage();
@@ -40,12 +42,14 @@ export function CommissioningTab({ project }: { project: Project }) {
           ))}
         </CardContent>
       </Card>
+      <RegulatoryCertificateGrid projectId={project.id}/>
     </div>
   );
 }
 
 export function HandoverTab({ project }: { project: Project }) {
   useUiLanguage();
+  const navigate = useNavigate();
   const currentUser = useStore((s) => s.currentUser);
   const steps = useStore((s) => s.handoverSteps).filter((h) => h.projectId === project.id).sort((a, b) => a.order - b.order);
   const commissioning = useStore((s) => s.commissioning).filter((c) => c.projectId === project.id);
@@ -55,7 +59,13 @@ export function HandoverTab({ project }: { project: Project }) {
   const gaps = handoverGaps(controlState, project.id);
   const advanceHandoverStep = useStore((s) => s.advanceHandoverStep);
   const completeHandoverAndOperationalize = useStore((s) => s.completeHandoverAndOperationalize);
-  const readOnly = !['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'].includes(currentUser?.role ?? '');
+  const readOnly = !['SUPERADMIN', 'EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'].includes(currentUser?.role ?? '');
+  function openGap(gap: string) {
+    const tab = gap === 'Open Defects' ? 'defects' : gap === 'Unresolved failed inspections' ? 'inspections' : gap === 'Commissioning Pending' ? 'safety & commissioning' : gap === 'Handover Steps' ? 'handover' : 'controls';
+    const query = new URLSearchParams({ tab });
+    if (tab === 'controls') query.set('kind', 'CERTIFICATE');
+    navigate(`/projects/${project.id}?${query}`);
+  }
 
   const allComplete = steps.every((s) => s.status === 'COMPLETED');
   const nextPendingIndex = steps.findIndex((s) => s.status !== 'COMPLETED');
@@ -77,7 +87,7 @@ export function HandoverTab({ project }: { project: Project }) {
       <Card>
         <CardHeader><CardTitle>{uiText("Handover Readiness — ")}{readinessPct}%</CardTitle></CardHeader>
         <CardContent>
-          {gaps.length > 0 && <div role="status" className="mb-4 rounded bg-amber-50 p-3"><p className="font-semibold">{uiText('Handover requirements remaining')}</p><ul className="list-inside list-disc text-sm">{gaps.map(g => <li key={g}>{uiText(g)}</li>)}</ul></div>}
+          {gaps.length > 0 && <div role="status" className="mb-4 rounded bg-amber-50 p-3"><p className="font-semibold">{uiText('Handover requirements remaining')}</p><ul className="mt-2 space-y-1 text-sm">{gaps.map(g => <li key={g}><button type="button" className="min-h-9 text-left text-blue-800 underline underline-offset-2" onClick={() => openGap(g)}>{uiText(g)} →</button></li>)}</ul></div>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {readinessComponents.map((c) => (
               <div key={c.label} className={cn('rounded-md border p-3', c.done ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50')}>

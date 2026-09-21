@@ -5,6 +5,7 @@ import { ROLE_LABELS } from '../lib/constants';
 import { contractorAccount } from '../lib/contractorAccount';
 import { generateFundInstallments } from '../mock/fundInstallments';
 import { todayDate } from '../lib/fundDisbursal';
+import { distanceMeters, pointInPolygon, polygonSelfIntersects } from '../lib/geo';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
@@ -97,6 +98,8 @@ export interface StoreState extends ControlActions {
   // progress
   addProgressReport: (r: Omit<ProgressReport, 'id'>) => Promise<void>;
   addPhoto: (p: Omit<SitePhoto, 'id'>) => SitePhoto;
+  updateSiteBoundary: (projectId: string, points: { lat: number; lng: number }[], radiusM: number) => void;
+  updateSiteLocation: (projectId: string, location: { lat: number; lng: number }) => void;
   deletePhoto: (id: string) => void;
 
   // milestones — certification workflow (submit -> verify/inspect -> certify -> bill-eligible -> paid)
@@ -237,7 +240,8 @@ export const useStore = create<StoreState>()(
       login: (role, userId) => {
         if (get().currentUser?.role === 'WORKFORCE' && role !== 'WORKFORCE') throw new Error('Sign out before switching accounts.');
         if (role === 'WORKFORCE') {
-          const worker = userId ? get().workers.find(w => w.id === userId) : get().workers[0];
+          const workerId = userId?.startsWith('WORKFORCE-') ? userId.slice('WORKFORCE-'.length) : userId;
+          const worker = workerId ? get().workers.find(w => w.id === workerId) : get().workers[0];
           set({ currentUser: worker ? workforceAccount(worker) : null }); return;
         }
         const user = userId ? get().users.find((u) => u.id === userId) : get().users.find((u) => u.role === role);
@@ -350,7 +354,7 @@ export const useStore = create<StoreState>()(
         get().logAction(`Submitted daily progress report (${r.stage})`, project?.name);
       },
       addPhoto: (p) => {
-        assertProjectAccess(get(), p.projectId, ['CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        assertProjectAccess(get(), p.projectId, ['SUPERADMIN', 'CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
         const actor = get().currentUser!;
         const photo: SitePhoto = { ...p, id: nid('PHO'), uploadedById: actor.id, uploadedBy: actor.name, uploadedByRole: actor.role, review: undefined, reviewHistory: [] };
         set((s) => ({ photos: [photo, ...s.photos] }));
@@ -358,10 +362,33 @@ export const useStore = create<StoreState>()(
         get().logAction(`Uploaded ${p.type.toLowerCase()} site photograph — ${p.stage}`, project?.name);
         return photo;
       },
+      updateSiteBoundary: (projectId, points, radiusM) => {
+        const actor = assertProjectAccess(get(), projectId, ['SUPERADMIN', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        const project = get().projects.find(item => item.id === projectId);
+        if (!project) throw new Error('Project not found.');
+        if ((points.length > 0 && points.length < 3) || points.length > 50 || points.some(point => !Number.isFinite(point.lat) || !Number.isFinite(point.lng) || point.lat < 15 || point.lat > 23 || point.lng < 72 || point.lng > 82)) throw new Error('Draw a valid site boundary with 3 to 50 points, or clear it to use the fallback radius.');
+        if (points.length >= 3 && !project.siteLocationConfirmedAt) throw new Error('Confirm the actual site location before saving a polygon.');
+        if (points.length >= 3 && (polygonSelfIntersects(points) || points.some(point => distanceMeters(point, { lat: project.siteLat, lng: project.siteLng }) > 2000))) throw new Error('Draw a simple boundary within 2 km of the registered site.');
+        if (points.length >= 3 && !pointInPolygon({ lat: project.siteLat, lng: project.siteLng }, points)) throw new Error('The boundary must contain the registered site location.');
+        if (!Number.isFinite(radiusM) || radiusM < 25 || radiusM > 2000) throw new Error('Set a fallback radius between 25 and 2,000 metres.');
+        const now = new Date().toISOString();
+        set(state => ({ projects: state.projects.map(item => item.id === projectId ? { ...item, siteBoundary: points.length ? points : undefined, geoFenceRadiusM: Math.round(radiusM), boundaryUpdatedAt: now, boundaryUpdatedBy: actor.id } : item) }));
+        get().logAction('Updated registered site boundary', project.name, undefined, points.length ? `${points.length} points` : `${Math.round(radiusM)}m circular radius`);
+      },
+      updateSiteLocation: (projectId, location) => {
+        const actor = assertProjectAccess(get(), projectId, ['SUPERADMIN', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        const project = get().projects.find(item => item.id === projectId);
+        if (!project) throw new Error('Project not found.');
+        if (!Number.isFinite(location.lat) || !Number.isFinite(location.lng) || location.lat < 15 || location.lat > 23 || location.lng < 72 || location.lng > 82) throw new Error('Select a valid Maharashtra site location.');
+        if (project.siteBoundary?.length && !pointInPolygon(location, project.siteBoundary)) throw new Error('The site marker must remain inside the saved boundary. Clear the boundary first.');
+        const now = new Date().toISOString();
+        set(state => ({ projects: state.projects.map(item => item.id === projectId ? { ...item, siteLat: location.lat, siteLng: location.lng, siteLocationConfirmedAt: now, siteLocationConfirmedBy: actor.id } : item) }));
+        get().logAction('Confirmed actual hospital site coordinates', project.name, `${project.siteLat.toFixed(6)}, ${project.siteLng.toFixed(6)}`, `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`);
+      },
       reviewPhoto: (id, status, note) => {
         const photo = get().photos.find(p => p.id === id);
         if (!photo) throw new Error('Photo not found.');
-        const actor = assertProjectAccess(get(), photo.projectId, ['PROJECT_MANAGER', 'EXECUTIVE_ENGINEER']);
+        const actor = assertProjectAccess(get(), photo.projectId, ['SUPERADMIN', 'PROJECT_MANAGER', 'EXECUTIVE_ENGINEER']);
         if (photo.uploadedById === actor.id || (!photo.uploadedById && photo.uploadedBy === actor.name)) throw new Error('You cannot approve your own evidence.');
         if (!['APPROVED', 'REJECTED'].includes(status) || note.trim().length < 5) throw new Error('Enter review comments of at least five characters.');
         if (!photo.dataUrl) throw new Error('Illustrative demo photos cannot be approved as site evidence.');
@@ -369,7 +396,14 @@ export const useStore = create<StoreState>()(
         set(s => ({ photos: s.photos.map(p => p.id === id ? { ...p, review, reviewHistory: [...(p.reviewHistory ?? []), review] } : p) }));
         get().logAction(`Photo evidence ${status.toLowerCase()}: ${id}`, get().projects.find(p => p.id === photo.projectId)?.name, photo.review?.status ?? 'PENDING', status);
       },
-      deletePhoto: (id) => set((s) => ({ photos: s.photos.filter((p) => p.id !== id) })),
+      deletePhoto: (id) => {
+        const photo = get().photos.find(p => p.id === id);
+        if (!photo) return;
+        const actor = assertProjectAccess(get(), photo.projectId, ['SUPERADMIN', 'CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        if (actor.role !== 'SUPERADMIN' && photo.uploadedById !== actor.id) throw new Error('Only the uploader or superadmin can delete evidence.');
+        set(s => ({ photos: s.photos.filter(p => p.id !== id) }));
+        get().logAction(`Deleted site photograph ${id}`, get().projects.find(p => p.id === photo.projectId)?.name);
+      },
 
       submitMilestone: (id, claimedValue) => {
         const m = get().milestones.find((x) => x.id === id);
@@ -914,7 +948,7 @@ export const useStore = create<StoreState>()(
 );
 
 export function assertProjectAccess(state: StoreState, projectId: string, roles?: Role[]) {
-  if (!state.currentUser || (roles && !roles.includes(state.currentUser.role)) || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(projectId)) throw new Error('This action requires an assigned, authorized user.');
+  if (!state.currentUser || (roles && state.currentUser.role !== 'SUPERADMIN' && !roles.includes(state.currentUser.role)) || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(projectId)) throw new Error('This action requires an assigned, authorized user.');
   return state.currentUser;
 }
 
@@ -924,7 +958,7 @@ function requireQualityProof(state: StoreState, projectId: string, inspectionId:
 
 function assertBillReviewer(state: StoreState, billId: string, roles: Role[]) {
   const bill = state.bills.find((item) => item.id === billId);
-  if (!state.currentUser || !roles.includes(state.currentUser.role) || !bill || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(bill.projectId)) {
+  if (!state.currentUser || (state.currentUser.role !== 'SUPERADMIN' && !roles.includes(state.currentUser.role)) || !bill || !computeProjectScope(state.currentUser, state.projects, state.contractors).projectIds.has(bill.projectId)) {
     throw new Error('This action requires an authorized reviewer for this project.');
   }
 }

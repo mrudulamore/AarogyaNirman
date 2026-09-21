@@ -38,8 +38,8 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
   const gaps = workOrderGaps(s, project.id);
   const readiness = handoverGaps(s, project.id);
   const user = s.currentUser;
-  const finance = ['COMMISSIONER', 'EXECUTIVE_ENGINEER'].includes(user?.role ?? '');
-  const editable = !!user && !['MINISTER', 'VIGILANCE_AUDIT', 'IT_ADMIN'].includes(user.role) && (!monthly || user.role === 'CONTRACTOR');
+  const finance = ['SUPERADMIN', 'COMMISSIONER', 'EXECUTIVE_ENGINEER'].includes(user?.role ?? '');
+  const editable = !!user && !['MINISTER', 'VIGILANCE_AUDIT', 'IT_ADMIN'].includes(user.role) && (!monthly || ['CONTRACTOR', 'SUPERADMIN'].includes(user.role));
   const options = (key: string): { id: string; label: string }[] | undefined => {
     if (key === 'documentType') return ['Drawing', 'Report', 'Contract', 'Other'].map(id => ({ id, label: id }));
     if (key === 'responsibleUserId') return s.users.filter(u => u.role === fields.responsibleRole && computeProjectScope(u, s.projects, s.contractors).projectIds.has(project.id)).map(u => ({ id: u.id, label: u.name }));
@@ -95,7 +95,7 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
     </fieldset></form></CardContent></Card>}
     {!records.length && <p className="p-4 text-sm text-slate-500">{uiText('No records submitted yet.')}</p>}
     {[...records].reverse().map(r => {
-      const reviewer = !!user && (['RECEIPT', 'PAYMENT', 'REVERSAL', 'RELEASE', 'VARIATION', 'EXTENSION', 'CONTRACT'].includes(r.kind) ? user.role === 'COMMISSIONER' : ['COMMISSIONER', 'EXECUTIVE_ENGINEER', 'CIVIL_SURGEON'].includes(user.role));
+      const reviewer = !!user && (user.role === 'SUPERADMIN' || (['RECEIPT', 'PAYMENT', 'REVERSAL', 'RELEASE', 'VARIATION', 'EXTENSION', 'CONTRACT'].includes(r.kind) ? user.role === 'COMMISSIONER' : ['COMMISSIONER', 'EXECUTIVE_ENGINEER', 'CIVIL_SURGEON'].includes(user.role)));
       const isCurrent = current.some(v => v.id === r.id);
       const drawingAlert = drawingWarning(s, project.id, r.fields.drawingId);
       const expiring = isCurrent && r.fields.expiryDate && r.fields.expiryDate <= renewalDate;

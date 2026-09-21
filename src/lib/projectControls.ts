@@ -38,7 +38,7 @@ const reviewers: Role[] = ['EXECUTIVE_ENGINEER', 'COMMISSIONER', 'CIVIL_SURGEON'
 const financeKinds: ControlKind[] = ['RECEIPT', 'PAYMENT', 'REVERSAL', 'RELEASE'];
 export function controlAccess(s: StoreState, projectId: string, roles?: Role[]) {
   const user = s.currentUser;
-  if (!user || roles && !roles.includes(user.role) || !computeProjectScope(user, s.projects, s.contractors).projectIds.has(projectId)) throw new Error('This action requires an assigned, authorized user.');
+  if (!user || (roles && user.role !== 'SUPERADMIN' && !roles.includes(user.role)) || !computeProjectScope(user, s.projects, s.contractors).projectIds.has(projectId)) throw new Error('This action requires an assigned, authorized user.');
   return user;
 }
 export function activeControls(s: Pick<StoreState, 'controlRecords'>, projectId: string) {
@@ -78,8 +78,8 @@ export function validateControl(s: StoreState, input: ControlInput, reviewing = 
   const user = controlAccess(s, input.projectId);
   if (!Object.hasOwn(CONTROL_FIELDS, input.kind)) throw new Error('Invalid record type.');
   if (['MINISTER', 'VIGILANCE_AUDIT', 'IT_ADMIN'].includes(user.role)) throw new Error('Read-only role.');
-  if (financeKinds.includes(input.kind) && !['COMMISSIONER', 'EXECUTIVE_ENGINEER'].includes(user.role)) throw new Error('Only finance reviewers can record transactions.');
-  if (!reviewing && input.kind === 'MONTHLY' && user.role !== 'CONTRACTOR') throw new Error('Only contractors can submit monthly reports.');
+  if (financeKinds.includes(input.kind) && !['SUPERADMIN', 'COMMISSIONER', 'EXECUTIVE_ENGINEER'].includes(user.role)) throw new Error('Only finance reviewers can record transactions.');
+  if (!reviewing && input.kind === 'MONTHLY' && !['CONTRACTOR', 'SUPERADMIN'].includes(user.role)) throw new Error('Only contractors can submit monthly reports.');
   if (!input.reference.trim() || !input.attachments.length) throw new Error('A reference and uploaded evidence are required.');
   if (input.attachments.length > 6 || new Set(input.attachments.map(a => a.id)).size !== input.attachments.length) throw new Error('Attach up to six distinct evidence files.');
   if (s.controlRecords.some(r => r.id !== (input as ControlRecord).id && r.projectId === input.projectId && r.kind === input.kind && r.reference.toLowerCase().trim() === input.reference.toLowerCase().trim())) throw new Error('This reference already exists.');

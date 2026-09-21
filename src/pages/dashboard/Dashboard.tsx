@@ -1,7 +1,6 @@
-import { PhotoLocationMap } from '../../components/common/PhotoLocationMap';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -21,11 +20,13 @@ import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlay
 import { formatCurrency, formatDate, formatDateTime, photoSrc, cn } from '../../lib/utils';
 import { tabsForRole } from '../../lib/projectTabAccess';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
-import { AccessManagement } from '../admin/AccessManagement';
-import { FieldHome } from '../field/FieldHome';
 import { SCHEMES, MAHARASHTRA_HIERARCHY } from '../../lib/constants';
 import type { Project, SitePhoto } from '../../types';
 import { Capacitor } from '@capacitor/core';
+
+const AccessManagement = lazy(() => import('../admin/AccessManagement').then(m => ({ default: m.AccessManagement })));
+const FieldHome = lazy(() => import('../field/FieldHome').then(m => ({ default: m.FieldHome })));
+const PhotoLocationMap = lazy(() => import('../../components/common/PhotoLocationMap').then(m => ({ default: m.PhotoLocationMap })));
 
 const SENIOR_ROLES = ['MINISTER', 'COMMISSIONER', 'REGIONAL_DIRECTOR'];
 const FIELD_ROLES = ['DEPUTY_ENGINEER', 'CONTRACTOR'];
@@ -100,6 +101,7 @@ export function Dashboard() {
   const [budgetFilter, setBudgetFilter] = useState<string[]>([]);
   const [schemeFilter, setSchemeFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey | null>(null);
+  const [photoMapOpen, setPhotoMapOpen] = useState(false);
   const filtersActive = zoneFilter.length > 0 || budgetFilter.length > 0 || schemeFilter.length > 0 || !!statusFilter;
 
   const focusDivision = zoneFilter.length === 1 ? zoneFilter[0] : null;
@@ -252,12 +254,12 @@ export function Dashboard() {
   // Superadmin's "dashboard" is the Access Management console — access/permission
   // governance is their job, not project monitoring.
   if (currentUser?.role === 'WORKFORCE') return <WorkforceHome />;
-  if (currentUser?.role === 'SUPERADMIN') return <AccessManagement />;
+  if (currentUser?.role === 'SUPERADMIN') return <Suspense fallback={<p role="status" className="p-4 text-sm text-slate-500">{uiText('Loading page…')}</p>}><AccessManagement /></Suspense>;
 
   // The native app is built for field roles: Deputy/Junior Engineers and Contractors land
   // straight on the Field app (capture, progress, defects) instead of the desktop-oriented
   // command-centre dashboard. The website itself is unaffected — same code, different shell.
-  if (currentUser?.role === 'CONTRACTOR' || (Capacitor.isNativePlatform() && currentUser && FIELD_ROLES.includes(currentUser.role))) return <FieldHome key={currentUser.id} />;
+  if (currentUser?.role === 'CONTRACTOR' || (Capacitor.isNativePlatform() && currentUser && FIELD_ROLES.includes(currentUser.role))) return <Suspense fallback={<p role="status" className="p-4 text-sm text-slate-500">{uiText('Loading page…')}</p>}><FieldHome key={currentUser.id} /></Suspense>;
 
   return (
     <div>
@@ -379,7 +381,7 @@ export function Dashboard() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader><CardTitle>{t('dashboard.mapTitle')}</CardTitle></CardHeader>
-          <CardContent><ProjectMap projects={projects} focusDivision={focusDivision} onDivisionSelect={selectZone} /><details className="mt-4"><summary className="cursor-pointer py-3 text-sm font-semibold text-blue-800">{uiText("Photo locations")}</summary><PhotoLocationMap photos={allPhotos.filter(photo => projects.some(project => project.id === photo.projectId))}/></details></CardContent>
+          <CardContent><ProjectMap projects={projects} focusDivision={focusDivision} onDivisionSelect={selectZone} /><details className="mt-4" onToggle={event => setPhotoMapOpen(event.currentTarget.open)}><summary className="cursor-pointer py-3 text-sm font-semibold text-blue-800">{uiText("Photo locations")}</summary>{photoMapOpen && <Suspense fallback={<p role="status" className="text-xs text-slate-500">{uiText('Loading map…')}</p>}><PhotoLocationMap photos={allPhotos.filter(photo => projects.some(project => project.id === photo.projectId))}/></Suspense>}</details></CardContent>
         </Card>
 
         <Card>

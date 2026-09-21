@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
 import { KpiCard } from '../../../../components/common/KpiCard';
 import { formatDate, cn } from '../../../../lib/utils';
+import { RegulatoryCertificateGrid } from '../../../../components/common/RegulatoryCertificateGrid';
 
 const SAFETY_TYPES: SafetyRecordType[] = ['INSPECTION', 'ACCIDENT', 'NEAR_MISS', 'VIOLATION', 'TRAINING'];
 const SEVERITIES: DefectSeverity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
@@ -100,6 +101,8 @@ export function SafetyCommissioningTab({ project }: { project: Project }) {
           ))}
         </div>
       </Card>
+
+      <RegulatoryCertificateGrid projectId={project.id}/>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent title={uiText("Log Safety Record")} description={uiText(project.name)}>

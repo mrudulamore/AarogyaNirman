@@ -119,7 +119,7 @@ export function TimelineTab({ project }: { project: Project }) {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activeStepPhotos.map((p) => (
-                  <GeoPhoto key={p.id} src={photoSrc(p)} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
+                  <GeoPhoto key={p.id} src={photoSrc(p)} mediaKey={p.mediaKey} lat={p.lat} lng={p.lng} timestamp={p.capturedAt} location={p.location} className="h-28" />
                 ))}
               </div>
             )}
