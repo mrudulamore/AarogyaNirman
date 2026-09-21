@@ -4,6 +4,7 @@ import en from './locales/en.json';
 import hi from './locales/hi.json';
 import mr from './locales/mr.json';
 import messages from './locales/interface.json';
+import landingMessages from './locales/landingMessages.json';
 
 const dictionaries: Record<string, Map<string, string>> = { hi: new Map(), mr: new Map() };
 const normalize = (value: string) => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
@@ -26,7 +27,7 @@ for (const language of ['hi', 'mr'] as const) {
     }
   }
 }
-for (const [source, translations] of Object.entries(messages)) {
+for (const [source, translations] of Object.entries({ ...messages, ...landingMessages })) {
   dictionaries.hi.set(normalize(source), translations[0]);
   dictionaries.mr.set(normalize(source), translations[1]);
 }

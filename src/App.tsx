@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 
 const AppShell = lazy(() => import('./components/layout/AppShell').then(m => ({ default: m.AppShell })));
 const PendingWorkPage = lazy(() => import('./components/common/PendingWork').then(m => ({ default: m.PendingWorkPage })));
-const Landing = lazy(() => import('./pages/landing/Landing').then(m => ({ default: m.Landing })));
+const LandingPage = lazy(() => import('./pages/landing/LandingPage').then(m => ({ default: m.LandingPage })));
 const Login = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const SelectRole = lazy(() => import('./pages/auth/SelectRole').then(m => ({ default: m.SelectRole })));
@@ -67,8 +67,9 @@ export default function App() {
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
       <PageErrorBoundary><Suspense fallback={<PageLoading />}><Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/landing" element={<Landing />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/landingpage" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/select-role" element={<SelectRole />} />

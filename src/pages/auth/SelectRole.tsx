@@ -1,7 +1,7 @@
 import { uiText, useUiLanguage } from '../../i18n/ui';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Building2, Landmark, HardHat, ClipboardList, Radar, Hammer, Stethoscope, Crown, MapPinned, KeyRound, Settings2, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
+import { Building2, Landmark, HardHat, ClipboardList, Radar, Hammer, Stethoscope, Crown, MapPinned, KeyRound, Settings2, ArrowLeft, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ROLE_LABELS, ROLE_DEPARTMENTS } from '../../lib/constants';
 import type { Role } from '../../types';
@@ -42,6 +42,10 @@ export function SelectRole() {
       </div>
 
       <div className="relative mx-auto max-w-5xl">
+        <Link to="/" className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-400">
+          <ArrowLeft size={20} aria-hidden="true" />
+          {t('common.back')}
+        </Link>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-govblue-500 to-navy-700 shadow-lg shadow-govblue-900/40">

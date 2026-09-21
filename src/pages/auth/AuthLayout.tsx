@@ -1,9 +1,10 @@
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useTranslation } from 'react-i18next';
-import { Landmark, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Landmark, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
-export function AuthLayout({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle: string }) {
+export function AuthLayout({ children, title, subtitle, backTo }: { children: React.ReactNode; title: string; subtitle: string; backTo?: string }) {
   useUiLanguage();
   const { t } = useTranslation();
   return (
@@ -36,6 +37,12 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
 
       <div className="auth-form-area flex w-full flex-1 items-center justify-center bg-slate-50 px-6 py-10 lg:w-1/2">
         <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-8">
+          {backTo && (
+            <Link to={backTo} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-navy-700 hover:bg-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-500">
+              <ArrowLeft size={20} aria-hidden="true" />
+              {t('common.back')}
+            </Link>
+          )}
           <div className="mb-4 flex items-center justify-between lg:justify-end">
             <div className="flex items-center gap-2 lg:hidden">
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-navy-800">

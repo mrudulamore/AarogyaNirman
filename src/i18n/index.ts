@@ -6,9 +6,9 @@ import hi from './locales/hi.json';
 import mr from './locales/mr.json';
 
 export const SUPPORTED_LANGUAGES = [
-  { code: 'en', label: 'English', nativeLabel: 'English' },
-  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी' },
   { code: 'mr', label: 'Marathi', nativeLabel: 'मराठी' },
+  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+  { code: 'en', label: 'English', nativeLabel: 'English' },
 ] as const;
 
 i18n
