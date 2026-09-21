@@ -1,37 +1,50 @@
-import { PendingWorkPage } from './components/common/PendingWork';
-import { useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { App as CapacitorApp } from '@capacitor/app';
+import { uiText } from './i18n/ui';
 import { Capacitor } from '@capacitor/core';
-import { AppShell } from './components/layout/AppShell';
 
-import { Landing } from './pages/landing/Landing';
-import { Login } from './pages/auth/Login';
-import { ForgotPassword } from './pages/auth/ForgotPassword';
-import { SelectRole } from './pages/auth/SelectRole';
+const AppShell = lazy(() => import('./components/layout/AppShell').then(m => ({ default: m.AppShell })));
+const PendingWorkPage = lazy(() => import('./components/common/PendingWork').then(m => ({ default: m.PendingWorkPage })));
+const Landing = lazy(() => import('./pages/landing/Landing').then(m => ({ default: m.Landing })));
+const Login = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const SelectRole = lazy(() => import('./pages/auth/SelectRole').then(m => ({ default: m.SelectRole })));
+const Dashboard = lazy(() => import('./pages/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const ProjectsList = lazy(() => import('./pages/projects/ProjectsList').then(m => ({ default: m.ProjectsList })));
+const ProjectDetail = lazy(() => import('./pages/projects/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
+const ContractorsList = lazy(() => import('./pages/contractors/ContractorsList').then(m => ({ default: m.ContractorsList })));
+const ContractorProfile = lazy(() => import('./pages/contractors/ContractorProfile').then(m => ({ default: m.ContractorProfile })));
+const TendersList = lazy(() => import('./pages/tenders/TendersList').then(m => ({ default: m.TendersList })));
+const WorkersList = lazy(() => import('./pages/workers/WorkersList').then(m => ({ default: m.WorkersList })));
+const StaffList = lazy(() => import('./pages/staff/StaffList').then(m => ({ default: m.StaffList })));
+const FinanceDashboard = lazy(() => import('./pages/finance/FinanceDashboard').then(m => ({ default: m.FinanceDashboard })));
+const QualityList = lazy(() => import('./pages/quality/QualityList').then(m => ({ default: m.QualityList })));
+const DefectsList = lazy(() => import('./pages/defects/DefectsList').then(m => ({ default: m.DefectsList })));
+const ApprovalsInbox = lazy(() => import('./pages/approvals/ApprovalsInbox').then(m => ({ default: m.ApprovalsInbox })));
+const DocumentsRepo = lazy(() => import('./pages/documents/DocumentsRepo').then(m => ({ default: m.DocumentsRepo })));
+const ReportsCenter = lazy(() => import('./pages/reports/ReportsCenter').then(m => ({ default: m.ReportsCenter })));
+const NotificationsCenter = lazy(() => import('./pages/notifications/NotificationsCenter').then(m => ({ default: m.NotificationsCenter })));
+const AuditLogPage = lazy(() => import('./pages/audit/AuditLogPage').then(m => ({ default: m.AuditLogPage })));
+const GlobalSearch = lazy(() => import('./pages/search/GlobalSearch').then(m => ({ default: m.GlobalSearch })));
+const ObserverDashboard = lazy(() => import('./pages/observer/ObserverDashboard').then(m => ({ default: m.ObserverDashboard })));
+const FieldHome = lazy(() => import('./pages/field/FieldHome').then(m => ({ default: m.FieldHome })));
+const AccessManagement = lazy(() => import('./pages/admin/AccessManagement').then(m => ({ default: m.AccessManagement })));
+const PortfolioTimeline = lazy(() => import('./pages/portfolio/PortfolioTimeline').then(m => ({ default: m.PortfolioTimeline })));
 
-import { Dashboard } from './pages/dashboard/Dashboard';
-import { ProjectsList } from './pages/projects/ProjectsList';
-import { ProjectDetail } from './pages/projects/ProjectDetail';
-import { ContractorsList } from './pages/contractors/ContractorsList';
-import { ContractorProfile } from './pages/contractors/ContractorProfile';
-import { TendersList } from './pages/tenders/TendersList';
-import { WorkersList } from './pages/workers/WorkersList';
-import { StaffList } from './pages/staff/StaffList';
-import { FinanceDashboard } from './pages/finance/FinanceDashboard';
-import { QualityList } from './pages/quality/QualityList';
-import { DefectsList } from './pages/defects/DefectsList';
-import { ApprovalsInbox } from './pages/approvals/ApprovalsInbox';
-import { DocumentsRepo } from './pages/documents/DocumentsRepo';
-import { ReportsCenter } from './pages/reports/ReportsCenter';
-import { NotificationsCenter } from './pages/notifications/NotificationsCenter';
-import { AuditLogPage } from './pages/audit/AuditLogPage';
-import { GlobalSearch } from './pages/search/GlobalSearch';
-import { ObserverDashboard } from './pages/observer/ObserverDashboard';
-import { FieldHome } from './pages/field/FieldHome';
-import { AccessManagement } from './pages/admin/AccessManagement';
-import { PortfolioTimeline } from './pages/portfolio/PortfolioTimeline';
+function PageLoading() {
+  return <div role="status" className="mx-auto max-w-5xl animate-pulse space-y-4 p-6" aria-label="Loading page"><div className="h-7 w-48 rounded-lg bg-blue-100"/><div className="h-32 rounded-2xl bg-slate-100"/><div className="h-32 rounded-2xl bg-slate-100"/></div>;
+}
+
+class PageErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return <div role="alert" className="mx-auto mt-20 max-w-md rounded-2xl border border-amber-200 bg-white p-6 text-center shadow-sm"><h1 className="text-lg font-semibold text-slate-900">{uiText('This page could not be opened')}</h1><p className="mt-2 text-sm text-slate-600">{uiText('Check your connection and try again. Your local drafts remain on this device.')}</p><button type="button" className="mt-5 min-h-11 rounded-xl bg-blue-700 px-5 text-sm font-semibold text-white" onClick={() => window.location.reload()}>{uiText('Reload page')}</button></div>;
+  }
+}
 
 /** In the native Android WebView shell, the hardware/gesture back button otherwise exits the app
  * outright instead of navigating within it — a jarring, easy-to-miss gap for a real app. Mirror
@@ -53,7 +66,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
-      <Routes>
+      <PageErrorBoundary><Suspense fallback={<PageLoading />}><Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -86,7 +99,7 @@ export default function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/landing" replace />} />
-      </Routes>
+      </Routes></Suspense></PageErrorBoundary>
     </BrowserRouter>
   );
 }

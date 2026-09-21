@@ -1,6 +1,6 @@
 import { reportGroupsForRole, reportNavigation } from '../../../lib/projectReportGroups';
 import { uiText, useUiLanguage } from '../../../i18n/ui';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, Calendar, Wallet, HardHat, UserRound, AlertOctagon, Edit3, ShieldAlert } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
@@ -14,30 +14,32 @@ import { formatCurrency, formatDate } from '../../../lib/utils';
 import { PHYSICAL_VS_FINANCIAL_THRESHOLD } from '../../../lib/constants';
 import { toast } from 'sonner';
 
-import { OverviewTab } from './tabs/OverviewTab';
-import { MinistryOverviewTab } from './tabs/MinistryOverviewTab';
-import { TimelineTab } from './tabs/TimelineTab';
-import { TenderTab } from './tabs/TenderTab';
-import { MilestonesTab } from './tabs/MilestonesTab';
-import { GovernanceTab } from './tabs/GovernanceTab';
-import { ProgressTab } from './tabs/ProgressTab';
-import { PhotosTab } from './tabs/PhotosTab';
-import { FieldEvidenceTab } from './tabs/FieldEvidenceTab';
-import { TeamTab } from './tabs/TeamTab';
-import { QualityTab, InspectionsTab } from './tabs/QualityInspectionsTab';
-import { DefectsTab } from './tabs/DefectsTab';
-import { WorkersTab } from './tabs/WorkersTab';
-import { ContractorTab } from './tabs/ContractorTab';
-import { BoqTab, MaterialsTab } from './tabs/BoqMaterialsTab';
-import { FinanceTab } from './tabs/FinanceTab';
-import { DocumentsTab } from './tabs/DocumentsTab';
-import { ApprovalsTab } from './tabs/ApprovalsTab';
-import { RisksTab } from './tabs/SafetyRisksTab';
-import { SafetyCommissioningTab } from './tabs/SafetyCommissioningTab';
-import { HandoverTab } from './tabs/CommissioningHandoverTab';
-import { AuditTab } from './tabs/AuditTab';
+const OverviewTab = lazy(() => import('./tabs/OverviewTab').then(m => ({ default: m.OverviewTab })));
+const MinistryOverviewTab = lazy(() => import('./tabs/MinistryOverviewTab').then(m => ({ default: m.MinistryOverviewTab })));
+const TimelineTab = lazy(() => import('./tabs/TimelineTab').then(m => ({ default: m.TimelineTab })));
+const TenderTab = lazy(() => import('./tabs/TenderTab').then(m => ({ default: m.TenderTab })));
+const MilestonesTab = lazy(() => import('./tabs/MilestonesTab').then(m => ({ default: m.MilestonesTab })));
+const GovernanceTab = lazy(() => import('./tabs/GovernanceTab').then(m => ({ default: m.GovernanceTab })));
+const ProgressTab = lazy(() => import('./tabs/ProgressTab').then(m => ({ default: m.ProgressTab })));
+const PhotosTab = lazy(() => import('./tabs/PhotosTab').then(m => ({ default: m.PhotosTab })));
+const FieldEvidenceTab = lazy(() => import('./tabs/FieldEvidenceTab').then(m => ({ default: m.FieldEvidenceTab })));
+const TeamTab = lazy(() => import('./tabs/TeamTab').then(m => ({ default: m.TeamTab })));
+const QualityTab = lazy(() => import('./tabs/QualityInspectionsTab').then(m => ({ default: m.QualityTab })));
+const InspectionsTab = lazy(() => import('./tabs/QualityInspectionsTab').then(m => ({ default: m.InspectionsTab })));
+const DefectsTab = lazy(() => import('./tabs/DefectsTab').then(m => ({ default: m.DefectsTab })));
+const WorkersTab = lazy(() => import('./tabs/WorkersTab').then(m => ({ default: m.WorkersTab })));
+const ContractorTab = lazy(() => import('./tabs/ContractorTab').then(m => ({ default: m.ContractorTab })));
+const BoqTab = lazy(() => import('./tabs/BoqMaterialsTab').then(m => ({ default: m.BoqTab })));
+const MaterialsTab = lazy(() => import('./tabs/BoqMaterialsTab').then(m => ({ default: m.MaterialsTab })));
+const FinanceTab = lazy(() => import('./tabs/FinanceTab').then(m => ({ default: m.FinanceTab })));
+const DocumentsTab = lazy(() => import('./tabs/DocumentsTab').then(m => ({ default: m.DocumentsTab })));
+const ApprovalsTab = lazy(() => import('./tabs/ApprovalsTab').then(m => ({ default: m.ApprovalsTab })));
+const RisksTab = lazy(() => import('./tabs/SafetyRisksTab').then(m => ({ default: m.RisksTab })));
+const SafetyCommissioningTab = lazy(() => import('./tabs/SafetyCommissioningTab').then(m => ({ default: m.SafetyCommissioningTab })));
+const HandoverTab = lazy(() => import('./tabs/CommissioningHandoverTab').then(m => ({ default: m.HandoverTab })));
+const AuditTab = lazy(() => import('./tabs/AuditTab').then(m => ({ default: m.AuditTab })));
 import { tabsForRole } from '../../../lib/projectTabAccess';
-import { ContractControlsTab } from './tabs/ContractControlsTab';
+const ContractControlsTab = lazy(() => import('./tabs/ContractControlsTab').then(m => ({ default: m.ContractControlsTab })));
 
 export function ProjectDetail() {
   useUiLanguage();
@@ -155,7 +157,7 @@ export function ProjectDetail() {
         </CardContent>
       </Card>
 
-      <Tabs value={tab} onValueChange={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })}>
+      <Suspense fallback={<div role="status" className="mt-5 animate-pulse space-y-3"><div className="h-12 rounded-xl bg-blue-100"/><div className="h-40 rounded-2xl bg-slate-100"/></div>}><Tabs value={tab} onValueChange={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })}>
         <ProjectNavigation tabs={navigationTabs} value={tab} onSelect={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })} />
 
         {activeReportGroup && activeReportGroup.sections.length > 1 && <section className="report-group-panel mt-4 rounded-2xl border border-blue-100 bg-white p-4 sm:p-5" aria-label={uiText(activeReportGroup.label)}>
@@ -188,7 +190,7 @@ export function ProjectDetail() {
         <TabsContent value="audit"><AuditTab project={project} /></TabsContent>
         <TabsContent value="controls"><ContractControlsTab key={project.id} project={project} /></TabsContent>
         <TabsContent value="monthly"><ContractControlsTab key={project.id + '-monthly'} project={project} monthly /></TabsContent>
-      </Tabs>
+      </Tabs></Suspense>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent title={uiText("Edit Project")} description={uiText(project.name)}>

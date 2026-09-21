@@ -2,6 +2,17 @@
 
 Scope: website and Capacitor Android application. Backend identity, APIs, central storage, server audit trails and payment integrations are intentionally deferred.
 
+## 21 September implementation status
+
+- Website routes and project tabs load on demand. The production entry bundle is now about 285 KiB, down from about 1,925 KiB before the route split. A bundle budget test guards this change.
+- Assigned engineers and project managers can confirm the actual hospital site coordinates; demo coordinates are clearly flagged and new capture remains `UNCERTAIN` until confirmation. Site polygons must be simple, within 2 km, and surround the confirmed marker.
+- Project photos show device-local media availability, missing originals, stamped copies, and central verification pending. A storage panel reports usage and can remove only unlinked captures older than seven days.
+- The field screen and storage panel count captured evidence awaiting central synchronization, and the field capture form records building, floor and activity. Site-coordinate confirmation requires an explicit checked acknowledgement.
+- A persistent workspace banner identifies demonstration records. Offline status, lazy route loading, a recoverable page error, text alternatives for photo maps, certificate details, and links from handover blockers to their resolution screens are present.
+- A GitHub Actions workflow template for build, lint, localization, role, control, geotagging, photo review, PDF and bundle budget checks is ready at `docs/frontend-ci-template.yml`. It needs a GitHub credential with workflow scope before it can be installed under `.github/workflows/`.
+
+Still dependent on external work: physical Android device testing, a server endpoint for real evidence synchronization and identity, production signing keys and official deployment approval. The device-local queue intentionally does not claim successful central upload.
+
 ## Completed in the current geotagging phase
 
 - Require a fresh high-accuracy GPS fix before the camera opens; gallery selection is unavailable for evidence capture.

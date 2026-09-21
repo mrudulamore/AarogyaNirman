@@ -38,7 +38,7 @@ export function DialogContent({ className, children, title, description, size = 
 export const DialogClose = DialogPrimitive.Close;
 export function DialogFooter({ children }: { children: React.ReactNode }) {
   useUiLanguage();
-  return <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">{children}</div>;
+  return <div className="sticky bottom-0 z-10 mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 bg-white/95 pb-2 pt-4 backdrop-blur-sm">{children}</div>;
 }
 
 // ---------------- Confirm dialog helper ----------------

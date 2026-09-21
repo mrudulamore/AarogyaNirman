@@ -1,8 +1,8 @@
 import { PhotoReview } from '../../../../components/common/PhotoReview';
 import { ROLE_LABELS } from '../../../../lib/constants';
-import { SiteCamera, type SiteCapture } from '../../../../components/common/SiteCamera';
+import type { SiteCapture } from '../../../../components/common/SiteCamera';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Camera, Trash2, ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import type { Project, PhotoType } from '../../../../types';
@@ -14,7 +14,11 @@ import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { photoSrc, formatDate, formatDateTime } from '../../../../lib/utils';
 import { isWithinGeofence } from '../../../../lib/geo';
 import { deleteEvidenceMedia, readEvidenceMedia } from '../../../../lib/evidenceMedia';
-import { SiteBoundaryEditor } from '../../../../components/common/SiteBoundaryEditor';
+import { EvidenceStorage } from '../../../../components/common/EvidenceStorage';
+import { EvidenceIntegrity } from '../../../../components/common/EvidenceIntegrity';
+
+const SiteCamera = lazy(() => import('../../../../components/common/SiteCamera').then(m => ({ default: m.SiteCamera })));
+const SiteBoundaryEditor = lazy(() => import('../../../../components/common/SiteBoundaryEditor').then(m => ({ default: m.SiteBoundaryEditor })));
 
 const STAGE_OPTIONS = ['Foundation', 'Structure', 'Roofing', 'MEP', 'Finishing', 'Medical Infrastructure'];
 const TYPES: PhotoType[] = ['BEFORE', 'PROGRESS', 'COMPLETION'];
@@ -27,6 +31,8 @@ export function PhotosTab({ project }: { project: Project }) {
   const currentUser = useStore((s) => s.currentUser);
 
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [boundaryOpen, setBoundaryOpen] = useState(false);
+  const [storageOpen, setStorageOpen] = useState(false);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
@@ -92,7 +98,8 @@ export function PhotosTab({ project }: { project: Project }) {
         return <button key={checkpoint.type} className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-left" onClick={()=>{setForm({...form,type:checkpoint.type});setUploadOpen(true);}}><p className="text-sm font-semibold text-blue-900">{uiText(checkpoint.label)}</p><p className="mt-1 text-xs text-slate-600">{count} {uiText('captured photos')}</p><p className="mt-2 text-xs text-blue-700">{uiText('Capture Photo')} →</p></button>;
       })}</div>
       <p className="text-xs text-slate-500">{uiText('Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity. Sample photos do not count as captured evidence.')}</p>
-      <details className="rounded-2xl border border-blue-100 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold text-blue-900">{uiText('Site boundary and geofence')}</summary><div className="mt-4"><SiteBoundaryEditor project={project}/></div></details>
+      <details className="rounded-2xl border border-blue-100 bg-white p-4" onToggle={event => setBoundaryOpen(event.currentTarget.open)}><summary className="cursor-pointer text-sm font-semibold text-blue-900">{uiText('Site boundary and geofence')}</summary>{boundaryOpen && <div className="mt-4"><Suspense fallback={<p role="status" className="text-xs text-slate-500">{uiText('Loading map…')}</p>}><SiteBoundaryEditor project={project}/></Suspense></div>}</details>
+      <details className="rounded-2xl border border-blue-100 bg-white p-4" onToggle={event => setStorageOpen(event.currentTarget.open)}><summary className="cursor-pointer text-sm font-semibold text-blue-900">{uiText('Evidence stored on this device')}</summary>{storageOpen && <div className="mt-4"><EvidenceStorage projectId={project.id}/></div>}</details>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Select value={stageFilter} onValueChange={setStageFilter}>
@@ -174,7 +181,7 @@ export function PhotosTab({ project }: { project: Project }) {
             {(['building', 'floor', 'activity'] as const).map(key => <label key={key} className="block text-xs">{uiText(key)}<input className="block min-h-11 w-full rounded border px-2" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>)}
             {capture && <GeoPhoto src={capture.dataUrl} mediaKey={capture.mediaKey} lat={capture.lat} lng={capture.lng} timestamp={capture.capturedAt} location={project.name} className="h-52" />}
             {capture && capture.geoFenceStatus !== 'INSIDE' && <label className="block text-xs font-medium text-amber-900">{uiText('Location exception reason')}<Textarea rows={2} value={locationReason} onChange={event => setLocationReason(event.target.value)} placeholder={uiText('Explain why evidence was captured outside or near the site boundary')}/></label>}
-            <SiteCamera key={`${project.id}-${uploadOpen}`} project={project} onCapture={acceptCapture} />
+            <Suspense fallback={<p role="status" className="text-xs text-slate-500">{uiText('Opening camera…')}</p>}><SiteCamera key={`${project.id}-${uploadOpen}`} project={project} onCapture={acceptCapture} /></Suspense>
           </div>
           <DialogFooter>
             <Button disabled={busy} variant="outline" onClick={() => { discardCapture(); setUploadOpen(false); }}>{uiText("Cancel")}</Button>
@@ -220,6 +227,7 @@ export function PhotosTab({ project }: { project: Project }) {
                 )}
               </div>
               {viewerPhoto.distanceFromSiteM !== undefined && <div><p className="text-slate-400">{uiText('Distance / accuracy')}</p><p className="font-medium text-slate-700">{viewerPhoto.distanceFromSiteM}m · ±{viewerPhoto.gpsAccuracyM}m</p></div>}
+              {viewerPhoto.geoFenceShape && <div><p className="text-slate-400">{uiText('Boundary at capture')}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.geoFenceShape)}{viewerPhoto.geoFenceBoundaryUpdatedAt ? ` · ${formatDateTime(viewerPhoto.geoFenceBoundaryUpdatedAt)}` : ''}</p></div>}
               {viewerPhoto.gpsCapturedAt && <div><p className="text-slate-400">{uiText('GPS fix time')}</p><p className="font-medium text-slate-700">{uiText(formatDateTime(viewerPhoto.gpsCapturedAt))}</p></div>}
               <div><p className="text-slate-400">{uiText("Device")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.deviceInfo ?? 'Not captured by device')}</p></div>
               <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Description")}</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
@@ -229,9 +237,10 @@ export function PhotosTab({ project }: { project: Project }) {
               </p>
             )}
             <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
+            <div className="mt-3"><EvidenceIntegrity mediaKey={viewerPhoto.mediaKey}/></div>
             <DialogFooter>
               {viewerPhoto.mediaKey && <Button variant="outline" size="sm" onClick={downloadStampedEvidence}>{uiText('Download geotagged copy')}</Button>}
-              <Button variant="destructive" size="sm" onClick={() => { setDeleteId(viewerPhoto.id); setViewerId(null); }}><Trash2 size={13} />{uiText(" Delete")}</Button>
+              {(currentUser?.role === 'SUPERADMIN' || viewerPhoto.uploadedById === currentUser?.id) && <Button variant="destructive" size="sm" onClick={() => { setDeleteId(viewerPhoto.id); setViewerId(null); }}><Trash2 size={13} />{uiText(" Delete")}</Button>}
             </DialogFooter>
           </DialogContent>
         )}
@@ -240,7 +249,7 @@ export function PhotosTab({ project }: { project: Project }) {
       <ConfirmDialog
         open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)} destructive
         title={uiText("Delete photograph?")} description={uiText("This will permanently remove the photograph and its metadata from the project record.")}
-        confirmLabel="Delete" onConfirm={() => { if (deleteId) { const photo = photos.find(item => item.id === deleteId); if (photo?.mediaKey) void deleteEvidenceMedia(photo.mediaKey); deletePhoto(deleteId); toast.success(uiText('Photo deleted.')); } }}
+        confirmLabel="Delete" onConfirm={() => { if (deleteId) { try { const photo = photos.find(item => item.id === deleteId); deletePhoto(deleteId); if (photo?.mediaKey) void deleteEvidenceMedia(photo.mediaKey); toast.success(uiText('Photo deleted.')); } catch (cause) { toast.error(uiText((cause as Error).message)); } } }}
       />
     </div>
   );

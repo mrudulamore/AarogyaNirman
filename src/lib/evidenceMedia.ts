@@ -2,6 +2,7 @@ const DB_NAME = 'aarogya-site-evidence';
 const STORE_NAME = 'images';
 
 type EvidenceVariant = 'original' | 'stamped';
+export type EvidenceStorageEntry = { mediaKey: string; originalBytes: number; stampedBytes: number; createdAt?: string };
 
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -87,6 +88,7 @@ export async function saveEvidenceMedia(dataUrl: string, metadata: {
       const transaction = db.transaction(STORE_NAME, 'readwrite');
       transaction.objectStore(STORE_NAME).put(original, `${key}:original`);
       transaction.objectStore(STORE_NAME).put(stamped, `${key}:stamped`);
+      transaction.objectStore(STORE_NAME).put({ createdAt: new Date().toISOString() }, `${key}:meta`);
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(new Error('The photo could not be saved. Check available device storage.'));
       transaction.onabort = () => reject(new Error('The photo could not be saved. Check available device storage.'));
@@ -113,8 +115,43 @@ export async function deleteEvidenceMedia(mediaKey: string): Promise<void> {
       const transaction = db.transaction(STORE_NAME, 'readwrite');
       transaction.objectStore(STORE_NAME).delete(`${mediaKey}:original`);
       transaction.objectStore(STORE_NAME).delete(`${mediaKey}:stamped`);
+      transaction.objectStore(STORE_NAME).delete(`${mediaKey}:meta`);
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(new Error('The local photo could not be removed.'));
     });
   } finally { db.close(); }
+}
+
+/** Reads sizes and keys without retaining photo blobs in memory after the cursor advances. */
+export async function listEvidenceMedia(): Promise<EvidenceStorageEntry[]> {
+  const db = await database();
+  try {
+    return await new Promise((resolve, reject) => {
+      const entries = new Map<string, EvidenceStorageEntry>();
+      const request = db.transaction(STORE_NAME).objectStore(STORE_NAME).openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) { resolve([...entries.values()]); return; }
+        const key = String(cursor.key);
+        const match = /^(.*):(original|stamped|meta)$/.exec(key);
+        if (match) {
+          const item = entries.get(match[1]) ?? { mediaKey: match[1], originalBytes: 0, stampedBytes: 0 };
+          if (match[2] === 'original' && cursor.value instanceof Blob) item.originalBytes = cursor.value.size;
+          if (match[2] === 'stamped' && cursor.value instanceof Blob) item.stampedBytes = cursor.value.size;
+          if (match[2] === 'meta') item.createdAt = cursor.value?.createdAt;
+          entries.set(match[1], item);
+        }
+        cursor.continue();
+      };
+      request.onerror = () => reject(new Error('Evidence storage could not be inspected.'));
+    });
+  } finally { db.close(); }
+}
+
+/** Keeps unsubmitted captures for seven days; legacy files without timestamps are never removed. */
+export async function cleanupUnlinkedEvidence(referencedKeys: Set<string>, now = Date.now()): Promise<number> {
+  const entries = await listEvidenceMedia();
+  const expired = entries.filter(item => !referencedKeys.has(item.mediaKey) && item.createdAt && now - Date.parse(item.createdAt) > 7 * 24 * 60 * 60 * 1000);
+  for (const item of expired) await deleteEvidenceMedia(item.mediaKey);
+  return expired.length;
 }

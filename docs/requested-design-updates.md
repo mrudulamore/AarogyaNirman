@@ -66,3 +66,5 @@ Push validation: browser checks at 390px and 1440px now pass for KYC submission/
 - Evidence maps show the site polygon or radius, GPS accuracy circles, numbered evidence markers, and direct links from a map marker to its corresponding photo.
 
 This is frontend/device-local enforcement. Server synchronization, signed evidence hashes, trusted server timestamps, audit immutability and administrator-managed authoritative boundaries remain backend work. Physical Android camera/GPS acceptance testing is still required.
+
+21 September follow-up: Added confirmation of real hospital coordinates, demo-coordinate warnings, safer polygon validation, local media inspection/cleanup, evidence integrity labels, offline feedback, certificate detail cards and linked handover blockers. Routes and project tabs now load on demand. Production entry JavaScript fell from roughly 1.97 MB to 0.29 MB; the bundle budget check passes locally. A signed debug APK was built and its phone-width browser flow passed; physical-device testing remains pending. The CI workflow is available as a template in `docs/frontend-ci-template.yml` until workflow-scoped GitHub access is available.

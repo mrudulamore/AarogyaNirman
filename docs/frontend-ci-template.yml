@@ -1,0 +1,25 @@
+name: Frontend checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node tests/bundleBudget.mjs
+      - run: npm run lint
+      - run: node tests/localization.mjs
+      - run: node tests/loginRoles.mjs
+      - run: node tests/projectControls.mjs
+      - run: node tests/geotagging.mjs
+      - run: node tests/photoReview.mjs
+      - run: node tests/pdfExport.mjs

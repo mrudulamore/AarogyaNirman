@@ -30,19 +30,30 @@ try {
   const state = useStore.getState();
   const project = state.projects.find(item => state.currentUser.assignedProjectIds.includes(item.id));
   const projectBoundary = boundary.map(point => ({ lat: point.lat - site.lat + project.siteLat, lng: point.lng - site.lng + project.siteLng }));
+  assert.throws(() => state.updateSiteBoundary(project.id, projectBoundary, 350), /Confirm the actual site location/);
+  state.updateSiteLocation(project.id, { lat: project.siteLat, lng: project.siteLng });
   state.updateSiteBoundary(project.id, projectBoundary, 350);
   const updatedProject = useStore.getState().projects.find(item => item.id === project.id);
   assert.deepEqual(updatedProject.siteBoundary, projectBoundary);
   assert.equal(updatedProject.geoFenceRadiusM, 350);
   assert.equal(updatedProject.boundaryUpdatedBy, state.currentUser.id);
-  assert.throws(() => state.updateSiteBoundary(project.id, projectBoundary.map(point => ({ ...point, lat: point.lat + 1 })), 350), /must contain/);
+  assert.throws(() => state.updateSiteBoundary(project.id, projectBoundary.map(point => ({ ...point, lat: point.lat + 1 })), 350), /simple boundary/);
+  const bowTie = [projectBoundary[0], projectBoundary[2], projectBoundary[1], projectBoundary[3]];
+  assert.throws(() => state.updateSiteBoundary(project.id, bowTie, 350), /simple boundary/);
+  assert.throws(() => state.updateSiteLocation(project.id, { lat: project.siteLat + 0.1, lng: project.siteLng }), /inside the saved boundary/);
   state.updateSiteBoundary(project.id, [], 500);
+  state.updateSiteLocation(project.id, { lat: project.siteLat + 0.01, lng: project.siteLng + 0.01 });
   const radiusProject = useStore.getState().projects.find(item => item.id === project.id);
   assert.equal(radiusProject.siteBoundary, undefined);
   assert.equal(radiusProject.geoFenceRadiusM, 500);
+  assert.ok(radiusProject.siteLocationConfirmedAt);
+  assert.equal(radiusProject.siteLocationConfirmedBy, state.currentUser.id);
+  assert.equal(assessProjectGeoFence({ lat: project.siteLat, lng: project.siteLng, gpsAccuracyM: 5 }, radiusProject).status, 'OUTSIDE');
+  assert.equal(assessProjectGeoFence({ lat: radiusProject.siteLat, lng: radiusProject.siteLng, gpsAccuracyM: 5 }, radiusProject).status, 'INSIDE');
 
   useStore.getState().login('CONTRACTOR');
   assert.throws(() => useStore.getState().updateSiteBoundary(project.id, projectBoundary, 350), /authorized user/);
+  assert.throws(() => useStore.getState().updateSiteLocation(project.id, { lat: project.siteLat, lng: project.siteLng }), /authorized user/);
   useStore.getState().login('DEPUTY_ENGINEER');
   const authorizedState = useStore.getState();
   const capturedAt = new Date().toISOString();
@@ -51,11 +62,17 @@ try {
     uploadedBy: 'ignored', uploadedByRole: 'CONTRACTOR', description: 'Accuracy-aware test evidence', seed: 0,
     dataUrl: 'data:image/jpeg;base64,/9j/2Q==', mediaKey: 'test-media', lat: site.lat, lng: site.lng,
     gpsAccuracyM: 12, gpsCapturedAt: capturedAt, gpsAgeMs: 800, geoFenceStatus: 'INSIDE', distanceFromSiteM: 0,
-    geoFenceRadiusM: 400, locationSource: 'CAPTURED', capturedAt, uploadedAt: capturedAt,
+    geoFenceRadiusM: 400, geoFenceShape: 'CIRCLE', locationSource: 'CAPTURED', capturedAt, uploadedAt: capturedAt,
   });
   assert.equal(saved.geoFenceStatus, 'INSIDE');
   assert.equal(saved.gpsAgeMs, 800);
   assert.equal(saved.mediaKey, 'test-media');
+  assert.equal(saved.geoFenceShape, 'CIRCLE');
   assert.equal(saved.uploadedById, authorizedState.currentUser.id);
+  useStore.getState().login('MINISTER');
+  assert.throws(() => useStore.getState().deletePhoto(saved.id), /authorized user/);
+  useStore.getState().login('SUPERADMIN');
+  useStore.getState().deletePhoto(saved.id);
+  assert.equal(useStore.getState().photos.some(photo => photo.id === saved.id), false);
   console.log('PASS circle/polygon geofences, boundary authorization and persisted evidence metadata');
 } finally { await server.close(); }

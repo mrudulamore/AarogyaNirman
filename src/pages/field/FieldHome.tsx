@@ -43,6 +43,7 @@ export function FieldHome() {
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
   const [photoType, setPhotoType] = useState<PhotoType>('PROGRESS');
+  const [photoPlace, setPhotoPlace] = useState({ building: '', floor: '', activity: '' });
   const [locationReason, setLocationReason] = useState('');
   const [capturedPhoto, setCapturedPhoto] = useState<SiteCapture | null>(null);
 
@@ -50,6 +51,7 @@ export function FieldHome() {
   const openDefects = defects.filter((d) => d.projectId === project?.id && d.status !== 'CLOSED');
   const projectWorkers = workers.filter((w) => w.projectId === project?.id);
   const recentSitePhotos = allPhotos.filter((p) => p.projectId === project?.id).sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1)).slice(0, 4);
+  const localEvidenceCount = allPhotos.filter(photo => photo.projectId === project?.id && photo.mediaKey).length;
 
   function closeAndToast(msg: string) { toast.success(uiText(msg)); setAction(null); setRemarks(''); setDefectDesc(''); }
 
@@ -65,21 +67,23 @@ export function FieldHome() {
 
   function uploadCapturedPhoto() {
     if (!capturedPhoto) return;
+    if (Object.values(photoPlace).some(value => !value.trim())) { toast.error(uiText('Enter building, floor and activity to group the photo.')); return; }
     if (capturedPhoto.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10) { toast.error(uiText('Explain why this outside or uncertain location should be submitted.')); return; }
     const now = new Date().toISOString();
     try { addPhoto({
       projectId: project.id, stage: 'Structure', type: photoType, date: now.slice(0, 10),
-      location: `${project.taluka}, ${project.district}`, uploadedBy: currentUser?.name ?? 'Field User',
-      uploadedByRole: currentUser?.role ?? 'DEPUTY_ENGINEER', description: 'Field-captured site photo',
+      location: `${photoPlace.building.trim()} / ${photoPlace.floor.trim()}`, building: photoPlace.building.trim(), floor: photoPlace.floor.trim(), activity: photoPlace.activity.trim(), uploadedBy: currentUser?.name ?? 'Field User',
+      uploadedByRole: currentUser?.role ?? 'DEPUTY_ENGINEER', description: photoPlace.activity.trim(),
       remarks: locationReason.trim() || undefined, seed: Math.floor(Math.random() * 99999), dataUrl: capturedPhoto.dataUrl, mediaKey: capturedPhoto.mediaKey,
       lat: capturedPhoto.lat, lng: capturedPhoto.lng, gpsAccuracyM: capturedPhoto.gpsAccuracyM,
       gpsCapturedAt: capturedPhoto.gpsCapturedAt, gpsAgeMs: capturedPhoto.gpsAgeMs, geoFenceStatus: capturedPhoto.geoFenceStatus,
       distanceFromSiteM: capturedPhoto.distanceFromSiteM, geoFenceRadiusM: capturedPhoto.geoFenceRadiusM,
+      geoFenceShape: capturedPhoto.geoFenceShape, geoFenceBoundaryUpdatedAt: capturedPhoto.geoFenceBoundaryUpdatedAt,
       locationSource: 'CAPTURED',
       deviceInfo: navigator.userAgent.slice(0, 60), capturedAt: capturedPhoto.capturedAt, uploadedAt: now,
     });
-    setCapturedPhoto(null); setLocationReason('');
-    closeAndToast('Photo captured and uploaded with geotag.');
+    setCapturedPhoto(null); setLocationReason(''); setPhotoPlace({ building: '', floor: '', activity: '' });
+    closeAndToast('Photo saved on this device with geotag. Central sync is pending.');
     } catch(e) { toast.error(uiText((e as Error).message)); }
   }
 
@@ -89,7 +93,7 @@ export function FieldHome() {
     <div className="field-workspace mx-auto max-w-3xl space-y-5 pb-10">
       <div>
         <p className="text-xs text-slate-400">{uiText(isContractor ? 'Contractor Dashboard' : 'Field Engineer App')}</p>
-        <Select disabled={submitting} value={projectId} onValueChange={id => { setProjectId(id); setProgressFiles([]); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setCapturedPhoto(null); setAction(null); }}>
+        <Select disabled={submitting} value={projectId} onValueChange={id => { discardCapturedPhoto(); setPhotoPlace({ building: '', floor: '', activity: '' }); setProjectId(id); setProgressFiles([]); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setAction(null); }}>
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>{myProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
         </Select>
@@ -106,12 +110,13 @@ export function FieldHome() {
           </div>
         </CardContent>
       </Card>
+      {localEvidenceCount > 0 && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">{localEvidenceCount} {uiText('captured photos await central synchronization. Originals remain on this device.')}</p>}
 
       <div className="field-shortcuts grid grid-cols-2 gap-3">
         <ActionButton icon={ClipboardList} label={uiText("Submit Progress")} onClick={() => { setProgressFiles([]); setProgressPct(project.reportedProgress); setAction('progress'); }} />
         {isContractor ? <>
           <ActionButton icon={ClipboardList} label={uiText('Daily site diary')} onClick={() => navigate(`/projects/${project.id}?tab=progress`)} />
-          <ActionButton icon={CameraIcon} label={uiText('Upload Site Photo')} onClick={() => setAction('photo')} />
+          <ActionButton icon={CameraIcon} label={uiText('Capture Site Photo')} onClick={() => setAction('photo')} />
           <ActionButton icon={AlertTriangle} label={uiText('Manage Defects')} onClick={() => navigate(`/projects/${project.id}?tab=defects`)} tone="amber" />
           <ActionButton icon={QrCode} label={uiText('Mark Attendance')} onClick={() => setAction('attendance')} />
           <ActionButton icon={ClipboardList} label={uiText('Track Milestones')} onClick={() => navigate(`/projects/${project.id}?tab=milestones`)} />
@@ -121,7 +126,7 @@ export function FieldHome() {
           <ActionButton icon={ClipboardList} label={uiText('Add Monthly Report')} onClick={() => navigate(`/projects/${project.id}?tab=monthly`)} />
           <ActionButton icon={ClipboardList} label={uiText('Submit Documents')} onClick={() => navigate(`/projects/${project.id}?tab=controls&kind=DOCUMENT`)} />
         </> : <>
-        <ActionButton icon={CameraIcon} label={uiText("Upload Site Photo")} onClick={() => setAction('photo')} />
+        <ActionButton icon={CameraIcon} label={uiText("Capture Site Photo")} onClick={() => setAction('photo')} />
         <ActionButton icon={AlertTriangle} label={uiText("Report Defect")} onClick={() => setAction('defect')} tone="amber" />
         <ActionButton icon={ShieldCheck} label={uiText("Start Inspection")} onClick={() => navigate(`/projects/${project.id}?tab=inspections`)} />
         <ActionButton icon={QrCode} label={uiText("Mark Attendance")} onClick={() => setAction('attendance')} />
@@ -183,7 +188,7 @@ export function FieldHome() {
       </Dialog>
 
       <Dialog open={action === 'photo'} onOpenChange={(v) => { if (!v) { setAction(null); discardCapturedPhoto(); } }}>
-        <DialogContent title={uiText("Upload Site Photo")}>
+        <DialogContent title={uiText("Capture Site Photo")}>
           <div className="space-y-3">
             {capturedPhoto ? (
               <>
@@ -201,11 +206,13 @@ export function FieldHome() {
                 {capturedPhoto.geoFenceStatus !== 'INSIDE' && <label className="block text-xs font-medium text-amber-900">{uiText('Location exception reason')}<Textarea rows={2} value={locationReason} onChange={event => setLocationReason(event.target.value)} placeholder={uiText('Explain why evidence was captured outside or near the site boundary')}/></label>}
               </>
             ) : null}
-            <label className="block text-sm">{uiText('Photo checkpoint')}<select className="mt-1 min-h-11 w-full rounded-lg border px-3" value={photoType} onChange={e=>setPhotoType(e.target.value as PhotoType)}><option value="BEFORE">{uiText('Start / baseline')}</option><option value="PROGRESS">{uiText('Midpoint / progress')}</option><option value="COMPLETION">{uiText('Completion')}</option></select></label><SiteCamera project={project} onCapture={acceptCapturedPhoto} />
+            <label className="block text-sm">{uiText('Photo checkpoint')}<select className="mt-1 min-h-11 w-full rounded-lg border px-3" value={photoType} onChange={e=>setPhotoType(e.target.value as PhotoType)}><option value="BEFORE">{uiText('Start / baseline')}</option><option value="PROGRESS">{uiText('Midpoint / progress')}</option><option value="COMPLETION">{uiText('Completion')}</option></select></label>
+            <div className="grid gap-2 sm:grid-cols-3">{(['building', 'floor', 'activity'] as const).map(key => <label key={key} className="block text-xs font-medium text-slate-700">{uiText(key)}<input className="mt-1 min-h-11 w-full rounded-lg border px-3" value={photoPlace[key]} onChange={event => setPhotoPlace(current => ({ ...current, [key]: event.target.value }))}/></label>)}</div>
+            <SiteCamera project={project} onCapture={acceptCapturedPhoto} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setAction(null); discardCapturedPhoto(); }}>{uiText("Cancel")}</Button>
-            <Button onClick={uploadCapturedPhoto} disabled={!capturedPhoto || (capturedPhoto.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10)}>{uiText("Submit evidence")}</Button>
+            <Button onClick={uploadCapturedPhoto} disabled={!capturedPhoto || Object.values(photoPlace).some(value => !value.trim()) || (capturedPhoto.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10)}>{uiText("Submit evidence")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

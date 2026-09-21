@@ -25,12 +25,14 @@ export interface SiteCapture {
   geoFenceStatus: GeoFenceStatus;
   distanceFromSiteM: number;
   geoFenceRadiusM: number;
+  geoFenceShape: 'POLYGON' | 'CIRCLE';
+  geoFenceBoundaryUpdatedAt?: string;
 }
 
 /** Camera-only evidence capture. A fresh GPS fix is acquired before the shutter is enabled;
  * the original and a separately stamped export are stored outside the main app state. */
 export function SiteCamera({ project, onCapture }: {
-  project: { name: string; siteLat: number; siteLng: number; siteBoundary?: { lat: number; lng: number }[]; geoFenceRadiusM?: number };
+  project: { name: string; siteLat: number; siteLng: number; siteBoundary?: { lat: number; lng: number }[]; geoFenceRadiusM?: number; siteLocationConfirmedAt?: string; boundaryUpdatedAt?: string };
   onCapture: (photo: SiteCapture) => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -53,7 +55,8 @@ export function SiteCamera({ project, onCapture }: {
     const next = { lat: position.coords.latitude, lng: position.coords.longitude, accuracyM: Math.ceil(position.coords.accuracy), capturedAt: new Date(timestampMs).toISOString(), timestampMs };
     if (alive.current) {
       setFix(next);
-      setAssessment(assessProjectGeoFence(next, project));
+      const result = assessProjectGeoFence(next, project);
+      setAssessment(project.siteLocationConfirmedAt ? result : { ...result, status: 'UNCERTAIN' });
     }
     return next;
   }
@@ -68,10 +71,11 @@ export function SiteCamera({ project, onCapture }: {
   async function persistCapture(dataUrl: string, capturedAt: string, locationFix: LocationFix) {
     const gpsAgeMs = Math.max(0, Date.parse(capturedAt) - locationFix.timestampMs);
     if (gpsAgeMs > MAX_FIX_AGE_MS) throw new Error('The GPS fix became stale. Refresh location and retake the photo.');
-    const result = assessProjectGeoFence(locationFix, project);
+    const calculated = assessProjectGeoFence(locationFix, project);
+    const result = project.siteLocationConfirmedAt ? calculated : { ...calculated, status: 'UNCERTAIN' as const };
     const stored = await saveEvidenceMedia(dataUrl, { projectName: project.name, lat: locationFix.lat, lng: locationFix.lng, accuracyM: locationFix.accuracyM, capturedAt, status: result.status });
     if (!alive.current) return;
-    onCapture({ dataUrl: stored.thumbnailDataUrl, mediaKey: stored.mediaKey, lat: locationFix.lat, lng: locationFix.lng, gpsAccuracyM: locationFix.accuracyM, gpsCapturedAt: locationFix.capturedAt, gpsAgeMs, capturedAt, geoFenceStatus: result.status, distanceFromSiteM: result.distanceM, geoFenceRadiusM: result.radiusM });
+    onCapture({ dataUrl: stored.thumbnailDataUrl, mediaKey: stored.mediaKey, lat: locationFix.lat, lng: locationFix.lng, gpsAccuracyM: locationFix.accuracyM, gpsCapturedAt: locationFix.capturedAt, gpsAgeMs, capturedAt, geoFenceStatus: result.status, distanceFromSiteM: result.distanceM, geoFenceRadiusM: result.radiusM, geoFenceShape: project.siteBoundary?.length ? 'POLYGON' : 'CIRCLE', geoFenceBoundaryUpdatedAt: project.boundaryUpdatedAt });
     stop();
   }
 
@@ -113,6 +117,7 @@ export function SiteCamera({ project, onCapture }: {
   const statusTone = assessment?.status === 'INSIDE' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : assessment?.status === 'OUTSIDE' ? 'border-red-200 bg-red-50 text-red-800' : 'border-amber-200 bg-amber-50 text-amber-800';
   return <div className="site-camera space-y-3 rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
     <div className="flex items-start gap-3"><LocateFixed className="mt-0.5 shrink-0 text-blue-700" size={20}/><div><p className="text-sm font-semibold text-blue-950">{uiText('Capture-time location')}</p><p className="text-xs leading-relaxed text-slate-600">{uiText('Acquire a fresh GPS fix before taking a new site photo. Gallery uploads are unavailable.')}</p></div></div>
+    {!project.siteLocationConfirmedAt && <p role="status" className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">{uiText('This project uses a demonstration site coordinate. Confirm the actual site marker before field use.')}</p>}
     {fix && assessment && <div role="status" className={`rounded-xl border p-3 text-xs ${statusTone}`}><p className="font-semibold">{uiText(assessment.status === 'INSIDE' ? 'Inside site boundary' : assessment.status === 'OUTSIDE' ? 'Outside site boundary' : 'Location uncertain')}</p><p className="mt-1">{assessment.distanceM}m {uiText('from registered site')} · ±{fix.accuracyM}m {uiText('GPS accuracy')}</p><p className="mt-1 font-mono text-[11px]">{fix.lat.toFixed(6)}, {fix.lng.toFixed(6)}</p></div>}
     {live && <video ref={video} autoPlay playsInline muted className="max-h-72 w-full rounded-xl bg-slate-950" />}
     {error && <p role="alert" className="text-sm text-red-700">{uiText(error)}</p>}

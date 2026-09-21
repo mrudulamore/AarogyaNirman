@@ -115,6 +115,8 @@ export interface Project {
   geoFenceRadiusM?: number;
   boundaryUpdatedAt?: string;
   boundaryUpdatedBy?: string;
+  siteLocationConfirmedAt?: string;
+  siteLocationConfirmedBy?: string;
   description: string;
   qualityScore: number;
   imageSeed: number; // for deterministic placeholder image variety
@@ -211,10 +213,12 @@ export interface SitePhoto {
   geoFenceStatus?: GeoFenceStatus;
   distanceFromSiteM?: number;
   geoFenceRadiusM?: number;
+  geoFenceShape?: 'POLYGON' | 'CIRCLE';
+  geoFenceBoundaryUpdatedAt?: string;
   locationSource: LocationSource;
   deviceInfo?: string;
   capturedAt: string;         // ISO datetime — when the photo was taken
-  uploadedAt: string;         // ISO datetime — when it reached the server (may lag capture, e.g. offline sync)
+  uploadedAt: string;         // ISO datetime — when the local evidence record was saved; server sync is not configured
   boqItemId?: string;
   remarks?: string;
 }

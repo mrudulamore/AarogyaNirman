@@ -2,7 +2,7 @@ import { PhotoLocationMap } from '../../../../components/common/PhotoLocationMap
 import { PhotoReview } from '../../../../components/common/PhotoReview';
 import { ROLE_LABELS } from '../../../../lib/constants';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { MapPin, ShieldAlert, ShieldCheck } from 'lucide-react';
 import type { Project, SitePhoto } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, StatusBadge, EmptyState, Button } from '..
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
+import { EvidenceIntegrity } from '../../../../components/common/EvidenceIntegrity';
 import { photoSrc, formatDateTime } from '../../../../lib/utils';
 import { assessProjectGeoFence, distanceMeters, isWithinGeofence, GEOFENCE_RADIUS_M } from '../../../../lib/geo';
 
@@ -23,11 +24,11 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
   const site = { lat: project.siteLat, lng: project.siteLng };
   const viewerPhoto = photos.find((p) => p.id === viewerId);
 
-  const rows = useMemo(() => photos.map((p) => {
+  const rows = photos.map((p) => {
     const assessment = assessProjectGeoFence(p, project);
     const status = p.geoFenceStatus ?? assessment.status;
     return { photo: p, distanceM: p.distanceFromSiteM ?? Math.round(distanceMeters(p, site)), status, within: status === 'INSIDE' };
-  }).sort((a, b) => (a.photo.capturedAt.localeCompare(b.photo.capturedAt) || a.photo.id.localeCompare(b.photo.id))), [photos, site]);
+  }).sort((a, b) => (a.photo.capturedAt.localeCompare(b.photo.capturedAt) || a.photo.id.localeCompare(b.photo.id)));
 
   const filtered = rows.filter((r) => {
     if (filter === 'ALL') return true;
@@ -45,7 +46,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label={uiText("Total Evidence Items")} value={rows.length} icon={MapPin} />
         <StatCard label={uiText("Flagged for Review")} value={flaggedCount} icon={ShieldAlert} tone={flaggedCount > 0 ? 'red' : undefined} />
-        <StatCard label={uiText("Geo-Fence Radius")} value={`${GEOFENCE_RADIUS_M} m`} icon={ShieldCheck} />
+        <StatCard label={uiText(project.siteBoundary?.length ? 'Site polygon' : 'Geo-Fence Radius')} value={project.siteBoundary?.length ? `${project.siteBoundary.length} ${uiText('boundary points')}` : `${project.geoFenceRadiusM ?? GEOFENCE_RADIUS_M} m`} icon={ShieldCheck} />
       </div>
 
       <Card className="p-4"><PhotoLocationMap photos={filtered.map(r => r.photo)} projectSite={{lat: project.siteLat, lng: project.siteLng, radiusM: project.geoFenceRadiusM ?? GEOFENCE_RADIUS_M, boundary: project.siteBoundary}} onSelectPhoto={setViewerId}/></Card>
@@ -54,7 +55,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
           <CardTitle>{uiText("Evidence distance overview")}</CardTitle>
         </CardHeader>
         <div className="p-4">
-          <EvidenceRadar rows={filtered} />
+          <EvidenceRadar rows={filtered} radiusM={project.geoFenceRadiusM ?? GEOFENCE_RADIUS_M} polygon={!!project.siteBoundary?.length} />
         </div>
       </Card>
 
@@ -72,9 +73,9 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
       </div>
 
       {filtered.length === 0 ? <EmptyState icon={<MapPin size={32} />} title={uiText("No field evidence matches this filter")} /> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map(({ photo, distanceM, within }, index) => <button key={photo.id} onClick={() => setViewerId(photo.id)} className="evidence-card overflow-hidden rounded-3xl border border-blue-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+        {filtered.map(({ photo, distanceM, within, status }, index) => <button key={photo.id} onClick={() => setViewerId(photo.id)} className="evidence-card overflow-hidden rounded-3xl border border-blue-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
           <p className="px-5 py-3 text-sm font-semibold text-blue-800">{uiText("Photo")} {index + 1} / {filtered.length}</p><GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-64 rounded-none" />
-          <div className="space-y-3 p-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-slate-900">{uiText(photo.stage)}</h3><StatusBadge status={photo.locationSource === 'MANUAL' || !within ? 'PENDING' : 'APPROVED'} label={uiText(photo.locationSource === 'MANUAL' ? 'Location unverified' : within ? 'Within site boundary' : 'Outside site boundary')} /></div>
+          <div className="space-y-3 p-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-slate-900">{uiText(photo.stage)}</h3><StatusBadge status={photo.locationSource === 'MANUAL' || status === 'UNCERTAIN' ? 'PENDING' : within ? 'APPROVED' : 'REJECTED'} label={uiText(photo.locationSource === 'MANUAL' ? 'Location unverified' : status === 'UNCERTAIN' ? 'Location uncertain' : within ? 'Within site boundary' : 'Outside site boundary')} /></div>
           <StatusBadge status={photo.review?.status ?? 'PENDING'} label={uiText(photo.review?.status === 'APPROVED' ? 'Approved by reviewer' : photo.review?.status === 'REJECTED' ? 'Rejected by reviewer' : 'Awaiting review')} /><p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{photo.description}</p>
           <div className="grid grid-cols-2 gap-3 rounded-xl bg-blue-50/70 p-3 text-xs"><div><p className="text-slate-500">{uiText('Location source')}</p><p className="mt-1 font-medium text-slate-800">{uiText(photo.locationSource === 'CAPTURED' ? 'Device GPS' : 'Manual entry')}</p></div><div><p className="text-slate-500">{uiText('Distance from site')}</p><p className="mt-1 font-medium text-slate-800">{distanceM} m</p></div></div>
           <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{photo.uploadedBy}<span className="block mt-1">{uiText(ROLE_LABELS[photo.uploadedByRole])}</span></span><span>{photo.gpsAccuracyM === undefined ? uiText('Accuracy unavailable') : `±${photo.gpsAccuracyM} m`}</span></div></div>
@@ -115,6 +116,7 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
               {viewerPhoto.remarks && <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Remarks")}</p><p className="font-medium text-slate-700">{viewerPhoto.remarks}</p></div>}
             </div>
             <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
+            <div className="mt-3"><EvidenceIntegrity mediaKey={viewerPhoto.mediaKey}/></div>
           </DialogContent>
         )}
       </Dialog>
@@ -123,14 +125,14 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
 }
 
 /** Quantitative distances, without invented geographic bearings. */
-function EvidenceRadar({ rows }: { rows: { photo: SitePhoto; distanceM: number; within: boolean }[] }) {
+function EvidenceRadar({ rows, radiusM, polygon }: { rows: { photo: SitePhoto; distanceM: number; within: boolean }[]; radiusM: number; polygon: boolean }) {
   useUiLanguage();
-  const maximum = Math.max(GEOFENCE_RADIUS_M * 2, ...rows.map(r => r.distanceM));
+  const maximum = Math.max(radiusM * 2, ...rows.map(r => r.distanceM));
   return <div className="space-y-4">
-    <p className="text-xs text-slate-500">{uiText('Distance from the registered site. The marker indicates the site boundary.')} ({GEOFENCE_RADIUS_M} m)</p>
+    <p className="text-xs text-slate-500">{uiText(polygon ? 'Distance from the registered site. Polygon classification is shown on each photo.' : 'Distance from the registered site. The marker indicates the site boundary.')} {!polygon && `(${radiusM} m)`}</p>
     <div className="max-h-72 space-y-4 overflow-y-auto pr-2">{rows.map(({photo,distanceM,within}) => <div key={photo.id}>
       <div className="mb-1 flex justify-between gap-2 text-xs"><span className="truncate text-slate-600">{uiText(photo.stage)} · {photo.uploadedBy}</span><span className="shrink-0 font-semibold text-slate-800">{distanceM} m</span></div>
-      <div className="relative h-2 rounded-full bg-slate-100"><div className={`h-2 rounded-full ${photo.locationSource === 'MANUAL' ? 'bg-amber-400' : within ? 'bg-blue-500' : 'bg-red-400'}`} style={{width: `${Math.max(1,distanceM / maximum * 100)}%`}}/><span className="absolute -top-1 h-4 w-0.5 bg-slate-500" style={{left:`${GEOFENCE_RADIUS_M / maximum * 100}%`}}/></div>
+      <div className="relative h-2 rounded-full bg-slate-100"><div className={`h-2 rounded-full ${photo.locationSource === 'MANUAL' ? 'bg-amber-400' : within ? 'bg-blue-500' : 'bg-red-400'}`} style={{width: `${Math.max(1,distanceM / maximum * 100)}%`}}/>{!polygon && <span className="absolute -top-1 h-4 w-0.5 bg-slate-500" style={{left:`${radiusM / maximum * 100}%`}}/>}</div>
     </div>)}</div>
     <p className="text-xs text-slate-500">{uiText('Blue: device GPS within boundary · Red: outside boundary · Amber: manually entered, unverified')}</p>
   </div>;

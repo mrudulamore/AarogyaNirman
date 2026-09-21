@@ -69,6 +69,21 @@ export function pointInPolygon(point: { lat: number; lng: number }, polygon: { l
   return inside;
 }
 
+/** Prevents bow-tie site polygons whose inside/outside result would be ambiguous. */
+export function polygonSelfIntersects(points: { lat: number; lng: number }[]): boolean {
+  const cross = (a: {lat:number;lng:number}, b: {lat:number;lng:number}, c: {lat:number;lng:number}) => (b.lng - a.lng) * (c.lat - a.lat) - (b.lat - a.lat) * (c.lng - a.lng);
+  const overlaps = (a: {lat:number;lng:number}, b: {lat:number;lng:number}, c: {lat:number;lng:number}, d: {lat:number;lng:number}) => {
+    const abC = cross(a,b,c), abD = cross(a,b,d), cdA = cross(c,d,a), cdB = cross(c,d,b);
+    if (Math.abs(abC) < 1e-12 || Math.abs(abD) < 1e-12 || Math.abs(cdA) < 1e-12 || Math.abs(cdB) < 1e-12) return false;
+    return (abC > 0) !== (abD > 0) && (cdA > 0) !== (cdB > 0);
+  };
+  for (let i = 0; i < points.length; i++) for (let j = i + 2; j < points.length; j++) {
+    if (i === 0 && j === points.length - 1) continue;
+    if (overlaps(points[i], points[(i + 1) % points.length], points[j], points[(j + 1) % points.length])) return true;
+  }
+  return false;
+}
+
 function pointToSegmentMeters(point: { lat: number; lng: number }, a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const latScale = 111_000;
   const lngScale = 111_000 * Math.cos(point.lat * Math.PI / 180);
