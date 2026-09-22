@@ -16,5 +16,5 @@ export function constructionImageForSource(src: string) {
 export function constructionImageFallback(seed: number, stage?: string) {
   const matching = images.filter(image => image.stage.toLowerCase() === stage?.toLowerCase());
   const pool = matching.length ? matching : images;
-  return pool.length ? pool[Math.abs(Math.trunc(seed)) % pool.length].path : '/site-photos/hospital-construction.jpg';
+  return pool.length ? pool[Math.abs(Math.trunc(seed)) % pool.length].path : '/site-photos/india/site-02.jpg';
 }

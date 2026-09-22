@@ -35,7 +35,7 @@ export function QualityTab({ project }: { project: Project }) {
 
   const byCategory = INSPECTION_CATEGORIES.map((cat) => {
     const catInspections = completed.filter((i) => i.category === cat);
-    const latest = catInspections[0];
+    const latest = [...catInspections].sort((a, b) => (b.completedDate || b.scheduledDate).localeCompare(a.completedDate || a.scheduledDate))[0];
     return { cat, latest, count: catInspections.length };
   }).filter((x) => x.count > 0);
 
