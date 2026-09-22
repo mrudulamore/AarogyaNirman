@@ -145,6 +145,7 @@ export function PhotosTab({ project }: { project: Project }) {
                 <div className="relative">
                   <img alt={ph.description} src={photoSrc(ph)} className="h-52 w-full object-cover transition-transform group-hover:scale-105" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
+                  {!ph.dataUrl && !ph.mediaKey && <span className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1 text-[10px] text-white">{uiText('Sample construction photo')}</span>}
                 </div>
                 <div className="p-1.5">
                   <p className="text-[10.5px] text-slate-500">{uiText(formatDate(ph.date))}</p>
