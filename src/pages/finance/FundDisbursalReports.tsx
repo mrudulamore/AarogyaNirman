@@ -52,15 +52,15 @@ export function FundDisbursalReports({ projects, scopeLabel }: { projects: Proje
       {!valid ? <p role="alert" className="text-sm text-red-600">{uiText("Choose a valid date up to today.")}</p> : <>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label={uiText("Government funds received")} value={formatCurrency(government.total)} sub={uiMessage('{{0}} installments received by {{1}}', [government.received.length, asOf])} />
-          <KpiCard label={uiText("Contractors paid")} value={formatCurrency(contractor.total)} sub={uiMessage('{{0}} paid bills with payment dates', [contractor.paid.length])} />
+          <KpiCard label={uiText("Contractors paid")} value={formatCurrency(contractor.total)} sub={uiMessage('{{0}} verified payment transactions', [contractor.paid.length])} />
           <KpiCard label={uiText("Government releases planned")} value={formatCurrency(government.planned)} sub={uiMessage('{{0}} installments outstanding', [government.pending.length])} />
           <KpiCard label={uiText("Contractor bills pending")} value={formatCurrency(contractor.pending.reduce((sum, b) => sum + b.netPayable, 0))} sub={uiText('Current workflow; payment dates not scheduled')} />
         </div>
         <div className="flex flex-wrap gap-2" aria-label={uiText("Fund report type")}>
           {(Object.keys(titles) as ReportKind[]).map((key) => <Button key={key} variant={kind === key ? 'primary' : 'outline'} aria-pressed={kind === key} onClick={() => setKind(key)}>{uiText(titles[key])}</Button>)}
         </div>
-        {kind === 'contractor' && <p className="text-xs text-slate-500">{uiText("Each paid bill is one recorded payment. Bank transfer installments and transaction references are not recorded in the current billing data. Undated payments are excluded from date-based totals.")}</p>}
-        {kind === 'roadmap' && <p className="text-xs text-slate-500">{uiText("Government targets are indicative and subject to approval. Cumulative funds include receipts through the selected date plus scheduled releases in date order. Contractor workflow statuses are current, not a historical snapshot; future payment dates are not yet recorded.")}</p>}
+        {kind === 'contractor' && <p className="text-xs text-slate-500">{uiText("Payments are dated verified transactions. Partial payments are counted separately; reversed payments are excluded.")}</p>}
+        {kind === 'roadmap' && <p className="text-xs text-slate-500">{uiText("Roadmap dates are planned targets, not completed transfers. Only verified receipts count as received. Contractor rows show submission dates; unscheduled payments are marked explicitly.")}</p>}
         {sections.map((section) => <ReportTable key={section.heading} section={section} />)}
       </>}
     </CardContent>

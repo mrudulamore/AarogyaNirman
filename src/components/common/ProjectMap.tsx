@@ -132,6 +132,7 @@ export function ProjectMap({ projects, focusDivision, onDivisionSelect }: {
       map.on('zoomend', updateIcon);
       marker.on('remove', () => map.off('zoomend', updateIcon));
       marker.on('popupclose', updateIcon);
+      marker.on('click', () => map.setView([p.siteLat, p.siteLng], map.getMaxZoom(), { animate: false }));
       const popupId = `view-project-${p.id}`;
       const statusLabel = uiText(p.status);
       marker.bindPopup(`

@@ -1,3 +1,7 @@
+import { ExpenditureCharts } from '../../../../components/common/ExpenditureCharts';
+import { actualTransactions } from '../../../../lib/projectControls';
+import { verifiedFundReports } from '../../../../lib/verifiedFundReports';
+import { todayDate } from '../../../../lib/fundDisbursal';
 import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { RABillSubmission } from './RABillSubmission';
 import { BillEvidence } from './BillEvidence';
@@ -29,6 +33,11 @@ function ageingDays(dateIso: string): number {
  * payment timeline and variation impact. Answers: "How much has been certified/paid?" */
 export function FinanceTab({ project }: { project: Project }) {
   useUiLanguage();
+  const state = useStore();
+  const transactions = actualTransactions(state, project.id);
+  const paymentRecords = transactions.filter(r => r.kind === 'PAYMENT');
+  const paidForBill = (id: string) => paymentRecords.filter(r => r.fields.billId === id).reduce((sum,r) => sum + Number(r.fields.amount), 0);
+  const report = verifiedFundReports(state, [project], todayDate());
   const bills = useStore((s) => s.bills).filter((b) => b.projectId === project.id).sort((a, b) => (a.submittedDate < b.submittedDate ? 1 : -1));
   const measurements = useStore((s) => s.measurements).filter((m) => m.projectId === project.id);
   const changeOrders = useStore((s) => s.changeOrders).filter((c) => c.projectId === project.id);
@@ -43,7 +52,7 @@ export function FinanceTab({ project }: { project: Project }) {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [submitOpen, setSubmitOpen] = useState(params.get('action') === 'submit-bill' && currentUser?.role === 'CONTRACTOR');
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(params.get('bill'));
 
   const active = bills.find((b) => b.id === detailId);
   const activeMeasurements = measurements.filter((m) => m.billId === detailId);
@@ -51,8 +60,8 @@ export function FinanceTab({ project }: { project: Project }) {
   // ---- Primary KPIs ----
   const contractValue = project.workOrderValue || project.sanctionedBudget;
   const workCertified = bills.filter((b) => ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status)).reduce((s, b) => s + b.netPayable, 0);
-  const amountPaid = bills.filter((b) => b.status === 'PAID').reduce((s, b) => s + b.netPayable, 0);
-  const pendingBills = bills.filter((b) => !['PAID', 'REJECTED'].includes(b.status));
+  const amountPaid = report.contractor.total;
+  const pendingBills = report.contractor.pending;
   const pendingBillsValue = pendingBills.reduce((s, b) => s + b.netPayable, 0);
   const balanceContractValue = contractValue - amountPaid;
 
@@ -84,9 +93,9 @@ export function FinanceTab({ project }: { project: Project }) {
     return months.map((m) => {
       const monthMid = new Date(`${m}-15`).getTime();
       const plannedPct = Math.round(Math.min(100, Math.max(0, ((monthMid - start) / (planned - start)) * 100)));
-      return { month: m, planned: plannedPct, verified: byMonth.get(m)!.verified, financial: Math.min(100, byMonth.get(m)!.verified + (project.financialProgress - project.physicalProgress)) };
+      return { month: m, planned: plannedPct, verified: byMonth.get(m)!.verified, financial: project.sanctionedBudget ? actualTransactions(state, project.id, new Date(Date.UTC(Number(m.slice(0,4)), Number(m.slice(5,7)), 0)).toISOString().slice(0,10)).filter(r => r.kind === 'PAYMENT').reduce((sum,r) => sum + Number(r.fields.amount), 0) / project.sanctionedBudget * 100 : 0 };
     });
-  }, [progressReports, project.startDate, project.plannedCompletionDate, project.financialProgress, project.physicalProgress]);
+  }, [progressReports, project.id, project.startDate, project.plannedCompletionDate, project.sanctionedBudget, state]);
 
   const waterfallData = [
     { name: 'Sanctioned', value: project.sanctionedBudget },
@@ -111,28 +120,10 @@ export function FinanceTab({ project }: { project: Project }) {
     return Object.entries(buckets).map(([bucket, count]) => ({ bucket, count }));
   }, [pendingBills]);
 
-  const paymentTrend = useMemo(() => {
-    const byMonth = new Map<string, { certified: number; paid: number }>();
-    bills.forEach((b) => {
-      if (['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status)) {
-        const key = b.submittedDate.slice(0, 7);
-        const cur = byMonth.get(key) ?? { certified: 0, paid: 0 };
-        cur.certified += b.netPayable;
-        byMonth.set(key, cur);
-      }
-      if (b.status === 'PAID' && b.paidDate) {
-        const key = b.paidDate.slice(0, 7);
-        const cur = byMonth.get(key) ?? { certified: 0, paid: 0 };
-        cur.paid += b.netPayable;
-        byMonth.set(key, cur);
-      }
-    });
-    return Array.from(byMonth.entries()).sort(([a], [b]) => (a < b ? -1 : 1)).slice(-8).map(([month, v]) => ({ month, ...v }));
-  }, [bills]);
 
   return (
     <div className="space-y-4">
-      <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
+      <div className="rounded-2xl bg-gradient-to-r from-blue-950 to-blue-700 p-5 text-white sm:p-7"><p className="text-xs uppercase tracking-widest text-blue-200">{uiText('Project financial position')}</p><h2 className="mt-2 text-2xl font-semibold">{formatCurrency(amountPaid)} <span className="text-sm font-normal text-blue-100">{uiText('verified expenditure')}</span></h2><p className="mt-2 max-w-2xl text-sm text-blue-100">{uiText('Receipts fund the project. Payments record contractor expenditure. Pending bills are liabilities, not money spent.')}</p><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><p>{uiText('Government funds received')}<strong className="block text-lg">{formatCurrency(report.government.total)}</strong></p><p>{uiText('Receipt balance after payments')}<strong className="block text-lg">{formatCurrency(report.government.total - amountPaid)}</strong></p></div></div>
       {/* A. Financial Summary — primary KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label={uiText("Sanctioned Cost")} value={formatCurrency(project.sanctionedBudget)} />
@@ -172,7 +163,7 @@ export function FinanceTab({ project }: { project: Project }) {
                 <RTooltip formatter={(v: any) => `${v}%`} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="planned" name={uiText("Planned Physical")} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
-                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="verified" name={uiText("Verified Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="verified" name={uiText("Reported Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
                 <Line label={{ position: 'bottom', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="financial" name={uiText("Financial")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -210,23 +201,10 @@ export function FinanceTab({ project }: { project: Project }) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>{uiText("Payment Trend")}</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={paymentTrend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
-                <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} type="monotone" dataKey="certified" name={uiText("Certified")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line label={{ position: 'bottom', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} type="monotone" dataKey="paid" name={uiText("Paid")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <ExpenditureCharts projectIds={new Set([project.id])} />
       </div>
 
+      <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
       {/* B. Bill Status */}
       <Card>
         <CardHeader>
@@ -234,16 +212,16 @@ export function FinanceTab({ project }: { project: Project }) {
           {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} />{uiText(" Submit RA Bill")}</Button>}
         </CardHeader>
         <Table>
-          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Type")}</Th><Th>{uiText("Period")}</Th><Th>{uiText("Claimed")}</Th><Th>{uiText("Certified")}</Th><Th>{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
+          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Submitted on")}</Th><Th>{uiText("Period")}</Th><Th>{uiText("Claimed")}</Th><Th>{uiText("Certified")}</Th><Th>{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
           <TBody>
             {bills.map((b) => {
               const certified = ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status) ? b.netPayable : 0;
-              const paid = b.status === 'PAID' ? b.netPayable : 0;
+              const paid = paidForBill(b.id);
               const age = ageingDays(b.submittedDate);
               return (
                 <Tr key={b.id} onClick={() => setDetailId(b.id)}>
                   <Td className="font-medium text-slate-800">{uiText(b.billNumber)}</Td>
-                  <Td>{uiText("RA Bill")}</Td>
+                  <Td>{formatDate(b.submittedDate)}</Td>
                   <Td>{uiText(formatDate(b.periodFrom))} — {uiText(formatDate(b.periodTo))}</Td>
                   <Td>{uiText(formatCurrency(b.grossAmount))}</Td>
                   <Td>{uiText(certified ? formatCurrency(certified) : '—')}</Td>

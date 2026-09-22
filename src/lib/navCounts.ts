@@ -1,3 +1,4 @@
+import { outstandingBills } from './financeLedger';
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useProjectScope } from './scope';
@@ -12,6 +13,7 @@ export function useNavCounts(): Partial<Record<string, number>> {
   const approvals = useStore((s) => s.approvals);
   const defects = useStore((s) => s.defects);
   const inspections = useStore((s) => s.inspections);
+  const controlRecords = useStore(s => s.controlRecords);
   const bills = useStore((s) => s.bills);
   const notifications = useStore((s) => s.notifications);
   const tenders = useStore((s) => s.tenders);
@@ -20,7 +22,7 @@ export function useNavCounts(): Partial<Record<string, number>> {
     const myPendingApprovals = approvals.filter((a) => projectIds.has(a.projectId) && a.status === 'PENDING' && a.chain[a.currentStepIndex] === currentUser?.role).length;
     const criticalDefects = defects.filter((d) => projectIds.has(d.projectId) && d.severity === 'CRITICAL' && d.status !== 'CLOSED').length;
     const pendingInspections = inspections.filter((i) => projectIds.has(i.projectId) && i.status === 'SCHEDULED').length;
-    const pendingBills = bills.filter((b) => projectIds.has(b.projectId) && !['PAID', 'REJECTED'].includes(b.status)).length;
+    const pendingBills = outstandingBills(bills, controlRecords).filter(b => projectIds.has(b.projectId)).length;
     const unreadNotifications = notifications.filter((n) => currentUser && n.targetRoles.includes(currentUser.role) && !n.read).length;
     const preAwardTenders = tenders.filter((t) => projectIds.has(t.projectId) && t.status !== 'WORK_ORDER_ISSUED' && t.status !== 'CANCELLED').length;
 
@@ -33,5 +35,5 @@ export function useNavCounts(): Partial<Record<string, number>> {
       notifications: unreadNotifications,
       tenders: preAwardTenders,
     };
-  }, [projects, projectIds, approvals, defects, inspections, bills, notifications, tenders, currentUser]);
+  }, [projects, projectIds, approvals, defects, inspections, bills, controlRecords, notifications, tenders, currentUser]);
 }

@@ -41,18 +41,11 @@ export function titleCase(s: string): string {
   return s.replace(/_/g, ' ').replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.substring(1).toLowerCase());
 }
 
-// Real, locally-hosted construction-site photographs (verified + downloaded from Unsplash;
-// see public/site-photos) rather than abstract generated art — deterministically picked by
-// seed/category so the same photo record always shows the same photo across the app.
-const SITE_PHOTOS = ['/site-photos/rebar.jpg', '/site-photos/hospital-construction.jpg', '/site-photos/civil-works.jpg', '/site-photos/structure.jpg', '/site-photos/scaffolding.jpg'];
-// Categories/stages that read as foundation/reinforcement work bias toward the rebar close-up;
-// everything else cycles across the full set by seed for visual variety.
-const FOUNDATION_STAGE_HINTS = ['foundation', 'structural', 'rcc', 'column', 'reinforcement'];
-
-export function seededImageUrl(seed: number, _w = 640, _h = 420, label?: string): string {
-  const hint = (label ?? '').toLowerCase();
-  if (FOUNDATION_STAGE_HINTS.some((h) => hint.includes(h))) return [SITE_PHOTOS[0], SITE_PHOTOS[2], SITE_PHOTOS[3]][Math.abs(seed) % 3];
-  return SITE_PHOTOS[(Math.abs(seed) % (SITE_PHOTOS.length - 1)) + 1];
+// Maharashtra construction illustrations; provenance in public/site-photos/CREDITS.md.
+// These are samples, never proof of progress at a project.
+export function seededImageUrl(_seed: number, _w = 640, _h = 420, label?: string): string {
+  return /foundation|reinforcement|excavation/i.test(label ?? '')
+    ? '/site-photos/pune-construction.jpg' : '/site-photos/nmmc-airoli.jpg';
 }
 
 /** A real device-captured photo (dataUrl) always wins; seed data without one falls back to the

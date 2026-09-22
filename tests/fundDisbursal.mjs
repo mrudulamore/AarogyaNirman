@@ -39,7 +39,7 @@ try {
   assert.equal(payments.paid.length, 1);
   assert.equal(payments.pending.length, 1);
   assert.equal(payments.missing.rows.length, 1);
-  assert.equal(payments.roadmap.rows[0][5], 'Not scheduled');
+  assert.equal(payments.roadmap.rows[0][payments.roadmap.columns.indexOf('Payment target')], 'Not scheduled');
   assert.equal(payments.details.rows[0][1], 'Contractor C');
   console.log('Fund totals, reconciliation, installment counts, date boundaries, scope, overdue plans, and separate contractor payments passed.');
 
