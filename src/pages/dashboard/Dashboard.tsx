@@ -2,8 +2,8 @@ import { outstandingBills } from '../../lib/financeLedger';
 import { saveBillFiles } from '../../lib/billAttachments';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
-import { lazy, Suspense, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -77,6 +77,14 @@ function matchesStatusFilter(p: Project, status: StatusFilterKey | null, photos:
 export function Dashboard() {
   useUiLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  const rolePermissions = useStore(s => s.rolePermissions);
+  useEffect(() => {
+    if (location.hash === '#contractor-progress') {
+      const frame = requestAnimationFrame(() => document.getElementById('contractor-progress')?.scrollIntoView({ block: 'start' }));
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [location.hash]);
   const { t } = useTranslation();
   const { projects: roleProjects, scopeLabel, isStatewide } = useProjectScope();
   const allApprovals = useStore((s) => s.approvals);
@@ -116,6 +124,7 @@ export function Dashboard() {
 
   // Zone / Budget / Scheme are plain data filters; the status filter comes from clicking a KPI
   // card segment (Projects: In Progress/Completed/Delayed, Data Integrity: Anomalies/Stale).
+
   const [overviewMode, setOverviewMode] = useState<'zone' | 'budget' | 'scheme'>('zone');
   const [zoneFilter, setZoneFilter] = useState<string[]>([]);
   const [budgetFilter, setBudgetFilter] = useState<string[]>([]);
@@ -490,7 +499,7 @@ export function Dashboard() {
         </Card>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="dashboard-insights mt-6 grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
         <Card>
           <CardHeader><CardTitle>{t('dashboard.statusDistribution')}</CardTitle></CardHeader>
           <CardContent>
@@ -536,12 +545,19 @@ export function Dashboard() {
                 <div className="mb-1 flex justify-between text-xs"><span className="text-slate-500">{t('dashboard.financialProgress')}</span><span className="font-semibold text-slate-700">{avgFinancial}%</span></div>
                 <ProgressBar value={avgFinancial} colorClass="bg-emerald-500" />
               </div>
-              <div className="space-y-3 border-t border-slate-100 pt-3">{topContractors.map(c => <div key={c.id} className="block w-full rounded-xl bg-slate-50 p-3 text-left"><p className="break-words text-sm font-semibold text-slate-800">{c.company}</p><p className="my-2 text-xs text-slate-500">{c.count} {uiText('Projects')} · {uiText('Physical Progress')} {c.physical}% · {uiText('Financial Progress')} {c.financial}%</p><ProgressBar value={c.physical} colorClass="bg-blue-500"/><div className="mt-2"><ProgressBar value={c.financial} colorClass="bg-emerald-500"/></div></div>)}</div>
-              <p className="rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                {uiText(Math.abs(avgFinancial - avgPhysical) < 5 ? t('dashboard.gapAligned')
-                  : avgFinancial > avgPhysical ? t('dashboard.gapFinancialAhead')
-                  : t('dashboard.gapPhysicalAhead'))}
-              </p>
+              <div id="contractor-progress" className="scroll-mt-4 border-t border-slate-100 pt-4">
+                <div className="mb-3 flex items-center justify-between text-xs text-slate-500"><span>{topContractors.length} {uiText('Contractors')}</span><span>{uiText('Scroll to explore')}</span></div>
+                <div className="contractor-progress-scroll" role="region" aria-label={uiText('Contractor progress')} tabIndex={0}>
+                  {topContractors.map(c => <button type="button" key={c.id} disabled={!currentUser || !(rolePermissions[currentUser.role] ?? []).includes('contractors')} onClick={() => navigate('/contractors/' + encodeURIComponent(c.id) + '?from=dashboard')} className="contractor-progress-card">
+                    <div className="flex items-start justify-between gap-3"><span className="text-sm font-semibold text-slate-800">{c.company}</span><ArrowRight size={17} className="mt-0.5 shrink-0 text-blue-600" /></div>
+                    <p className="mb-4 mt-1 text-xs text-slate-500">{c.count} {uiText('Projects')}</p>
+                    <div className="mb-1.5 flex justify-between text-xs"><span>{uiText('Physical Progress')}</span><strong className="text-blue-600">{c.physical}%</strong></div>
+                    <ProgressBar value={c.physical} colorClass="bg-blue-500" />
+                    <div className="mb-1.5 mt-3 flex justify-between text-xs"><span>{uiText('Financial Progress')}</span><strong className="text-emerald-600">{c.financial}%</strong></div>
+                    <ProgressBar value={c.financial} colorClass="bg-emerald-500" />
+                  </button>)}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

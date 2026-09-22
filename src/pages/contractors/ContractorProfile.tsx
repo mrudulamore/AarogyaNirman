@@ -27,6 +27,7 @@ export function ContractorProfile() {
   // breadcrumb and back-link return to that project instead of dropping the user at the generic
   // contractors list — this was the "redirection back" bug reported from the Ministry dashboard.
   const fromProjectId = searchParams.get('from');
+  const fromDashboard = fromProjectId === 'dashboard';
   const fromProject = fromProjectId ? projects.find((p) => p.id === fromProjectId) : undefined;
 
   const stats = useMemo(() => {
@@ -64,6 +65,7 @@ export function ContractorProfile() {
 
   return (
     <div>
+      {fromDashboard && <button onClick={() => navigate('/dashboard#contractor-progress')} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-sm font-medium text-blue-800"><ArrowLeft size={17} />{uiText('Back to dashboard')}</button>}
       <Breadcrumbs items={fromProject
         ? [{ label: 'Projects', to: '/projects' }, { label: fromProject.name, to: `/projects/${fromProject.id}` }, { label: contractor.company }]
         : [{ label: 'Contractors', to: '/contractors' }, { label: contractor.company }]} />

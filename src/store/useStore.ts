@@ -1,4 +1,5 @@
 import { reconcileProjects } from '../lib/financeLedger';
+import { withDemoFinance } from '../mock/demoFinance';
 import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
 import { workforceAccount } from '../lib/workforceAccount';
 import { DEFAULT_ESCALATION, pendingWork, daysLate, drawingWarning, type EscalationPolicy } from '../lib/pendingWork';
@@ -232,10 +233,10 @@ export const useStore = create<StoreState>()(
           get().pushNotification({ projectId: task.projectId, type: level ? 'WARNING' : 'INFO', targetRoles: [...new Set([task.ownerRole, role])], message: task.title + ' is ' + days + ' days overdue. Escalation level ' + level + '.' });
         }
       },
-      controlRecords: [],
+      controlRecords: withDemoFinance(seed.projects, seed.projects, []),
       ...createControlActions(set, get),
       ...seed,
-      projects: reconcileProjects(seed.projects, []),
+      projects: reconcileProjects(seed.projects, withDemoFinance(seed.projects, seed.projects, [])),
       rolePermissions: JSON.parse(JSON.stringify(ROLE_NAV)),
       fundInstallments: generateFundInstallments(seed.projects, todayDate()),
 
@@ -955,7 +956,8 @@ export const useStore = create<StoreState>()(
           saved.currentUser = user ?? null;
         }
         const merged = { ...current, ...saved, ...mergeDemoSamples({ ...current, ...saved }, current), currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
-        return { ...merged, projects: reconcileProjects(merged.projects, merged.controlRecords) };
+        const controlRecords = withDemoFinance(merged.projects, seed.projects, merged.controlRecords);
+        return { ...merged, controlRecords, projects: reconcileProjects(merged.projects, controlRecords) };
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;

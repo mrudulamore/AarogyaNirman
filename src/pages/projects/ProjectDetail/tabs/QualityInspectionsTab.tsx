@@ -1,3 +1,4 @@
+import { InspectionDetails } from '../../../../components/common/InspectionDetails';
 import { activeControls } from '../../../../lib/projectControls';
 import { drawingWarning } from '../../../../lib/pendingWork';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
@@ -19,6 +20,7 @@ import { downloadDocumentRecord } from '../../../../lib/pdf';
 export function QualityTab({ project }: { project: Project }) {
   useUiLanguage();
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const completed = inspections.filter((i) => i.status === 'COMPLETED');
   const passed = completed.filter((i) => i.overallResult === 'PASS').length;
   const conditional = completed.filter((i) => i.overallResult === 'CONDITIONAL').length;
@@ -75,14 +77,14 @@ export function QualityTab({ project }: { project: Project }) {
         <CardHeader><CardTitle>{uiText("Category Breakdown")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {byCategory.map(({ cat, latest }) => (
-            <div key={cat} className="rounded-md border border-slate-200 p-3">
+            <button type="button" key={cat} onClick={() => setDetailId(latest.id)} className="rounded-md border border-slate-200 p-3 text-left hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-slate-700">{uiText(cat.replace(/_/g, ' '))}</p>
                 <StatusBadge status={latest.overallResult} />
               </div>
               <p className="mt-1 text-[10.5px] text-slate-400">{uiText("Last inspected ")}{uiText(formatDate(latest.completedDate))}{uiText(" by ")}{uiText(latest.inspector)}</p>
               <p className="mt-1 text-[11px] font-medium text-slate-600">{uiText("Score: ")}{latest.score}%</p>
-            </div>
+            </button>
           ))}
           {byCategory.length === 0 && <p className="col-span-full py-8 text-center text-xs text-slate-400">{uiText("No inspections completed yet.")}</p>}
         </CardContent>
@@ -123,6 +125,7 @@ export function QualityTab({ project }: { project: Project }) {
         )}
       </Card>
 
+      <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} />
       <Dialog open={!!activeFailureId} onOpenChange={(v) => !v && setActiveFailureId(null)}>
         {activeFailure && (
           <DialogContent title={uiMessage("Quality Failure {{0}}", [activeFailure.id])} description={uiText(activeFailure.location)} size="lg">
@@ -191,6 +194,7 @@ export function InspectionsTab({ project }: { project: Project }) {
   const passReinspection = useStore((s) => s.passReinspection);
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [checklistId, setChecklistId] = useState<string | null>(null);
   const [schedForm, setSchedForm] = useState({ drawingId: '', category: INSPECTION_CATEGORIES[0] as InspectionCategory, date: new Date().toISOString().slice(0, 10), inspector: users[0]?.name ?? 'Deputy Engineer' });
   const [items, setItems] = useState<ChecklistItem[]>([]);
@@ -258,7 +262,7 @@ export function InspectionsTab({ project }: { project: Project }) {
             {inspections.map((insp) => {
               const canReinspectSource = insp.overallResult === 'FAIL' && defects.find((d) => d.sourceInspectionId === insp.id && d.status === 'FIXED');
               return (
-                <Tr key={insp.id}>
+                <Tr key={insp.id} onClick={() => setDetailId(insp.id)}>
                   <Td className="font-medium text-slate-800">{insp.isReinspection && <RefreshCw size={11} className="mr-1 inline text-purple-500" />}{uiText(insp.category.replace(/_/g, ' '))}</Td>
                   <Td>{uiText(formatDate(insp.scheduledDate))}</Td>
                   <Td>{uiText(insp.inspector)}</Td>
@@ -266,9 +270,10 @@ export function InspectionsTab({ project }: { project: Project }) {
                   <Td><StatusBadge status={insp.overallResult} /></Td>
                   <Td>{uiText(insp.status === 'COMPLETED' ? `${insp.score}%` : '—')}</Td>
                   <Td className="space-x-1.5 whitespace-nowrap">
-                    {canConduct && insp.status !== 'COMPLETED' && <Button size="sm" variant="outline" onClick={() => openChecklist(insp)}><ClipboardCheck size={12} /> {uiText(insp.isReinspection ? 'Submit Result' : 'Start Inspection')}</Button>}
+                    <Button size="sm" variant="ghost" onClick={event => { event.stopPropagation(); setDetailId(insp.id); }}>{uiText('View details')}</Button>
+                    {canConduct && insp.status !== 'COMPLETED' && <Button size="sm" variant="outline" onClick={event => { event.stopPropagation(); openChecklist(insp); }}><ClipboardCheck size={12} /> {uiText(insp.isReinspection ? 'Submit Result' : 'Start Inspection')}</Button>}
                     {canConduct && canReinspectSource && (
-                      <Button size="sm" onClick={() => { const r = reinspect(canReinspectSource.id); toast.success(uiText('Re-inspection started.')); openChecklist(r); }}>
+                      <Button size="sm" onClick={event => { event.stopPropagation(); const r = reinspect(canReinspectSource.id); toast.success(uiText('Re-inspection started.')); openChecklist(r); }}>
                         <RefreshCw size={12} />{uiText(" Re-inspect")}</Button>
                     )}
                     {!canConduct && insp.status === 'COMPLETED' && <span className="text-[11px] text-slate-400">{uiText("View only")}</span>}
@@ -347,6 +352,7 @@ export function InspectionsTab({ project }: { project: Project }) {
         </DialogContent>
       </Dialog>
 
+      <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} />
       <Dialog open={!!checklistId} onOpenChange={(v) => !v && setChecklistId(null)}>
         {active && (
           <DialogContent title={uiMessage("{{0}} Inspection Checklist", [active.category.replace(/_/g, ' ')])} description={uiText(project.name)} size="lg">
