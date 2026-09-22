@@ -38,14 +38,11 @@ export function SafetyCommissioningTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" data-testid="safety-summary">
         <KpiCard label={uiText("Safety Inspections")} value={records.filter((r) => r.type === 'INSPECTION').length} icon={ShieldCheck} />
-        <KpiCard label={uiText("Open Safety Issues")} value={openIssues} icon={ShieldCheck} tone="amber" />
-        <KpiCard label={uiText("Critical Safety Issues")} value={criticalCount} icon={ShieldCheck} tone={criticalCount > 0 ? 'red' : 'default'} />
+        <KpiCard label={uiText("Open Safety Issues")} value={openIssues} sub={`${uiText("Critical Safety Issues")}: ${criticalCount}`} icon={ShieldCheck} tone={criticalCount > 0 ? 'red' : 'amber'} />
         <KpiCard label={uiText("PPE Compliance")} value={`${avgPpe}%`} icon={HardHat} />
-        <KpiCard label={uiText("Commissioning Systems")} value={items.length} icon={HardHat} />
-        <KpiCard label={uiText("Passed")} value={readyCount} icon={HardHat} tone="emerald" />
-        <KpiCard label={uiText("Pending")} value={pendingCount} icon={HardHat} tone="amber" />
+        <KpiCard label={uiText("Commissioning Systems")} value={items.length} sub={`${uiText("Passed")}: ${readyCount} · ${uiText("Pending")}: ${pendingCount} · ${uiText("Not Ready")}: ${failedCount}`} icon={HardHat} tone={failedCount > 0 ? 'red' : 'blue'} />
         <KpiCard label={uiText("Handover Readiness")} value={`${readinessPct}%`} icon={HardHat} tone={readinessPct === 100 ? 'emerald' : 'default'} />
       </div>
 
