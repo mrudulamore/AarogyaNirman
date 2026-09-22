@@ -1,5 +1,9 @@
 # Construction photo credits
 
+## Phase-matched project gallery
+
+The 222 sample photo records reuse a varied collection of construction photographs across projects. See [the per-image credits and project assignments](phases/CREDITS.md) for authors, source pages, and individual licenses. Finishing uses interior services and fixtures as references; medical infrastructure uses a hospital facility reference, not evidence of installed equipment. These international reference photos are illustrative; they are not photographs of the assigned Maharashtra projects. User-captured evidence is preserved.
+
 Downloaded September 16, 2026. These photographs illustrate construction activities; they are not live captures of the application’s project sites. Existing device-captured photos take precedence over this collection.
 
 | Local file | Photographer | Source | Subject |

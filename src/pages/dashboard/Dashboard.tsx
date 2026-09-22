@@ -1,4 +1,5 @@
 import { outstandingBills } from '../../lib/financeLedger';
+import { saveBillFiles } from '../../lib/billAttachments';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { lazy, Suspense, useMemo, useState } from 'react';
@@ -89,6 +90,28 @@ export function Dashboard() {
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [outcome, setOutcome] = useState('');
+  const [decisionFiles, setDecisionFiles] = useState<File[]>([]);
+  const [savingDecision, setSavingDecision] = useState(false);
+  const [decisionError, setDecisionError] = useState('');
+
+  async function recordDecision() {
+    if (!decisionId || savingDecision) return;
+    setSavingDecision(true);
+    setDecisionError('');
+    try {
+      const attachments = decisionFiles.length ? await saveBillFiles(decisionFiles.map(file => ({ file, category: 'SUPPORTING' as const }))) : [];
+      resolveDecision(decisionId, outcome.trim() || 'Decided.', attachments);
+      toast.success(uiText('Decision recorded.'));
+      setDecisionId(null);
+      setDecisionFiles([]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : uiText('Could not save the decision.');
+      setDecisionError(message);
+      toast.error(message);
+    } finally {
+      setSavingDecision(false);
+    }
+  }
 
 
   // Zone / Budget / Scheme are plain data filters; the status filter comes from clicking a KPI
@@ -236,7 +259,7 @@ export function Dashboard() {
       .filter((d) => d.status === 'PENDING' && projectIds.has(d.projectId))
       .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || (a.pendingSince < b.pendingSince ? -1 : 1)),
     [allDecisions, projectIds]);
-  const activeDecision = pendingDecisions.find((d) => d.id === decisionId);
+  const activeDecision = allDecisions.find((d) => d.id === decisionId);
 
   // PM Dashboard rollup — Risk/Site-Issue/Change-Order/EOT registers already exist per-project
   // (GovernanceTab, SafetyRisksTab) but nowhere aggregates them across a manager's portfolio.
@@ -420,7 +443,7 @@ export function Dashboard() {
                     <Td><StatusBadge status={d.priority} /></Td>
                     <Td>
                       {d.pendingWith === currentUser?.role && (
-                        <Button size="sm" variant="outline" onClick={() => { setDecisionId(d.id); setOutcome(''); }}>{uiText("Decide")}</Button>
+                        <Button size="sm" variant="outline" onClick={() => { setDecisionId(d.id); setOutcome(''); setDecisionFiles([]); setDecisionError(''); }}>{uiText("Decide")}</Button>
                       )}
                     </Td>
                   </Tr>
@@ -622,6 +645,7 @@ export function Dashboard() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold leading-snug text-slate-800">{projects.find((project) => project.id === ph.projectId)?.name ?? ph.projectId}</p>
                   <p className="mt-1 text-[11px] text-slate-600">{uiText(ph.stage)} &middot; {uiText(ph.location)}</p>
+                  {!ph.dataUrl && !ph.mediaKey && <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-medium text-blue-700">{uiText('Sample construction photo')}</span>}
                   <p className="mt-1 flex items-start gap-1 text-[11px] font-medium tabular-nums text-navy-700"><MapPinned size={12} className="mt-0.5 shrink-0" /><span>{uiText("Lat ")}{uiText(ph.lat.toFixed(5))}{uiText(", Lng ")}{uiText(ph.lng.toFixed(5))}</span></p>
                   <p className="mt-1 text-[10px] text-slate-500">{uiText(formatDateTime(ph.capturedAt || ph.date))}</p>
                   {ph.dataUrl && <span className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">
@@ -656,16 +680,32 @@ export function Dashboard() {
         )}
       </Dialog>
 
-      <Dialog open={!!decisionId} onOpenChange={(v) => !v && setDecisionId(null)}>
+      <Dialog open={!!decisionId} onOpenChange={(v) => !v && !savingDecision && setDecisionId(null)}>
         {activeDecision && (
           <DialogContent title={uiText("Record Decision")} description={uiText(activeDecision.decisionRequired)}>
             <div className="space-y-2 text-xs">
               <p className="text-slate-500">{uiText("Recommended action: ")}<span className="text-slate-700">{uiText(activeDecision.recommendedAction)}</span></p>
               <Textarea rows={3} placeholder={uiText("Decision outcome / remarks…")} value={outcome} onChange={(e) => setOutcome(e.target.value)} />
             </div>
+            <div className="mt-4 space-y-2 text-xs">
+              <label htmlFor="decision-attachments" className="block font-medium text-slate-700">{uiText('Attachments (optional)')}</label>
+              <input id="decision-attachments" type="file" multiple accept="application/pdf,image/jpeg,image/png" disabled={savingDecision} className="block w-full rounded-md border border-slate-200 p-2 text-xs" onChange={(event) => {
+                const files = Array.from(event.target.files ?? []);
+                event.target.value = '';
+                if (decisionFiles.length + files.length > 5) { toast.error(uiText('Attach up to 5 files.')); return; }
+                if (files.some(file => !['application/pdf', 'image/jpeg', 'image/png'].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024)) { toast.error(uiText('Use PDF, JPEG or PNG files up to 5 MB each.')); return; }
+                setDecisionFiles(previous => [...previous, ...files]);
+              }} />
+              <p className="text-slate-500">{uiText('PDF, JPEG or PNG. Up to 5 files, 5 MB each.')}</p>
+              {decisionFiles.map((file, index) => <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 rounded-md bg-slate-50 p-2">
+                <span className="min-w-0 break-all">{file.name}</span>
+                <Button size="sm" variant="ghost" disabled={savingDecision} aria-label={`${uiText('Remove')} ${file.name}`} onClick={() => setDecisionFiles(previous => previous.filter((_, i) => i !== index))}><X size={14} /></Button>
+              </div>)}
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDecisionId(null)}>{uiText("Cancel")}</Button>
-              <Button onClick={() => { resolveDecision(activeDecision.id, outcome.trim() || 'Decided.'); toast.success(uiText('Decision recorded.')); setDecisionId(null); }}>{uiText("Record Decision")}</Button>
+              {decisionError && <p role="alert" className="w-full text-sm text-red-600">{uiText(decisionError)}</p>}
+              <Button variant="outline" disabled={savingDecision} onClick={() => setDecisionId(null)}>{uiText("Cancel")}</Button>
+              <Button disabled={savingDecision} onClick={recordDecision}>{uiText(savingDecision ? 'Saving…' : 'Record Decision')}</Button>
             </DialogFooter>
           </DialogContent>
         )}

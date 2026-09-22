@@ -689,6 +689,7 @@ export interface Decision {
   status: 'PENDING' | 'DECIDED';
   decidedDate?: string;
   decisionOutcome?: string;
+  attachments?: BillAttachment[];
 }
 
 // ---------- Contractor points of contact ----------

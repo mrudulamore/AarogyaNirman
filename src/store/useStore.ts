@@ -119,7 +119,7 @@ export interface StoreState extends ControlActions {
   raiseSiteIssue: (i: Omit<SiteIssue, 'id' | 'status'>) => void;
   resolveSiteIssue: (id: string) => void;
   addDecision: (d: Omit<Decision, 'id' | 'status'>) => void;
-  resolveDecision: (id: string, outcome: string) => void;
+  resolveDecision: (id: string, outcome: string, attachments?: Decision['attachments']) => void;
 
   // inspections
   scheduleInspection: (i: Omit<Inspection, 'id' | 'items' | 'score' | 'overallResult' | 'status' | 'isReinspection'> & { category: Inspection['category'] }) => Inspection;
@@ -504,11 +504,26 @@ export const useStore = create<StoreState>()(
         const project = get().projects.find((p) => p.id === d.projectId);
         get().logAction(`Logged decision required: ${d.decisionRequired}`, project?.name);
       },
-      resolveDecision: (id, outcome) => {
-        set((s) => ({ decisions: s.decisions.map((d) => (d.id === id ? { ...d, status: 'DECIDED', decisionOutcome: outcome, decidedDate: new Date().toISOString().slice(0, 10) } : d)) }));
-        const d = get().decisions.find((x) => x.id === id);
+      resolveDecision: (id, outcome, attachments = []) => {
+        const previous = get();
+        const d = previous.decisions.find((x) => x.id === id);
+        if (!d) throw new Error('This decision could not be found.');
+        if (d.status !== 'PENDING') throw new Error('This decision has already been recorded.');
         const project = get().projects.find((p) => p.id === d?.projectId);
-        get().logAction(`Decision recorded: ${d?.decisionRequired} — ${outcome}`, project?.name);
+        const audit: AuditEntry = {
+          id: nid('AUD'), user: previous.currentUser?.name ?? 'System', role: previous.currentUser?.role ?? 'COMMISSIONER',
+          action: `Decision recorded: ${d.decisionRequired} — ${outcome}`, project: project?.name, timestamp: new Date().toISOString(),
+        };
+        try {
+          set({
+            decisions: previous.decisions.map(item => item.id === id ? { ...item, status: 'DECIDED', decisionOutcome: outcome, attachments, decidedDate: new Date().toISOString().slice(0, 10) } : item),
+            auditLog: [audit, ...previous.auditLog],
+          });
+        } catch {
+          // Persist updates memory before writing storage; restore the pending record on failure.
+          try { set({ decisions: previous.decisions, auditLog: previous.auditLog }); } catch { /* Memory is restored even if storage remains unavailable. */ }
+          throw new Error('Decision could not be saved on this device. Free some storage and try again.');
+        }
       },
 
       scheduleInspection: (i) => {
