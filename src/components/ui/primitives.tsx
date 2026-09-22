@@ -185,6 +185,30 @@ export function Td({ children, className, ...props }: React.TdHTMLAttributes<HTM
   return <td className={cn('px-4 py-3 align-middle text-slate-700', className)} {...props}>{children}</td>;
 }
 
+export interface DataColumn<T> {
+  key: string;
+  header: string;
+  cell: (row: T) => React.ReactNode;
+  primary?: boolean;
+  hideOnMobile?: boolean;
+  className?: string;
+}
+
+/** One data definition rendered as a table on desktop and touch-friendly cards on phones. */
+export function DataView<T>({ rows, columns, rowKey, onRowClick, emptyTitle = 'No records found' }: {
+  rows: T[]; columns: DataColumn<T>[]; rowKey: (row: T) => string; onRowClick?: (row: T) => void; emptyTitle?: string;
+}) {
+  const primary = columns.find(column => column.primary) ?? columns[0];
+  if (!rows.length) return <EmptyState title={emptyTitle} />;
+  return <>
+    <div className="hidden md:block"><Table><THead><Tr>{columns.map(column => <Th key={column.key} className={column.className}>{uiText(column.header)}</Th>)}</Tr></THead><TBody>{rows.map(row => <Tr key={rowKey(row)} onClick={onRowClick ? () => onRowClick(row) : undefined}>{columns.map(column => <Td key={column.key} className={column.className}>{column.cell(row)}</Td>)}</Tr>)}</TBody></Table></div>
+    <div className="grid gap-3 md:hidden">{rows.map(row => <button type="button" key={rowKey(row)} onClick={onRowClick ? () => onRowClick(row) : undefined} disabled={!onRowClick} className="rounded-[20px] border border-slate-200 bg-white p-4 text-left shadow-sm disabled:cursor-default">
+      <div className="text-[15px] font-semibold text-slate-900">{primary.cell(row)}</div>
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">{columns.filter(column => column !== primary && !column.hideOnMobile).map(column => <div key={column.key} className="min-w-0"><dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{uiText(column.header)}</dt><dd className="mt-0.5 break-words text-sm text-slate-700">{column.cell(row)}</dd></div>)}</dl>
+    </button>)}</div>
+  </>;
+}
+
 // ---------------- Empty state ----------------
 export function EmptyState({ icon, title, description, action }: { icon?: React.ReactNode; title: string; description?: string; action?: React.ReactNode }) {
   useUiLanguage();

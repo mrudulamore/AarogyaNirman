@@ -60,3 +60,22 @@ export const ROLE_NAV: Record<Role, string[]> = {
   // 'access' (permission grants stay a Superadmin-only capability).
   IT_ADMIN: ['dashboard', 'documents', 'audit', 'notifications', 'search'],
 };
+
+export type MobileDestination = 'today' | 'projects' | 'capture' | 'inspect' | 'bills' | 'approvals' | 'quality' | 'overview' | 'reports' | 'observer' | 'audit' | 'access' | 'attendance' | 'profile' | 'status' | 'documents' | 'finance' | 'more';
+
+/** The five primary destinations specified for each role in the mobile plan. */
+export const MOBILE_TABS: Record<Role, MobileDestination[]> = {
+  DEPUTY_ENGINEER: ['today', 'projects', 'capture', 'inspect', 'more'],
+  CONTRACTOR: ['today', 'projects', 'capture', 'bills', 'more'],
+  WORKFORCE: ['attendance', 'profile'],
+  PROJECT_MANAGER: ['today', 'projects', 'capture', 'approvals', 'more'],
+  EXECUTIVE_ENGINEER: ['today', 'projects', 'approvals', 'quality', 'more'],
+  COMMISSIONER: ['overview', 'projects', 'approvals', 'reports', 'more'],
+  REGIONAL_DIRECTOR: ['overview', 'projects', 'approvals', 'reports', 'more'],
+  CIVIL_SURGEON: ['overview', 'projects', 'approvals', 'reports', 'more'],
+  MINISTER: ['overview', 'projects', 'finance', 'reports', 'more'],
+  VIGILANCE_AUDIT: ['today', 'projects', 'observer', 'audit', 'more'],
+  MEDICAL_OFFICER: ['today', 'projects', 'documents', 'reports', 'more'],
+  IT_ADMIN: ['status', 'audit', 'documents', 'more'],
+  SUPERADMIN: ['overview', 'projects', 'approvals', 'access', 'more'],
+};

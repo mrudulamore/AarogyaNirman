@@ -1,9 +1,9 @@
 import { DeadlineBadge } from '../../../components/common/DeadlineBadge';
-import { reportGroupsForRole, reportNavigation } from '../../../lib/projectReportGroups';
+import { hubForTab, projectHubsForRole, reportGroupsForRole, reportNavigation } from '../../../lib/projectReportGroups';
 import { uiText, useUiLanguage } from '../../../i18n/ui';
 import { lazy, Suspense, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Building2, Calendar, Wallet, HardHat, UserRound, AlertOctagon, Edit3, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, Wallet, HardHat, UserRound, AlertOctagon, Edit3, ShieldAlert } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { useProjectScope } from '../../../lib/scope';
 import { Breadcrumbs } from '../../../components/layout/Breadcrumbs';
@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogFooter } from '../../../components/ui/over
 import { formatCurrency, formatDate } from '../../../lib/utils';
 import { PHYSICAL_VS_FINANCIAL_THRESHOLD } from '../../../lib/constants';
 import { toast } from 'sonner';
+import { ProjectMobileHome } from './ProjectMobileHome';
+import { SegmentedControl } from '../../../components/ui/mobile';
 
 const OverviewTab = lazy(() => import('./tabs/OverviewTab').then(m => ({ default: m.OverviewTab })));
 const MinistryOverviewTab = lazy(() => import('./tabs/MinistryOverviewTab').then(m => ({ default: m.MinistryOverviewTab })));
@@ -44,7 +46,7 @@ const ContractControlsTab = lazy(() => import('./tabs/ContractControlsTab').then
 
 export function ProjectDetail() {
   useUiLanguage();
-  const { id } = useParams();
+  const { id, hub } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const currentUser = useStore((s) => s.currentUser);
@@ -59,12 +61,14 @@ export function ProjectDetail() {
 
   const project = projects.find((p) => p.id === id);
   const visibleTabs = tabsForRole(currentUser?.role);
-  const requestedTab = params.get('tab') ?? 'overview';
+  const mobileHub = projectHubsForRole(currentUser?.role).find(item => item.key === hub);
+  const requestedTab = params.get('tab') ?? mobileHub?.sections[0]?.value ?? 'overview';
   const tab = visibleTabs.some((t) => t.value === requestedTab) ? requestedTab : (visibleTabs[0]?.value ?? 'overview');
 
   const reportGroups = reportGroupsForRole(currentUser?.role);
   const activeReportGroup = reportGroups.find(group => group.sections.some(section => section.value === tab));
   const navigationTabs = reportNavigation(currentUser?.role, tab);
+  const selectedHub = hubForTab(currentUser?.role, tab);
 
   if (!project) {
     return <div className="py-20 text-center text-sm text-slate-500">{uiText("Project not found. ")}<button className="text-navy-700 underline" onClick={() => navigate('/projects')}>{uiText("Back to projects")}</button></div>;
@@ -93,7 +97,8 @@ export function ProjectDetail() {
 
   return (
     <div>
-      <DeadlineBadge project={project} />
+      {!hub && !params.has('tab') && <ProjectMobileHome project={project} role={currentUser?.role} />}
+      <div className="hidden lg:block"><DeadlineBadge project={project} />
       <Breadcrumbs items={[{ label: 'Projects', to: '/projects' }, { label: project.name }]} />
 
       <Card className="mb-4">
@@ -157,12 +162,13 @@ export function ProjectDetail() {
             </p>
           )}
         </CardContent>
-      </Card>
+      </Card></div>
 
-      <Suspense fallback={<div role="status" className="mt-5 animate-pulse space-y-3"><div className="h-12 rounded-xl bg-blue-100"/><div className="h-40 rounded-2xl bg-slate-100"/></div>}><Tabs value={tab} onValueChange={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })}>
-        <ProjectNavigation tabs={navigationTabs} value={tab} onSelect={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })} />
+      <div className={!hub && !params.has('tab') ? 'hidden lg:block' : ''}><Suspense fallback={<div role="status" className="mt-5 animate-pulse space-y-3"><div className="h-12 rounded-xl bg-blue-100"/><div className="h-40 rounded-2xl bg-slate-100"/></div>}><Tabs value={tab} onValueChange={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })}>
+        {selectedHub && <div className="mb-4 lg:hidden"><button type="button" onClick={() => navigate(`/projects/${project.id}`)} className="mobile-back mb-3"><ArrowLeft size={19}/>{uiText(project.name)}</button><h1 className="mb-3 text-xl font-bold text-slate-950">{uiText(selectedHub.label)}</h1><SegmentedControl label={selectedHub.label} value={tab} items={selectedHub.sections} onChange={(value) => setParams({ tab: value })}/></div>}
+        <div className="hidden lg:block"><ProjectNavigation tabs={navigationTabs} value={tab} onSelect={(value) => setParams((previous) => { const next = new URLSearchParams(previous); next.set('tab', value); return next; })} /></div>
 
-        {activeReportGroup && activeReportGroup.sections.length > 1 && <section className="report-group-panel mt-4 rounded-2xl border border-blue-100 bg-white p-4 sm:p-5" aria-label={uiText(activeReportGroup.label)}>
+        {activeReportGroup && activeReportGroup.sections.length > 1 && <section className="report-group-panel mt-4 hidden rounded-2xl border border-blue-100 bg-white p-4 sm:p-5 lg:block" aria-label={uiText(activeReportGroup.label)}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-semibold text-blue-950">{uiText(activeReportGroup.label)}</h2><span className="text-xs text-slate-500">{activeReportGroup.sections.length} {uiText('related reports')}</span></div>
           <nav aria-label={uiText('Reports in this section')} className="flex flex-wrap gap-2">{activeReportGroup.sections.map(section => <button key={section.value} type="button" aria-current={section.value === tab ? 'page' : undefined} onClick={() => setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', section.value); return next; })} className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${section.value === tab ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : 'border-blue-100 bg-blue-50/60 text-blue-900 hover:bg-blue-100'}`}>{uiText(section.label)}</button>)}</nav>
         </section>}
@@ -192,7 +198,7 @@ export function ProjectDetail() {
         <TabsContent value="audit"><AuditTab project={project} /></TabsContent>
         <TabsContent value="controls"><ContractControlsTab key={project.id} project={project} /></TabsContent>
         <TabsContent value="monthly"><ContractControlsTab key={project.id + '-monthly'} project={project} monthly /></TabsContent>
-      </Tabs></Suspense>
+      </Tabs></Suspense></div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent title={uiText("Edit Project")} description={uiText(project.name)}>

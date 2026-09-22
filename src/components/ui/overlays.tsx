@@ -11,16 +11,20 @@ import { cn } from '../../lib/utils';
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 
-export function DialogContent({ className, children, title, description, size = 'md' }: { className?: string; children: React.ReactNode; title: string; description?: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+export function DialogContent({ className, children, title, description, size = 'md', variant = 'auto' }: { className?: string; children: React.ReactNode; title: string; description?: string; size?: 'sm' | 'md' | 'lg' | 'xl'; variant?: 'auto' | 'dialog' | 'sheet' }) {
   useUiLanguage();
   const widths = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
       <DialogPrimitive.Content className={cn(
-        'fixed left-1/2 top-1/2 z-50 max-h-[88dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95',
+        'fixed z-50 overflow-y-auto bg-white shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in',
+        variant === 'dialog' && 'left-1/2 top-1/2 max-h-[88dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl data-[state=open]:zoom-in-95',
+        variant === 'sheet' && 'inset-x-0 bottom-0 max-h-[92dvh] w-full rounded-t-[28px] pb-[env(safe-area-inset-bottom)] data-[state=open]:slide-in-from-bottom',
+        variant === 'auto' && 'inset-x-0 bottom-0 max-h-[92dvh] w-full rounded-t-[28px] pb-[env(safe-area-inset-bottom)] data-[state=open]:slide-in-from-bottom md:left-1/2 md:top-1/2 md:bottom-auto md:max-h-[88dvh] md:w-[calc(100vw-1.5rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:pb-0 md:data-[state=open]:zoom-in-95',
         widths[size], className,
       )}>
+        {variant !== 'dialog' && <div aria-hidden="true" className="mx-auto mt-2 h-1.5 w-11 rounded-full bg-slate-300 md:hidden" />}
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <DialogPrimitive.Title className="text-base font-semibold text-slate-900">{uiText(title)}</DialogPrimitive.Title>

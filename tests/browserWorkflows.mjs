@@ -8,7 +8,8 @@ import { createServer } from 'vite';
 const server = await createServer({ server: { host: '127.0.0.1', port: 4189, strictPort: true }, logLevel: 'error' });
 await server.listen();
 const profile = await mkdtemp(join(tmpdir(), 'aarogya-browser-test-'));
-const browser = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9239', `--user-data-dir=${profile}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+const browserPath = process.platform === 'win32' ? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe' : '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const browser = spawn(browserPath, ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9239', `--user-data-dir=${profile}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
 let socket;
 try {
   let targets;
@@ -63,9 +64,9 @@ try {
   await new Promise(r => setTimeout(r, 150));
   assert.ok(await evaluate('document.body.innerText.includes("Save draft") && document.body.innerText.includes("Measurement notes")'), 'Diary form did not open');
   console.log('Browser: diary page, mobile width and draft form checks passed.');
+  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: 'http://127.0.0.1:4189/dashboard' });
   for (let n = 0; n < 80; n++) { if (await evaluate('!!document.querySelector(".field-action")')) break; await new Promise(r => setTimeout(r, 250)); }
-  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
   const rect = await evaluate('(() => { const r = document.querySelector(".field-action").getBoundingClientRect(); return { x: r.x + r.width/2, y: r.y + r.height/2 }; })()');
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...rect });
   await new Promise(r => setTimeout(r, 250));
@@ -79,6 +80,13 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   assert.ok(await evaluate('document.documentElement.scrollWidth <= 395'), 'Pending page overflows mobile');
   console.log('Pending-work summary navigation, dedicated filters and mobile width passed.');
+
+  await send('Page.navigate', { url: `http://127.0.0.1:4189/projects/${result.projectId}` });
+  for (let n = 0; n < 80; n++) { if (await evaluate('document.querySelectorAll(".project-hub-card").length === 5')) break; await new Promise(r => setTimeout(r, 100)); }
+  assert.equal(await evaluate('document.querySelectorAll(".project-hub-card").length'), 5, 'Mobile Project Home must expose five hubs');
+  assert.ok(await evaluate('document.documentElement.scrollWidth <= 395'), 'Mobile Project Home overflows');
+  assert.equal(await evaluate('document.querySelectorAll(".mobile-dock .dock-link").length'), 5, 'Contractor mobile dock must contain five role destinations');
+  console.log('Mobile role dock and five-hub Project Home passed at 390px.');
 
 
 } finally { socket?.close(); browser.kill(); await server.close(); }

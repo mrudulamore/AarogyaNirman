@@ -505,3 +505,44 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .contractor-progress-card:disabled { cursor: default; }
 .contractor-progress-card:disabled svg { display: none; }
 @media (prefers-reduced-motion: no-preference) { .contractor-progress-card { transition: background-color 180ms, border-color 180ms; } }
+
+/* Mobile-first workspace from the approved implementation plan. */
+.mobile-workspace { padding-bottom: 20px; }
+.mobile-page-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; overflow: hidden; border-radius: 28px; padding: 24px; color: white; background: radial-gradient(circle at 90% 5%,#4c91db 0,transparent 34%),linear-gradient(145deg,#173c72,#265aa0); box-shadow: 0 18px 38px -27px #173c72aa; }
+.mobile-page-hero h1 { margin-top: 6px; font-size: clamp(1.55rem,6vw,2.15rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.1; }
+.mobile-page-hero p:last-child { margin-top: 8px; font-size: 13px; color: #dbeafe; }
+.mobile-focus-card { display: grid; grid-template-columns: 1fr auto; align-items: end; border: 1px solid #d9e8fa; border-radius: 24px; padding: 20px; background: linear-gradient(135deg,#fff,#edf6ff); }
+.mobile-focus-card p { grid-column: 1 / -1; color: #516984; font-size: 13px; font-weight: 650; }
+.mobile-focus-card strong { margin-top: 12px; color: #173c72; font-size: 2.25rem; line-height: 1; }
+.mobile-focus-card span { color: #64748b; font-size: 12px; }
+.mobile-kpi-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.mobile-kpi { display: grid; grid-template-columns: auto 1fr; gap: 9px; min-width: 0; border: 1px solid #dce8f8; border-radius: 20px; padding: 15px; background: #fff; }
+.mobile-kpi svg { color: #2b68b3; }
+.mobile-kpi span { overflow: hidden; color: #61738a; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.mobile-kpi strong { grid-column: 1 / -1; color: #173c72; font-size: 20px; overflow-wrap: anywhere; }
+.mobile-kpi.tone-amber svg,.mobile-kpi.tone-amber strong { color: #b45309; }.mobile-kpi.tone-red svg,.mobile-kpi.tone-red strong { color: #b91c1c; }
+.mobile-action-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.mobile-action-grid button { display: flex; min-height: 104px; flex-direction: column; align-items: center; justify-content: center; gap: 9px; border: 1px solid #d9e7f8; border-radius: 20px; padding: 10px 6px; background: white; color: #29415e; font-size: 12px; font-weight: 700; text-align: center; }
+.mobile-action-grid button span { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 16px; color: white; background: #2665ae; }
+.mobile-list-card:focus-visible,.project-hub-card:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+.mobile-segments { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; border-radius: 15px; padding: 4px; background: #e7eef8; scrollbar-width: none; }
+.mobile-segments button { min-height: 44px; flex: 0 0 auto; border-radius: 12px; padding: 8px 14px; color: #52677e; font-size: 13px; font-weight: 700; }
+.mobile-segments button.is-active { color: #173c72; background: white; box-shadow: 0 2px 8px #173c7218; }
+.mobile-back { display: inline-flex; min-height: 44px; align-items: center; gap: 7px; border-radius: 12px; padding: 0 8px; color: #265aa0; font-size: 13px; font-weight: 700; }
+.project-mobile-hero { border-radius: 26px; padding: 22px; color: white; background: radial-gradient(circle at 90% 0,#549ae0,transparent 38%),linear-gradient(145deg,#173c72,#265aa0); }
+.project-mobile-hero > div:first-child p { color: #bfdbfe; font-size: 11px; }.project-mobile-hero h1 { margin-top: 7px; max-width: 260px; font-size: 21px; font-weight: 800; line-height: 1.25; }
+.project-mobile-hero > div:nth-child(2) > div { min-width: 0; }.project-mobile-hero > div:nth-child(2) strong,.project-mobile-hero > div:nth-child(2) span { display: block; }.project-mobile-hero > div:nth-child(2) strong { font-size: 16px; }.project-mobile-hero > div:nth-child(2) span { margin-top: 3px; overflow: hidden; color: #bfdbfe; font-size: 9px; text-overflow: ellipsis; }
+.project-hub-card { display: flex; min-height: 180px; flex-direction: column; align-items: flex-start; border: 1px solid #dbe7f6; border-radius: 24px; padding: 16px; text-align: left; background: linear-gradient(145deg,#fff,#f3f8ff); box-shadow: 0 12px 28px -24px #173c7280; }
+.project-hub-card > span { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 15px; color: white; background: #2764ad; }.project-hub-card strong { margin-top: 13px; color: #162f52; font-size: 16px; }.project-hub-card small { margin-top: 4px; color: #64748b; font-size: 11px; line-height: 1.45; }.project-hub-card em { display: flex; align-items: center; gap: 2px; margin-top: auto; color: #265aa0; font-size: 11px; font-style: normal; font-weight: 700; }
+.hub-quality > span { background: #16826e; }.hub-money > span { background: #7c57bd; }.hub-closeout > span { background: #52677e; }
+.mobile-sticky-actions { position: sticky; bottom: 8px; z-index: 20; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px; border: 1px solid #d5e3f4; border-radius: 20px; padding: 5px; background: #fffffff2; box-shadow: 0 16px 36px #173c7235; backdrop-filter: blur(18px); }
+.mobile-sticky-actions button { display: flex; min-height: 50px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 15px; color: #36516f; font-size: 10px; font-weight: 700; }.mobile-sticky-actions button:first-child { color: white; background: #265aa0; }
+@media (max-width:1023px) {
+  .app-content { padding-bottom: 18px; }
+  .dock-icon { display: grid; place-items: center; }
+  .dock-capture .dock-icon { width: 48px; height: 48px; margin-top: -19px; border: 4px solid white; border-radius: 50%; color: white; background: #1f64b5; box-shadow: 0 6px 16px #173c7240; }
+  .dock-capture { overflow: visible; }
+  .dock-capture.is-active { background: transparent; }
+  .ui-button,.ui-input,button,a { -webkit-tap-highlight-color: transparent; }
+}
+@media (min-width:1024px) { .mobile-workspace { padding-bottom: 0; } }

@@ -1,15 +1,24 @@
-import { Menu } from 'lucide-react';
+import { BarChart3, Building2, Camera, ClipboardCheck, FileText, Gauge, HardHat, KeyRound, LayoutDashboard, Menu, Radar, ShieldCheck, UserRound, Wallet } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { uiText } from '../../i18n/ui';
 import { Outlet, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useStore } from '../../store/useStore';
-import { NAV_ITEMS } from './navConfig';
+import { MOBILE_TABS, NAV_ITEMS, type MobileDestination } from './navConfig';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 const PendingWork = lazy(() => import('../common/PendingWork').then(m => ({ default: m.PendingWork })));
 let demoNoticeShown = false;
+
+const MOBILE_DESTINATIONS: Record<MobileDestination, { label: string; path: string; icon: typeof Menu }> = {
+  today: { label: 'Today', path: '/today', icon: Gauge }, overview: { label: 'Overview', path: '/today', icon: LayoutDashboard }, status: { label: 'Status', path: '/today', icon: Gauge },
+  projects: { label: 'Projects', path: '/projects', icon: Building2 }, capture: { label: 'Capture', path: '/capture', icon: Camera }, inspect: { label: 'Inspect', path: '/quality', icon: ShieldCheck },
+  bills: { label: 'Bills', path: '/finance', icon: Wallet }, finance: { label: 'Finance', path: '/finance', icon: Wallet }, approvals: { label: 'Approvals', path: '/approvals', icon: ClipboardCheck },
+  quality: { label: 'Quality', path: '/quality', icon: ShieldCheck }, reports: { label: 'Reports', path: '/reports', icon: BarChart3 }, observer: { label: 'Observer', path: '/observer', icon: Radar },
+  audit: { label: 'Audit', path: '/audit', icon: FileText }, access: { label: 'Access', path: '/access', icon: KeyRound }, attendance: { label: 'Attendance', path: '/today', icon: HardHat },
+  profile: { label: 'Profile', path: '/today?view=profile', icon: UserRound }, documents: { label: 'Documents', path: '/documents', icon: FileText }, more: { label: 'More', path: '/more', icon: Menu },
+};
 
 /** Longest matching nav item for a pathname (handles nested routes like /projects/:id). */
 function navKeyForPath(pathname: string): string | null {
@@ -34,7 +43,8 @@ export function AppShell() {
   const navigate = useNavigate();
 
   const navKey = currentUser ? navKeyForPath(location.pathname) : null;
-  const allowed = currentUser?.role === 'WORKFORCE' ? location.pathname === '/dashboard' : currentUser ? !navKey || (rolePermissions[currentUser.role] ?? []).includes(navKey) : true;
+  const mobileAlias = location.pathname === '/capture' ? 'field' : location.pathname === '/today' ? 'dashboard' : null;
+  const allowed = currentUser?.role === 'WORKFORCE' ? ['/dashboard', '/today'].includes(location.pathname) : currentUser ? (navKey ? (rolePermissions[currentUser.role] ?? []).includes(navKey) : mobileAlias ? (rolePermissions[currentUser.role] ?? []).includes(mobileAlias) : true) : true;
 
   useEffect(() => {
     if (!activeUserId || !allowed || location.pathname !== '/dashboard' || demoNoticeShown) return;
@@ -67,6 +77,11 @@ export function AppShell() {
   }, [activeUserId, activeRole]);
 
   useEffect(() => {
+    if (location.pathname !== '/dashboard' || window.matchMedia('(min-width: 1024px)').matches) return;
+    navigate('/today', { replace: true });
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
     const update = () => setOnline(navigator.onLine);
     window.addEventListener('online', update); window.addEventListener('offline', update);
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
@@ -87,11 +102,11 @@ export function AppShell() {
           <Outlet />
         </main>
         <nav className="mobile-dock" aria-label={uiText('Navigation')}>
-          {['dashboard', 'projects', 'field', 'notifications'].filter(key => currentUser.role === 'WORKFORCE' ? key === 'dashboard' : (rolePermissions[currentUser.role] ?? []).includes(key)).map(key => {
-            const item = NAV_ITEMS[key];
-            return <NavLink key={key} to={item.path} className={({isActive}) => isActive ? 'dock-link is-active' : 'dock-link'}><item.icon size={21}/><span>{currentUser.role === 'WORKFORCE' ? uiText('My attendance') : uiText(({ dashboard: 'Home', projects: 'Projects', field: 'Field', notifications: 'Alerts' } as Record<string, string>)[key])}</span></NavLink>;
+          {MOBILE_TABS[currentUser.role].map(destination => {
+            const item = MOBILE_DESTINATIONS[destination];
+            const Icon = item.icon;
+            return <NavLink key={destination} to={item.path} className={({isActive}) => `${isActive ? 'dock-link is-active' : 'dock-link'} ${destination === 'capture' ? 'dock-capture' : ''}`}><span className="dock-icon"><Icon size={destination === 'capture' ? 24 : 21}/></span><span>{uiText(item.label)}</span></NavLink>;
           })}
-          <button type="button" className="dock-link" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu size={21}/><span>{uiText('Menu')}</span></button>
         </nav>
       </div>
     </div>

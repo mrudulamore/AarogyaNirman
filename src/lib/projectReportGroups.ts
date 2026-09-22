@@ -19,6 +19,30 @@ export const PROJECT_REPORT_GROUPS = [
   { label: 'Handover', sections: ['handover'] },
 ];
 
+/** Five thumb-friendly mobile hubs layered over the complete Project 360 model. */
+export const PROJECT_HUBS = [
+  { key: 'plan', label: 'Plan', description: 'Scope, contract and schedule', sections: ['overview', 'governance', 'tender', 'controls', 'timeline'] },
+  { key: 'build', label: 'Build', description: 'Progress, people and field evidence', sections: ['milestones', 'boq', 'materials', 'progress', 'monthly', 'field evidence', 'photos', 'team', 'contractor', 'workers'] },
+  { key: 'quality', label: 'Quality', description: 'Inspections, safety and risks', sections: ['inspections', 'quality', 'safety & commissioning', 'defects', 'risks'] },
+  { key: 'money', label: 'Money', description: 'Funds, bills and approvals', sections: ['finance', 'approvals'] },
+  { key: 'closeout', label: 'Closeout', description: 'Documents, handover and audit', sections: ['documents', 'handover', 'audit'] },
+] as const;
+
+export type ProjectHubKey = typeof PROJECT_HUBS[number]['key'];
+
+/** Filter every leaf through the existing role map before it reaches a hub. */
+export function projectHubsForRole(role: Role | undefined) {
+  const allowed = new Map(tabsForRole(role).map(tab => [tab.value, tab]));
+  return PROJECT_HUBS.map(hub => ({
+    ...hub,
+    sections: hub.sections.flatMap(key => allowed.has(key) ? [allowed.get(key)!] : []),
+  })).filter(hub => hub.sections.length > 0);
+}
+
+export function hubForTab(role: Role | undefined, tab: string) {
+  return projectHubsForRole(role).find(hub => hub.sections.some(section => section.value === tab));
+}
+
 /** Filter leaves before grouping: combining reports must never grant sibling access. */
 export function reportGroupsForRole(role: Role | undefined) {
   const allowed = new Map(tabsForRole(role).map(tab => [tab.value, tab]));

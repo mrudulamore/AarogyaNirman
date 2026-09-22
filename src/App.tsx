@@ -32,6 +32,9 @@ const ObserverDashboard = lazy(() => import('./pages/observer/ObserverDashboard'
 const FieldHome = lazy(() => import('./pages/field/FieldHome').then(m => ({ default: m.FieldHome })));
 const AccessManagement = lazy(() => import('./pages/admin/AccessManagement').then(m => ({ default: m.AccessManagement })));
 const PortfolioTimeline = lazy(() => import('./pages/portfolio/PortfolioTimeline').then(m => ({ default: m.PortfolioTimeline })));
+const TodayPage = lazy(() => import('./pages/today/TodayPage').then(m => ({ default: m.TodayPage })));
+const MorePage = lazy(() => import('./pages/mobile/MorePage').then(m => ({ default: m.MorePage })));
+const CapturePage = lazy(() => import('./pages/mobile/CapturePage').then(m => ({ default: m.CapturePage })));
 
 function PageLoading() {
   return <div role="status" className="mx-auto max-w-5xl animate-pulse space-y-4 p-6" aria-label="Loading page"><div className="h-7 w-48 rounded-lg bg-blue-100"/><div className="h-32 rounded-2xl bg-slate-100"/><div className="h-32 rounded-2xl bg-slate-100"/></div>;
@@ -65,7 +68,7 @@ export default function App() {
   useAndroidBackButton();
   return (
     <BrowserRouter>
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster position={typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'bottom-center' : 'top-right'} richColors closeButton />
       <PageErrorBoundary><Suspense fallback={<PageLoading />}><Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
@@ -76,9 +79,13 @@ export default function App() {
 
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/today" element={<TodayPage />} />
+          <Route path="/more" element={<MorePage />} />
+          <Route path="/capture" element={<CapturePage />} />
           <Route path="/dashboard/pending-work" element={<PendingWorkPage />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="/projects/:id/:hub" element={<ProjectDetail />} />
           <Route path="/contractors" element={<ContractorsList />} />
           <Route path="/contractors/:id" element={<ContractorProfile />} />
           <Route path="/tenders" element={<TendersList />} />
