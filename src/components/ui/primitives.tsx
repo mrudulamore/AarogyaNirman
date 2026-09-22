@@ -71,7 +71,7 @@ export function SeverityBadge({ severity }: { severity: string }) {
 // ---------------- Card ----------------
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   useUiLanguage();
-  return <div className={cn('ui-card rounded-2xl border border-slate-200/80 bg-white shadow-card', className)} {...props}>{children}</div>;
+  return <div className={cn('ui-card min-w-0 break-words rounded-2xl border border-slate-200/80 bg-white shadow-card', className)} {...props}>{children}</div>;
 }
 export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();
@@ -79,7 +79,7 @@ export function CardHeader({ className, children }: { className?: string; childr
 }
 export function CardTitle({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();
-  return <h3 className={cn('text-sm font-semibold text-slate-800', className)}>{children}</h3>;
+  return <h3 className={cn('min-w-0 break-words text-sm font-semibold text-slate-800', className)}>{children}</h3>;
 }
 export function CardContent({ className, children }: { className?: string; children: React.ReactNode }) {
   useUiLanguage();

@@ -1,3 +1,4 @@
+import { outstandingBills } from '../../lib/financeLedger';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { lazy, Suspense, useMemo, useState } from 'react';
@@ -22,14 +23,10 @@ import { tabsForRole } from '../../lib/projectTabAccess';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
 import { SCHEMES, MAHARASHTRA_HIERARCHY } from '../../lib/constants';
 import type { Project, SitePhoto } from '../../types';
-import { Capacitor } from '@capacitor/core';
 
-const AccessManagement = lazy(() => import('../admin/AccessManagement').then(m => ({ default: m.AccessManagement })));
-const FieldHome = lazy(() => import('../field/FieldHome').then(m => ({ default: m.FieldHome })));
 const PhotoLocationMap = lazy(() => import('../../components/common/PhotoLocationMap').then(m => ({ default: m.PhotoLocationMap })));
 
-const SENIOR_ROLES = ['MINISTER', 'COMMISSIONER', 'REGIONAL_DIRECTOR'];
-const FIELD_ROLES = ['DEPUTY_ENGINEER', 'CONTRACTOR'];
+const SENIOR_ROLES = ['SUPERADMIN', 'MINISTER', 'COMMISSIONER', 'REGIONAL_DIRECTOR'];
 const PRIORITY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 const STATUS_HEX: Record<string, string> = { ON_TRACK: '#3b82f6', AT_RISK: '#f59e0b', DELAYED: '#ef4444', COMPLETED: '#10b981' };
@@ -138,6 +135,7 @@ export function Dashboard() {
   const allChangeOrders = useStore((s) => s.changeOrders);
   const allRisks = useStore((s) => s.risks);
   const allSiteIssues = useStore((s) => s.siteIssues);
+  const controlRecords = useStore(s => s.controlRecords);
   const allBills = useStore((s) => s.bills);
 
   const approvals = useMemo(() => allApprovals.filter((a) => projectIds.has(a.projectId)), [allApprovals, projectIds]);
@@ -162,12 +160,12 @@ export function Dashboard() {
     const staleProjects = scopedProjects.filter((p) => isStaleProject(p, scopedPhotos)).length;
     const overdueInspections = scopedInspections.filter((i) => i.status === 'SCHEDULED' && new Date(i.scheduledDate) < new Date()).length;
     const overdueApprovals = scopedApprovals.filter((a) => a.status === 'PENDING' && (now - new Date(a.submittedDate).getTime()) / 86400000 > 15).length;
-    const billsOver30Days = allBills.filter((b) => scopedProjectIds.has(b.projectId) && !['PAID', 'REJECTED'].includes(b.status) && (now - new Date(b.submittedDate).getTime()) / 86400000 > 30).length;
+    const billsOver30Days = outstandingBills(allBills, controlRecords).filter((b) => scopedProjectIds.has(b.projectId) && (now - new Date(b.submittedDate).getTime()) / 86400000 > 30).length;
     const projectsRequiringEot = allExtensionsOfTime.filter((e) => scopedProjectIds.has(e.projectId) && (e.status === 'PENDING' || e.status === 'RECOMMENDED')).length;
     const projectsWithCostVariation = allChangeOrders.filter((c) => scopedProjectIds.has(c.projectId) && c.status === 'PENDING_APPROVAL').length;
     const handoverDueSoon = scopedProjects.filter((p) => p.status !== 'COMPLETED' && (new Date(p.plannedCompletionDate).getTime() - now) / 86400000 <= 30 && (new Date(p.plannedCompletionDate).getTime() - now) / 86400000 >= 0).length;
     return { total, inProgress, completed, delayed, sanctioned, spent, pendingApprovals, failedQc, financialAnomalies, staleProjects, overdueInspections, overdueApprovals, billsOver30Days, projectsRequiringEot, projectsWithCostVariation, handoverDueSoon };
-  }, [scopedProjects, scopedApprovals, scopedInspections, scopedPhotos, scopedProjectIds, allBills, allExtensionsOfTime, allChangeOrders]);
+  }, [scopedProjects, scopedApprovals, scopedInspections, scopedPhotos, scopedProjectIds, allBills, controlRecords, allExtensionsOfTime, allChangeOrders]);
 
   const statusDist = ['ON_TRACK', 'AT_RISK', 'DELAYED', 'COMPLETED'].map((s) => ({
     name: uiText(s), value: scopedProjects.filter((p) => p.status === s).length, key: s,
@@ -208,7 +206,7 @@ export function Dashboard() {
   }, [projects]);
 
   const avgPhysical = projects.length ? Math.round(projects.reduce((s, p) => s + p.physicalProgress, 0) / projects.length) : 0;
-  const avgFinancial = projects.length ? Math.round(projects.reduce((s, p) => s + p.financialProgress, 0) / projects.length) : 0;
+  const avgFinancial = Math.round(projects.reduce((s, p) => s + p.amountSpent, 0) / (projects.reduce((s, p) => s + p.sanctionedBudget, 0) || 1) * 100);
 
   const delayedProjects = projects.filter((p) => p.status === 'DELAYED').sort((a, b) => b.delayDays - a.delayDays).slice(0, 6);
   const upcomingInspections = inspections.filter((i) => i.status === 'SCHEDULED').slice(0, 6);
@@ -225,7 +223,11 @@ export function Dashboard() {
   const photoProjectTab = photoTabs.find((tab) => tab.value === 'field evidence')
     ?? photoTabs.find((tab) => tab.value === 'photos') ?? photoTabs[0];
   const workersOnSite = workers.filter((w) => w.attendanceStatus === 'PRESENT').length;
-  const topContractors = [...contractors].sort((a, b) => b.performanceScore - a.performanceScore).slice(0, 5);
+  const topContractors = contractors.map(c => {
+    const assigned = projects.filter(p => p.contractorId === c.id);
+    const budget = assigned.reduce((sum,p) => sum + p.sanctionedBudget, 0);
+    return { ...c, physical: assigned.length ? Math.round(assigned.reduce((sum,p) => sum + p.physicalProgress, 0) / assigned.length) : 0, financial: budget ? Math.round(assigned.reduce((sum,p) => sum + p.amountSpent, 0) / budget * 100) : 0, count: assigned.length };
+  }).filter(c => c.count > 0).sort((a,b) => b.physical - a.physical);
 
   const isSeniorRole = !!currentUser && SENIOR_ROLES.includes(currentUser.role);
   const isProjectManager = currentUser?.role === 'PROJECT_MANAGER';
@@ -254,12 +256,10 @@ export function Dashboard() {
   // Superadmin's "dashboard" is the Access Management console — access/permission
   // governance is their job, not project monitoring.
   if (currentUser?.role === 'WORKFORCE') return <WorkforceHome />;
-  if (currentUser?.role === 'SUPERADMIN') return <Suspense fallback={<p role="status" className="p-4 text-sm text-slate-500">{uiText('Loading page…')}</p>}><AccessManagement /></Suspense>;
 
   // The native app is built for field roles: Deputy/Junior Engineers and Contractors land
   // straight on the Field app (capture, progress, defects) instead of the desktop-oriented
   // command-centre dashboard. The website itself is unaffected — same code, different shell.
-  if (currentUser?.role === 'CONTRACTOR' || (Capacitor.isNativePlatform() && currentUser && FIELD_ROLES.includes(currentUser.role))) return <Suspense fallback={<p role="status" className="p-4 text-sm text-slate-500">{uiText('Loading page…')}</p>}><FieldHome key={currentUser.id} /></Suspense>;
 
   return (
     <div>
@@ -502,7 +502,7 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>{t('dashboard.physicalVsFinancial')}</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{uiText('Physical, financial & contractor progress')}</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4 py-2">
               <div>
@@ -513,6 +513,7 @@ export function Dashboard() {
                 <div className="mb-1 flex justify-between text-xs"><span className="text-slate-500">{t('dashboard.financialProgress')}</span><span className="font-semibold text-slate-700">{avgFinancial}%</span></div>
                 <ProgressBar value={avgFinancial} colorClass="bg-emerald-500" />
               </div>
+              <div className="space-y-3 border-t border-slate-100 pt-3">{topContractors.map(c => <div key={c.id} className="block w-full rounded-xl bg-slate-50 p-3 text-left"><p className="break-words text-sm font-semibold text-slate-800">{c.company}</p><p className="my-2 text-xs text-slate-500">{c.count} {uiText('Projects')} · {uiText('Physical Progress')} {c.physical}% · {uiText('Financial Progress')} {c.financial}%</p><ProgressBar value={c.physical} colorClass="bg-blue-500"/><div className="mt-2"><ProgressBar value={c.financial} colorClass="bg-emerald-500"/></div></div>)}</div>
               <p className="rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
                 {uiText(Math.abs(avgFinancial - avgPhysical) < 5 ? t('dashboard.gapAligned')
                   : avgFinancial > avgPhysical ? t('dashboard.gapFinancialAhead')
@@ -587,29 +588,18 @@ export function Dashboard() {
             <CardHeader><CardTitle>{t('dashboard.upcomingInspections')}</CardTitle></CardHeader>
             <CardContent className="space-y-2.5">
               {upcomingInspections.map((i) => (
-                <div key={i.id} className="flex items-center justify-between text-xs">
+                <button key={i.id} onClick={() => navigate(`/projects/${i.projectId}?tab=inspections`)} className="flex w-full items-center justify-between gap-3 rounded-xl p-2 text-left text-xs hover:bg-blue-50">
                   <div>
                     <p className="font-medium text-slate-700">{uiText(i.category.replace('_', ' '))}</p>
                     <p className="text-[10.5px] text-slate-400">{projects.find((p) => p.id === i.projectId)?.name}</p>
                   </div>
                   <span className="text-[10.5px] text-slate-500">{uiText(formatDate(i.scheduledDate))}</span>
-                </div>
+                </button>
               ))}
             </CardContent>
           </Card>
         )}
 
-        <Card className={isSeniorRole ? 'lg:max-w-md' : ''}>
-          <CardHeader><CardTitle>{t('dashboard.contractorPerformance')}</CardTitle></CardHeader>
-          <CardContent className="space-y-2.5">
-            {topContractors.map((c) => (
-              <div key={c.id}>
-                <div className="mb-1 flex justify-between text-xs"><span className="truncate font-medium text-slate-700">{uiText(c.company)}</span><span className="text-slate-500">{c.performanceScore}%</span></div>
-                <ProgressBar value={c.performanceScore} className="h-1.5" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
 
         {!isSeniorRole && (
           <Card>

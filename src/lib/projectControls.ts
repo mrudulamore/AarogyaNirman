@@ -1,6 +1,7 @@
+import { ledgerTransactions } from './financeLedger';
 import type { BillAttachment, Role } from '../types';
 import type { StoreState } from '../store/useStore';
-import { computeProjectScope } from './scope';
+import { computeProjectScope } from './projectScope';
 import { todayDate } from './fundDisbursal';
 import { readBillFile } from './billAttachments';
 
@@ -69,8 +70,7 @@ export function handoverGaps(s: StoreState, projectId: string) {
   return gaps;
 }
 export function actualTransactions(s: StoreState, projectId: string, asOf = todayDate()) {
-  const records = activeControls(s, projectId).filter(r => !['PAYMENT', 'RECEIPT', 'REVERSAL'].includes(r.kind) || r.fields.transactionDate <= asOf);
-  return records.filter(r => ['PAYMENT', 'RECEIPT'].includes(r.kind) && !records.some(reversal => reversal.kind === 'REVERSAL' && reversal.fields.originalTransactionId === r.id));
+  return ledgerTransactions(s.controlRecords, projectId, asOf);
 }
 const positive = (v: string) => Number.isFinite(Number(v)) && Number(v) > 0;
 const dateValid = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
@@ -188,7 +188,7 @@ export function createControlActions(set: (fn: (s: StoreState) => Partial<StoreS
           const tx = actualTransactions({ ...state, controlRecords }, initial.projectId);
           const spent = tx.filter(r => r.kind === 'PAYMENT').reduce((n, r) => n + Number(r.fields.amount), 0);
           const received = tx.filter(r => r.kind === 'RECEIPT').reduce((n, r) => n + Number(r.fields.amount), 0);
-          projects = projects.map(p => p.id !== initial.projectId ? p : { ...p, amountSpent: spent, amountReleased: received, financialProgress: p.sanctionedBudget ? Math.min(100, spent / p.sanctionedBudget * 100) : 0 });
+          projects = projects.map(p => p.id !== initial.projectId ? p : { ...p, amountSpent: spent, amountReleased: received, financialProgress: p.sanctionedBudget ? Math.round(spent / p.sanctionedBudget * 10000) / 100 : 0 });
           bills = bills.map(b => {
             if (b.projectId !== initial.projectId || !tx.some(r => r.fields.billId === b.id) && !controlRecords.some(r => r.kind === 'PAYMENT' && r.fields.billId === b.id && r.status === 'VERIFIED')) return b;
             const paid = tx.filter(r => r.kind === 'PAYMENT' && r.fields.billId === b.id).reduce((n, r) => n + Number(r.fields.amount), 0);

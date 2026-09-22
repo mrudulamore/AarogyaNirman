@@ -91,8 +91,9 @@ export function FieldHome() {
 
   return (
     <div className="field-workspace mx-auto max-w-3xl space-y-5 pb-10">
-      <div>
-        <p className="text-xs text-slate-400">{uiText(isContractor ? 'Contractor Dashboard' : 'Field Engineer App')}</p>
+      <div className="rounded-2xl bg-gradient-to-br from-cyan-950 to-blue-800 p-5 text-white">
+        <h1 className="mb-2 text-2xl font-semibold">{uiText("Field workspace")}</h1><p className="mb-4 text-sm text-blue-100">{uiText("Capture evidence, record progress and resolve site work.")}</p>
+        <p className="text-xs text-blue-100">{uiText(isContractor ? 'Contractor Dashboard' : 'Field Engineer App')}</p>
         <Select disabled={submitting} value={projectId} onValueChange={id => { discardCapturedPhoto(); setPhotoPlace({ building: '', floor: '', activity: '' }); setProjectId(id); setProgressFiles([]); setProgressPct(myProjects.find(p => p.id === id)?.reportedProgress ?? 0); setRemarks(''); setDefectDesc(''); setAction(null); }}>
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>{myProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
@@ -150,14 +151,14 @@ export function FieldHome() {
       <Section title={uiText("Pending Inspections")} onSeeAll={() => navigate(`/projects/${project.id}?tab=inspections`)}>
         {pendingInspections.length === 0 && <EmptyLine text="No pending inspections." />}
         {pendingInspections.map((i) => (
-          <Row key={i.id} primary={i.category.replace(/_/g, ' ')} secondary={`Scheduled ${formatDate(i.scheduledDate)} · ${i.inspector}`} />
+          <button key={i.id} onClick={() => navigate(`/projects/${project.id}?tab=inspections`)} className="block w-full rounded-xl p-2 text-left hover:bg-blue-50"><Row primary={i.category.replace(/_/g, ' ')} secondary={`Scheduled ${formatDate(i.scheduledDate)} · ${i.inspector}`} /></button>
         ))}
       </Section>
 
       <Section title={uiText("Open Defects")} onSeeAll={() => navigate(`/projects/${project.id}?tab=defects`)}>
         {openDefects.length === 0 && <EmptyLine text="No open defects." />}
         {openDefects.slice(0, 5).map((d) => (
-          <Row key={d.id} primary={d.location} secondary={d.category.replace(/_/g, ' ')} badge={<StatusBadge status={d.status} />} />
+          <button key={d.id} onClick={() => navigate(`/projects/${project.id}?tab=defects`)} className="block w-full rounded-xl p-2 text-left hover:bg-blue-50"><Row primary={d.location} secondary={d.category.replace(/_/g, ' ')} badge={<StatusBadge status={d.status} />} /></button>
         ))}
       </Section>
 

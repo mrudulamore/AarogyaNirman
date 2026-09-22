@@ -1,3 +1,4 @@
+import { outstandingBills } from '../../lib/financeLedger';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { FundDisbursalReports } from '../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
@@ -74,7 +75,7 @@ const REPORTS: ReportDef[] = [
           { label: 'Sanctioned Budget', value: formatCurrency(sum(projects.map((p) => p.sanctionedBudget))) },
           { label: 'Amount Released', value: formatCurrency(sum(projects.map((p) => p.amountReleased))) },
           { label: 'Amount Spent', value: formatCurrency(sum(projects.map((p) => p.amountSpent))) },
-          { label: 'Bills Pending', value: String(bills.filter((b) => !['PAID', 'REJECTED'].includes(b.status)).length) },
+          { label: 'Bills Pending', value: String(outstandingBills(bills, store.getState().controlRecords).length) },
         ],
         sections: [{
           heading: 'Bills in Scope', columns: ['Bill No.', 'Project', 'Gross', 'Net Payable', 'Status', 'Submitted'],

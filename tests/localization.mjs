@@ -4,7 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 
-const catalog = JSON.parse(fs.readFileSync('src/i18n/locales/interface.json', 'utf8'));
+const catalog = { ...JSON.parse(fs.readFileSync('src/i18n/locales/interface.json', 'utf8')), ...JSON.parse(fs.readFileSync('src/i18n/locales/landingMessages.json', 'utf8')) };
 for (const [key, values] of Object.entries(catalog)) {
   assert.equal(values.length, 2, key);
   for (const value of values) {

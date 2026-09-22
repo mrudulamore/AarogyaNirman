@@ -1,3 +1,4 @@
+import { DeadlineBadge } from '../../../components/common/DeadlineBadge';
 import { reportGroupsForRole, reportNavigation } from '../../../lib/projectReportGroups';
 import { uiText, useUiLanguage } from '../../../i18n/ui';
 import { lazy, Suspense, useState } from 'react';
@@ -92,6 +93,7 @@ export function ProjectDetail() {
 
   return (
     <div>
+      <DeadlineBadge project={project} />
       <Breadcrumbs items={[{ label: 'Projects', to: '/projects' }, { label: project.name }]} />
 
       <Card className="mb-4">

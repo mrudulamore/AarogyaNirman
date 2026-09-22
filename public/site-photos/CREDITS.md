@@ -15,3 +15,12 @@ Original image URLs:
 - https://images.unsplash.com/photo-1609867271967-a82f85c48531
 
 The pre-existing rebar.jpg, structure.jpg and scaffolding.jpg assets remain in the collection; their original source records were not included in the repository.
+
+## Maharashtra illustrations (September 2026 update)
+
+These unmodified photographs illustrate construction in Maharashtra. They are not captured evidence of any project in the demo dataset. Device-captured evidence retains its own source.
+
+- **nmmc-airoli.jpg** — Construction of NMMC hospital, Airoli, Navi Mumbai. Author: Agneelrajput. [Source](https://commons.wikimedia.org/wiki/File:Construction_of_NMMC_hospital.jpg). [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- **pune-construction.jpg** — Pune Construction Site. Author: Drmarathe. [Source](https://commons.wikimedia.org/wiki/File:Pune_Construction_Site.JPG). [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+
+Original image files are redistributed without edits; display cropping is performed by CSS.

@@ -1,3 +1,4 @@
+import { reconcileProjects } from '../lib/financeLedger';
 import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
 import { workforceAccount } from '../lib/workforceAccount';
 import { DEFAULT_ESCALATION, pendingWork, daysLate, drawingWarning, type EscalationPolicy } from '../lib/pendingWork';
@@ -10,7 +11,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateMockData } from '../mock/seed';
 import { ROLE_NAV, NAV_ITEMS } from '../components/layout/navConfig';
-import { computeProjectScope } from '../lib/scope';
+import { computeProjectScope } from '../lib/projectScope';
 import { validateBillSubmission } from '../lib/billSubmission';
 import { readBillFile } from '../lib/billAttachments';
 import { previousClaimedQuantity, validateBillMeasurements } from '../lib/billMeasurements';
@@ -234,6 +235,7 @@ export const useStore = create<StoreState>()(
       controlRecords: [],
       ...createControlActions(set, get),
       ...seed,
+      projects: reconcileProjects(seed.projects, []),
       rolePermissions: JSON.parse(JSON.stringify(ROLE_NAV)),
       fundInstallments: generateFundInstallments(seed.projects, todayDate()),
 
@@ -937,7 +939,8 @@ export const useStore = create<StoreState>()(
           const user = (saved.users ?? current.users).find(u => u.id === saved.currentUser?.id && u.role === saved.currentUser?.role);
           saved.currentUser = user ?? null;
         }
-        return { ...current, ...saved, ...mergeDemoSamples({ ...current, ...saved }, current), currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+        const merged = { ...current, ...saved, ...mergeDemoSamples({ ...current, ...saved }, current), currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: Array.from(new Set([...(saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR), 'workers'])) }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+        return { ...merged, projects: reconcileProjects(merged.projects, merged.controlRecords) };
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;

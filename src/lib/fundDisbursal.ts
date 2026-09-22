@@ -73,7 +73,7 @@ export function buildContractorFundReport(projects: Project[], bills: import('..
     return [p.name, money(records.reduce((sum, b) => sum + b.netPayable, 0)), records.length, records.at(-1)?.paidDate ?? 'No dated payments'];
   }) };
   const details: PdfSection = { heading: 'Contractor Payment Register', columns: ['Project', 'Contractor', 'Bill reference', 'Payment date', 'Net paid'], rows: paid.map((b) => [name(b.projectId), company(b.contractorId), b.billNumber, b.paidDate!, money(b.netPayable)]) };
-  const roadmap: PdfSection = { heading: 'Contractor Payment Pipeline (current workflow status)', columns: ['Project / Bill', 'Contractor', 'Net payable', 'Status', 'Next action', 'Payment target'], rows: pending.map((b) => [`${name(b.projectId)} / ${b.billNumber}`, company(b.contractorId), money(b.netPayable), b.status, nextStep[b.status] ?? 'Review required', 'Not scheduled']) };
+  const roadmap: PdfSection = { heading: 'Contractor Payment Pipeline (current workflow status)', columns: ['Project / Bill', 'Contractor', 'Submitted on', 'Net payable', 'Status', 'Next action', 'Payment target'], rows: pending.map((b) => [`${name(b.projectId)} / ${b.billNumber}`, company(b.contractorId), b.submittedDate, money(b.netPayable), b.status, nextStep[b.status] ?? 'Review required', 'Not scheduled']) };
   const missing: PdfSection = { heading: 'Paid Bills Excluded: Payment Date Missing', columns: ['Project', 'Bill reference', 'Net payable'], rows: undated.map((b) => [name(b.projectId), b.billNumber, money(b.netPayable)]) };
   return { total, paid, pending, kpis, summary, details, roadmap, missing };
 }

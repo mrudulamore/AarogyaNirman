@@ -6300,5 +6300,89 @@
   "Confirm that these coordinates were checked against the actual hospital site.": ["पुष्टि करें कि इन निर्देशांकों की वास्तविक अस्पताल स्थल से जाँच की गई है।", "हे निर्देशांक प्रत्यक्ष रुग्णालयाच्या ठिकाणाशी तपासल्याची खात्री करा."],
   "Photo saved on this device with geotag. Central sync is pending.": ["जियोटैग सहित तस्वीर इस डिवाइस पर सहेजी गई। केंद्रीय सिंक लंबित है।", "जिओटॅगसह छायाचित्र या उपकरणावर जतन झाले. केंद्रीय समक्रमण प्रलंबित आहे."],
   "awaiting central synchronization": ["केंद्रीय समन्वयन की प्रतीक्षा में", "केंद्रीय समक्रमणाच्या प्रतीक्षेत"],
-  "captured photos await central synchronization. Originals remain on this device.": ["कैप्चर की गई तस्वीरें केंद्रीय समन्वयन की प्रतीक्षा में हैं। मूल प्रतियाँ इस डिवाइस पर रहती हैं।", "काढलेली छायाचित्रे केंद्रीय समक्रमणाच्या प्रतीक्षेत आहेत. मूळ प्रती या उपकरणावरच राहतात."]
+  "captured photos await central synchronization. Originals remain on this device.": ["कैप्चर की गई तस्वीरें केंद्रीय समन्वयन की प्रतीक्षा में हैं। मूल प्रतियाँ इस डिवाइस पर रहती हैं।", "काढलेली छायाचित्रे केंद्रीय समक्रमणाच्या प्रतीक्षेत आहेत. मूळ प्रती या उपकरणावरच राहतात."],
+  "Field workspace": [
+    "फील्ड कार्यक्षेत्र",
+    "स्थळ कार्यक्षेत्र"
+  ],
+  "Capture evidence, record progress and resolve site work.": [
+    "साक्ष्य लें, प्रगति दर्ज करें और स्थल के कार्य पूरे करें।",
+    "पुरावे नोंदवा, प्रगती नोंदवा आणि स्थळावरील कामे पूर्ण करा."
+  ],
+  "Physical, financial & contractor progress": [
+    "भौतिक, वित्तीय और ठेकेदार की प्रगति",
+    "भौतिक, आर्थिक आणि कंत्राटदाराची प्रगती"
+  ],
+  "Monthly expenditure · last 12 months": [
+    "मासिक व्यय · पिछले 12 महीने",
+    "मासिक खर्च · मागील 12 महिने"
+  ],
+  "Monthly change and reconciliation": [
+    "मासिक बदलाव और मिलान",
+    "मासिक बदल आणि ताळमेळ"
+  ],
+  "Net expenditure": [
+    "शुद्ध व्यय",
+    "निव्वळ खर्च"
+  ],
+  "Project financial position": [
+    "परियोजना की वित्तीय स्थिति",
+    "प्रकल्पाची आर्थिक स्थिती"
+  ],
+  "Receipt balance after payments": [
+    "भुगतान के बाद प्राप्त निधि शेष",
+    "देयकांनंतर प्राप्त निधीची शिल्लक"
+  ],
+  "Reported Physical": [
+    "दर्ज भौतिक प्रगति",
+    "नोंदवलेली भौतिक प्रगती"
+  ],
+  "Submitted on": [
+    "प्रस्तुति दिनांक",
+    "सादर दिनांक"
+  ],
+  "verified expenditure": [
+    "सत्यापित व्यय",
+    "पडताळलेला खर्च"
+  ],
+  "{{0}} days left": [
+    "{{0}} दिन शेष",
+    "{{0}} दिवस बाकी"
+  ],
+  "{{0}} days overdue": [
+    "{{0}} दिन की देरी",
+    "{{0}} दिवस विलंब"
+  ],
+  "Due today": [
+    "आज नियत",
+    "आज देय"
+  ],
+  "Verified payments less reversals, by transaction date. Current month is partial.": [
+    "लेनदेन दिनांक के अनुसार सत्यापित भुगतान में से उलट प्रविष्टियां घटाकर। चालू महीना आंशिक है।",
+    "व्यवहार दिनांकानुसार पडताळलेल्या देयकांतून रद्द व्यवहार वजा करून. चालू महिना अपूर्ण आहे."
+  ],
+  "Change compares each month with the previous month. Percent change is omitted when the previous month is zero. Negative expenditure represents reversals.": [
+    "बदलाव पिछले महीने से तुलना है। पिछला महीना शून्य होने पर प्रतिशत नहीं दिखता। ऋणात्मक व्यय उलट प्रविष्टियां दर्शाता है।",
+    "बदल मागील महिन्याशी तुलना दर्शवतो. मागील महिना शून्य असल्यास टक्केवारी दाखवली जात नाही. ऋण खर्च रद्द व्यवहार दर्शवतो."
+  ],
+  "Receipts fund the project. Payments record contractor expenditure. Pending bills are liabilities, not money spent.": [
+    "प्राप्त निधि परियोजना को वित्त देती है। भुगतान ठेकेदार व्यय दर्ज करते हैं। लंबित बिल देनदारियां हैं, खर्च नहीं।",
+    "प्राप्त निधीतून प्रकल्प चालतो. देयके कंत्राटदाराचा खर्च नोंदवतात. प्रलंबित बिले दायित्वे आहेत, झालेला खर्च नाही."
+  ],
+  "Payments are dated verified transactions. Partial payments are counted separately; reversed payments are excluded.": [
+    "भुगतान दिनांक सहित सत्यापित लेनदेन हैं। आंशिक भुगतान अलग गिने जाते हैं; रद्द भुगतान बाहर हैं।",
+    "देयके दिनांकित पडताळलेले व्यवहार आहेत. अंशतः देयके स्वतंत्र मोजली जातात; रद्द देयके वगळली जातात."
+  ],
+  "Maharashtra construction · illustrative photo, not project evidence": [
+    "महाराष्ट्र निर्माण · उदाहरण फोटो, परियोजना का साक्ष्य नहीं",
+    "महाराष्ट्र बांधकाम · उदाहरण छायाचित्र, प्रकल्पाचा पुरावा नाही"
+  ],
+  "Expenditure equals verified contractor payments minus reversals. Project totals, district charts and receipt/payment registers share this ledger; legacy paid labels are not proof of payment.": [
+    "व्यय सत्यापित ठेकेदार भुगतान से रद्द प्रविष्टियां घटाकर है। परियोजना योग, जिला चार्ट और प्राप्ति/भुगतान रजिस्टर इसी बही का उपयोग करते हैं; पुराने भुगतान लेबल प्रमाण नहीं हैं।",
+    "खर्च म्हणजे पडताळलेल्या कंत्राटदार देयकांतून रद्द व्यवहार वजा केलेली रक्कम. प्रकल्पाची बेरीज, जिल्हा आलेख आणि प्राप्ती/देयक नोंदी हीच खातेवही वापरतात; जुनी देयक स्थिती हा पुरावा नाही."
+  ],
+  "Roadmap dates are planned targets, not completed transfers. Only verified receipts count as received. Contractor rows show submission dates; unscheduled payments are marked explicitly.": [
+    "रोडमैप की तारीखें नियोजित लक्ष्य हैं, पूर्ण हस्तांतरण नहीं। केवल सत्यापित प्राप्तियां गिनी जाती हैं। ठेकेदार पंक्तियां प्रस्तुति दिनांक दिखाती हैं; अनिर्धारित भुगतान स्पष्ट हैं।",
+    "आराखड्यातील दिनांक नियोजित उद्दिष्टे आहेत, पूर्ण हस्तांतरण नाही. फक्त पडताळलेल्या प्राप्ती मोजल्या जातात. कंत्राटदार पंक्तींमध्ये सादर दिनांक दिसतात; वेळ न ठरलेली देयके स्पष्ट केली आहेत."
+  ]
 }

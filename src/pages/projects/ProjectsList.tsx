@@ -1,3 +1,4 @@
+import { DeadlineBadge } from '../../components/common/DeadlineBadge';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -207,7 +208,7 @@ export function ProjectsList() {
                     <div className="text-right"><p className="text-xs font-medium text-slate-500">{uiText('Physical Progress')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-700">{p.physicalProgress}<span className="ml-0.5 text-sm text-slate-500">%</span></p></div>
                     <div className="col-span-2"><ProgressBar value={p.physicalProgress} className="h-1.5" /></div>
                   </div>
-                  <div className="flex items-center justify-between gap-4 text-xs"><span className="text-slate-500">{uiText('Planned Completion')}</span><span className="font-semibold text-slate-700">{formatDate(p.plannedCompletionDate)}</span></div>
+                  <div className="flex items-center justify-between gap-4 text-xs"><span className="text-slate-500">{uiText('Planned Completion')}</span><span className="font-semibold text-slate-700">{formatDate(p.plannedCompletionDate)}</span></div><DeadlineBadge project={p} />
                 </div>
                 <div className="hospital-card-footer"><div className="min-w-0"><p className="text-[11px] text-slate-500">{uiText('Contractor')}</p><p className="mt-1 truncate text-xs font-semibold text-slate-700">{contractors.find(c => c.id === p.contractorId)?.company ?? '—'}</p></div><span className="hospital-card-open" aria-hidden="true"><ArrowRight size={20}/></span></div>
               </Link>
