@@ -1,6 +1,6 @@
+import { InspectionDetails } from '../../components/common/InspectionDetails';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
@@ -14,7 +14,7 @@ import { ShieldCheck, ShieldAlert, Clock, ClipboardCheck, MapPinned } from 'luci
 
 export function QualityList() {
   useUiLanguage();
-  const navigate = useNavigate();
+  const [detailId, setDetailId] = useState<string | null>(null);
   const { t } = useTranslation();
   const { projects, projectIds, scopeLabel, isStatewide } = useProjectScope();
   const allInspections = useStore((s) => s.inspections);
@@ -67,7 +67,7 @@ export function QualityList() {
           <THead><Tr><Th>{uiText("Project")}</Th><Th>{uiText("Category")}</Th><Th>{uiText("Scheduled")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Result")}</Th><Th>{uiText("Score")}</Th></Tr></THead>
           <TBody>
             {filtered.map((i) => (
-              <Tr key={i.id} onClick={() => navigate(`/projects/${i.projectId}?tab=inspections`)}>
+              <Tr key={i.id} onClick={() => setDetailId(i.id)}>
                 <Td className="max-w-[200px] truncate font-medium text-slate-800">{projects.find((p) => p.id === i.projectId)?.name}</Td>
                 <Td>{uiText(i.category.replace(/_/g, ' '))}</Td>
                 <Td>{uiText(formatDate(i.scheduledDate))}</Td>
@@ -80,6 +80,7 @@ export function QualityList() {
           </TBody>
         </Table>
       </Card>
+      <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} />
     </div>
   );
 }
