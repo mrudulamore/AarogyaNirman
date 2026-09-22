@@ -47,7 +47,9 @@ export function buildFundReport(projects: Project[], installments: FundInstallme
   return { total, planned, budget, received, pending, kpis, summary, details, roadmap };
 }
 
-export function buildContractorFundReport(projects: Project[], bills: import('../types').Bill[], contractors: import('../types').Contractor[], asOf: string) {
+export type FundReportBill = Pick<import('../types').Bill, 'id' | 'projectId' | 'contractorId' | 'billNumber' | 'netPayable' | 'status' | 'submittedDate' | 'paidDate'>;
+
+export function buildContractorFundReport(projects: Project[], bills: FundReportBill[], contractors: import('../types').Contractor[], asOf: string) {
   const ids = new Set(projects.map((p) => p.id));
   const scoped = bills.filter((b) => ids.has(b.projectId));
   const paid = scoped.filter((b) => b.status === 'PAID' && b.paidDate && b.paidDate <= asOf)

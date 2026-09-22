@@ -6384,5 +6384,229 @@
   "Roadmap dates are planned targets, not completed transfers. Only verified receipts count as received. Contractor rows show submission dates; unscheduled payments are marked explicitly.": [
     "रोडमैप की तारीखें नियोजित लक्ष्य हैं, पूर्ण हस्तांतरण नहीं। केवल सत्यापित प्राप्तियां गिनी जाती हैं। ठेकेदार पंक्तियां प्रस्तुति दिनांक दिखाती हैं; अनिर्धारित भुगतान स्पष्ट हैं।",
     "आराखड्यातील दिनांक नियोजित उद्दिष्टे आहेत, पूर्ण हस्तांतरण नाही. फक्त पडताळलेल्या प्राप्ती मोजल्या जातात. कंत्राटदार पंक्तींमध्ये सादर दिनांक दिसतात; वेळ न ठरलेली देयके स्पष्ट केली आहेत."
+  ],
+  "Every rupee, clearly accounted for": [
+    "हर रुपये का स्पष्ट हिसाब",
+    "प्रत्येक रुपयाचा स्पष्ट हिशेब"
+  ],
+  "Sanctioned money": [
+    "स्वीकृत निधि",
+    "मंजूर निधी"
+  ],
+  "Disbursed money": [
+    "वितरित निधि",
+    "वितरित निधी"
+  ],
+  "Approved budget for selected projects": [
+    "चयनित परियोजनाओं का स्वीकृत बजट",
+    "निवडलेल्या प्रकल्पांचे मंजूर अंदाजपत्रक"
+  ],
+  "Government funds received by projects": [
+    "परियोजनाओं को प्राप्त सरकारी निधि",
+    "प्रकल्पांना प्राप्त सरकारी निधी"
+  ],
+  "Verified payments made to contractors": [
+    "ठेकेदारों को किए गए सत्यापित भुगतान",
+    "कंत्राटदारांना केलेली पडताळलेली देयके"
+  ],
+  "View project budgets": [
+    "परियोजना बजट देखें",
+    "प्रकल्प अंदाजपत्रके पाहा"
+  ],
+  "View actual receipts": [
+    "वास्तविक प्राप्तियां देखें",
+    "प्रत्यक्ष प्राप्ती पाहा"
+  ],
+  "View payments & linked bills": [
+    "भुगतान और संबंधित बिल देखें",
+    "देयके आणि संबंधित बिले पाहा"
+  ],
+  "Available funds": [
+    "उपलब्ध निधि",
+    "उपलब्ध निधी"
+  ],
+  "Disbursed minus expenditure": [
+    "वितरित निधि में से व्यय घटाकर",
+    "वितरित निधीतून खर्च वजा करून"
+  ],
+  "Budget awaiting disbursal": [
+    "वितरण हेतु शेष बजट",
+    "वितरणाच्या प्रतीक्षेतील निधी"
+  ],
+  "Receipts exceed sanctioned budget": [
+    "प्राप्तियां स्वीकृत बजट से अधिक हैं",
+    "प्राप्ती मंजूर अंदाजपत्रकापेक्षा जास्त आहे"
+  ],
+  "Outstanding bills": [
+    "बकाया बिल",
+    "थकीत बिले"
+  ],
+  "Receipts and expenditure include verified transactions only, net of reversals. Outstanding bills are not counted as expenditure.": [
+    "प्राप्तियां और व्यय में केवल सत्यापित लेनदेन शामिल हैं, रद्द प्रविष्टियां घटाकर। बकाया बिल व्यय में शामिल नहीं हैं।",
+    "प्राप्ती आणि खर्चामध्ये रद्द व्यवहार वजा करून फक्त पडताळलेले व्यवहार समाविष्ट आहेत. थकीत बिले खर्चात धरली जात नाहीत."
+  ],
+  "Project budgets": [
+    "परियोजना बजट",
+    "प्रकल्प अंदाजपत्रके"
+  ],
+  "Receipts": [
+    "प्राप्तियां",
+    "प्राप्ती"
+  ],
+  "Trends": [
+    "रुझान",
+    "कल"
+  ],
+  "Reports & roadmap": [
+    "रिपोर्ट और वितरण योजना",
+    "अहवाल आणि वितरण आराखडा"
+  ],
+  "Finance sections": [
+    "वित्त अनुभाग",
+    "आर्थिक विभाग"
+  ],
+  "Open a reference to see its original record and supporting evidence.": [
+    "मूल रिकॉर्ड और सहायक साक्ष्य देखने के लिए संदर्भ खोलें।",
+    "मूळ नोंद आणि आधारभूत पुरावे पाहण्यासाठी संदर्भ उघडा."
+  ],
+  "Search financial records": [
+    "वित्तीय रिकॉर्ड खोजें",
+    "आर्थिक नोंदी शोधा"
+  ],
+  "No linked bill": [
+    "कोई संबंधित बिल नहीं",
+    "संबंधित बिल नाही"
+  ],
+  "All bills": [
+    "सभी बिल",
+    "सर्व बिले"
+  ],
+  "Outstanding balance": [
+    "बकाया शेष",
+    "थकीत शिल्लक"
+  ],
+  "No matching financial records": [
+    "मेल खाने वाले वित्तीय रिकॉर्ड नहीं मिले",
+    "जुळणाऱ्या आर्थिक नोंदी नाहीत"
+  ],
+  "Choose another project or clear your search.": [
+    "अन्य परियोजना चुनें या खोज साफ करें।",
+    "दुसरा प्रकल्प निवडा किंवा शोध साफ करा."
+  ],
+  "Transaction details & evidence": [
+    "लेनदेन विवरण और साक्ष्य",
+    "व्यवहार तपशील आणि पुरावे"
+  ],
+  "View all records": [
+    "सभी रिकॉर्ड देखें",
+    "सर्व नोंदी पाहा"
+  ],
+  "Contract & billing breakdown": [
+    "अनुबंध और बिल का विवरण",
+    "करार आणि बिलांचा तपशील"
+  ],
+  "Budget utilisation": [
+    "बजट उपयोग",
+    "अंदाजपत्रकाचा वापर"
+  ],
+  "Approved bills funding gap": [
+    "स्वीकृत बिलों हेतु निधि की कमी",
+    "मंजूर बिलांसाठी निधीची तूट"
+  ],
+  "Bills pending over 30 days": [
+    "30 दिनों से अधिक लंबित बिल",
+    "30 दिवसांपेक्षा जास्त प्रलंबित बिले"
+  ],
+  "Verified expenditure / sanctioned budget": [
+    "सत्यापित व्यय / स्वीकृत बजट",
+    "पडताळलेला खर्च / मंजूर अंदाजपत्रक"
+  ],
+  "{{0}} projects need funding review": [
+    "{{0}} परियोजनाओं की निधि समीक्षा आवश्यक",
+    "{{0}} प्रकल्पांच्या निधीचा आढावा आवश्यक"
+  ],
+  "{{0}} outstanding bills since submission": [
+    "प्रस्तुति के बाद से {{0}} बकाया बिल",
+    "सादर केल्यापासून {{0}} थकीत बिले"
+  ],
+  "Decision priorities": [
+    "निर्णय की प्राथमिकताएं",
+    "निर्णयाचे प्राधान्यक्रम"
+  ],
+  "Critical items first, then highest financial exposure. Amounts may overlap; do not add them together.": [
+    "गंभीर विषय पहले, फिर अधिक वित्तीय राशि। राशियां दोहराई जा सकती हैं; इन्हें न जोड़ें।",
+    "गंभीर बाबी प्रथम, नंतर सर्वाधिक आर्थिक रक्कम. रकमांची पुनरावृत्ती होऊ शकते; त्यांची बेरीज करू नका."
+  ],
+  "All priorities": [
+    "सभी प्राथमिकताएं",
+    "सर्व प्राधान्यक्रम"
+  ],
+  "Budget overrun": [
+    "बजट से अधिक व्यय",
+    "अंदाजपत्रकापेक्षा जास्त खर्च"
+  ],
+  "Funding shortfall": [
+    "निधि की कमी",
+    "निधीची तूट"
+  ],
+  "Ageing bill": [
+    "लंबे समय से लंबित बिल",
+    "दीर्घकाळ प्रलंबित बिल"
+  ],
+  "Payment missing bill link": [
+    "भुगतान से बिल नहीं जुड़ा है",
+    "देयकाशी बिल जोडलेले नाही"
+  ],
+  "Review the sanctioned budget and payment records before further commitments.": [
+    "अगली प्रतिबद्धताओं से पहले स्वीकृत बजट और भुगतान रिकॉर्ड की समीक्षा करें।",
+    "पुढील वचनबद्धतेपूर्वी मंजूर अंदाजपत्रक आणि देयक नोंदी तपासा."
+  ],
+  "Confirm available receipts and arrange the project funding needed for approved bills.": [
+    "उपलब्ध प्राप्तियां जांचें और स्वीकृत बिलों के लिए आवश्यक परियोजना निधि की व्यवस्था करें।",
+    "उपलब्ध प्राप्ती तपासा आणि मंजूर बिलांसाठी आवश्यक प्रकल्प निधीची व्यवस्था करा."
+  ],
+  "Review the bill and resolve its verification, approval or payment blocker.": [
+    "बिल की समीक्षा करके सत्यापन, स्वीकृति या भुगतान की बाधा दूर करें।",
+    "बिल तपासून पडताळणी, मंजुरी किंवा देयकातील अडथळा दूर करा."
+  ],
+  "Reconcile this payment with its source bill before relying on bill-level reporting.": [
+    "बिल-स्तरीय रिपोर्ट पर निर्भर होने से पहले इस भुगतान का मूल बिल से मिलान करें।",
+    "बिलनिहाय अहवालावर अवलंबून राहण्यापूर्वी या देयकाचा मूळ बिलाशी ताळमेळ करा."
+  ],
+  "{{0}} days since submission": [
+    "प्रस्तुति के बाद {{0}} दिन",
+    "सादर केल्यापासून {{0}} दिवस"
+  ],
+  "Expenditure above sanctioned budget": [
+    "स्वीकृत बजट से अधिक व्यय",
+    "मंजूर अंदाजपत्रकापेक्षा जास्त खर्च"
+  ],
+  "Approved unpaid bills minus available project funds": [
+    "स्वीकृत अवैतनिक बिल घटा उपलब्ध परियोजना निधि",
+    "मंजूर न भरलेली बिले वजा उपलब्ध प्रकल्प निधी"
+  ],
+  "Verified payment has no matching bill": [
+    "सत्यापित भुगतान का संबंधित बिल नहीं है",
+    "पडताळलेल्या देयकाशी जुळणारे बिल नाही"
+  ],
+  "Review records": [
+    "रिकॉर्ड की समीक्षा करें",
+    "नोंदी तपासा"
+  ],
+  "No items meet these review thresholds in the selected projects.": [
+    "चयनित परियोजनाओं में इन समीक्षा सीमाओं के अंतर्गत कोई विषय नहीं है।",
+    "निवडलेल्या प्रकल्पांत या पुनरावलोकन मर्यादांनुसार कोणतीही बाब नाही."
+  ],
+  "Analysis basis": [
+    "विश्लेषण का आधार",
+    "विश्लेषणाचा आधार"
+  ],
+  "Funding gaps are calculated per project: approved unpaid bills minus receipts remaining after expenditure. Surpluses in other projects are not assumed transferable. A negative cash balance is included in the gap. Bill ageing starts at submission; 30 days is a review threshold, not a contractual due date. Only recorded, verified transactions count; this is not a bank balance or a payment instruction.": [
+    "निधि की कमी प्रति परियोजना है: स्वीकृत अवैतनिक बिल घटा व्यय के बाद शेष प्राप्तियां। अन्य परियोजनाओं की अतिरिक्त निधि हस्तांतरणीय नहीं मानी जाती। ऋणात्मक शेष कमी में शामिल है। बिल की उम्र प्रस्तुति से शुरू होती है; 30 दिन समीक्षा सीमा है, अनुबंध की देय तिथि नहीं। केवल दर्ज सत्यापित लेनदेन गिने जाते हैं; यह बैंक शेष या भुगतान निर्देश नहीं है।",
+    "निधीची तूट प्रकल्पनिहाय आहे: मंजूर न भरलेली बिले वजा खर्चानंतर शिल्लक प्राप्ती. इतर प्रकल्पांतील अतिरिक्त निधी हस्तांतरणीय मानला जात नाही. ऋण शिल्लक तुटीत समाविष्ट आहे. बिलाचे वय सादर दिनांकापासून मोजले जाते; 30 दिवस ही आढाव्याची मर्यादा आहे, करारातील देय दिनांक नाही. फक्त नोंदवलेले पडताळलेले व्यवहार मोजले जातात; ही बँक शिल्लक किंवा देयक सूचना नाही."
+  ],
+  "{{0}} verified payments have no matching bill": [
+    "{{0}} सत्यापित भुगतानों का संबंधित बिल नहीं है",
+    "{{0}} पडताळलेल्या देयकांशी जुळणारी बिले नाहीत"
   ]
 }

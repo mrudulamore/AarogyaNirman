@@ -1,6 +1,6 @@
 import { computeProjectScope } from '../../../../lib/scope';
 import { drawingWarning } from '../../../../lib/pendingWork';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useStore } from '../../../../store/useStore';
@@ -18,7 +18,15 @@ const LABELS: Record<string, string> = { responsibleUserId: 'Responsible officer
 export function ContractControlsTab({ project, monthly = false }: { project: Project; monthly?: boolean }) {
   useUiLanguage();
   const s = useStore();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const requestedRecord = params.get("record");
+  const recordView = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (requestedRecord) {
+      recordView.current?.scrollIntoView({block:'start'});
+      recordView.current?.focus({preventScroll:true});
+    }
+  }, [requestedRecord]);
   const [renewalDate] = useState(() => new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
   const requestedKind = params.get('kind') as ControlKind;
   const initialKind: ControlKind = Object.hasOwn(KIND_LABELS, requestedKind ?? '') ? requestedKind : 'CERTIFICATE';
@@ -32,7 +40,7 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
   const [error, setError] = useState('');
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [fileKey, setFileKey] = useState(0);
-  const records = s.controlRecords.filter(r => r.projectId === project.id && (monthly ? r.kind === 'MONTHLY' : r.kind !== 'MONTHLY'));
+  const records = s.controlRecords.filter(r => r.projectId === project.id && (!requestedRecord || r.id === requestedRecord) && (monthly ? r.kind === 'MONTHLY' : r.kind !== 'MONTHLY'));
   const current = activeControls(s, project.id);
   const tx = actualTransactions(s, project.id);
   const gaps = workOrderGaps(s, project.id);
@@ -71,8 +79,9 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
     setBusy(true); setError('');
     try { await s.reviewControl(id, approve, notes[id] ?? ''); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
-  return <div className="space-y-4">
-    {!monthly && <>
+  return <div ref={recordView} tabIndex={-1} className="scroll-mt-24 space-y-4 outline-none">
+    {requestedRecord && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-blue-50 p-4"><p className="text-sm font-medium text-blue-900">{uiText('Transaction details & evidence')}</p><Button variant="outline" onClick={() => setParams(previous => { const next = new URLSearchParams(previous); next.delete('record'); return next; })}>{uiText('View all records')}</Button></div>}
+    {!monthly && !requestedRecord && <>
       <Card><CardContent className="space-y-3 p-4"><h3 className="font-semibold">{uiText('Approval readiness')}</h3>
         <p className="text-sm">{uiText('Work-order prerequisites remaining')}: {gaps.length}</p><div className="flex flex-wrap gap-1">{gaps.map(g => <span key={g} className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">{uiText(g)}</span>)}</div>
         <p className="text-sm">{uiText('Handover requirements remaining')}: {readiness.length}</p><div className="flex flex-wrap gap-1">{readiness.map(g => <span key={g} className="rounded bg-red-50 px-2 py-1 text-xs text-red-700">{uiText(g)}</span>)}</div>
@@ -82,7 +91,7 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
       <p className="text-xs text-slate-500">{uiText('Verified ledger totals exclude legacy demo balances. Evidence is stored on this device.')}</p>
     </>}
     {error && <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{uiText(error)}</p>}
-    {editable && <Card><CardContent className="p-4"><form onSubmit={submit} className="space-y-3"><fieldset disabled={busy} className="space-y-3">
+    {editable && !requestedRecord && <Card><CardContent className="p-4"><form onSubmit={submit} className="space-y-3"><fieldset disabled={busy} className="space-y-3">
       <h3 className="font-semibold">{uiText(monthly ? 'Add Monthly Report' : 'Submit supporting record')}</h3>
       {!monthly && <label className="block text-xs">{uiText('Record type')}<NativeSelect value={kind} onChange={e => { const next = e.target.value as ControlKind; setKind(next); setCategory(next === 'PROCUREMENT' ? PROCUREMENT[0] : CERTIFICATES[0]); setSupersedesId(''); }}>{(Object.keys(KIND_LABELS) as ControlKind[]).filter(k => k !== 'MONTHLY' && (finance || !['PAYMENT', 'RECEIPT', 'REVERSAL', 'RELEASE'].includes(k))).map(k => <option key={k} value={k}>{uiText(KIND_LABELS[k])}</option>)}</NativeSelect></label>}
       {['CERTIFICATE', 'PROCUREMENT'].includes(kind) && <label className="block text-xs">{uiText('Category')}<NativeSelect value={category} onChange={e => setCategory(e.target.value)}>{(kind === 'CERTIFICATE' ? CERTIFICATES : PROCUREMENT).map(c => <option key={c} value={c}>{uiText(c)}</option>)}</NativeSelect></label>}
@@ -104,7 +113,7 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
         {drawingAlert && <p role="alert" className="text-sm text-amber-700">{uiText(drawingAlert)}</p>}
         {expiring && <p role="status" className="rounded bg-amber-50 p-2 text-xs text-amber-800">{uiText(validControl(r) ? 'Renewal due within 30 days' : 'Expired certificate — not ready')}</p>}
         {r.status === 'VERIFIED' && !isCurrent && <p className="text-xs text-slate-500">{uiText('Superseded — retained for audit')}</p>}
-        <details><summary className="cursor-pointer text-sm text-navy-700">{uiText('View details and evidence')}</summary><dl className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(r.fields).filter(([,v]) => v).map(([k,v]) => <div key={k}><dt className="text-xs text-slate-400">{uiText(LABELS[k] ?? k)}</dt><dd className="break-words text-sm">{v}</dd></div>)}</dl><BillEvidence attachments={r.attachments} /></details>
+        <details open={requestedRecord === r.id ? true : undefined}><summary className="cursor-pointer text-sm text-navy-700">{uiText('View details and evidence')}</summary><dl className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(r.fields).filter(([,v]) => v).map(([k,v]) => <div key={k}><dt className="text-xs text-slate-400">{uiText(LABELS[k] ?? k)}</dt><dd className="break-words text-sm">{v}</dd></div>)}</dl><BillEvidence attachments={r.attachments} /></details>
         {r.decision && <p className="text-xs">{r.decision} · {s.users.find(u => u.id === r.reviewedBy)?.name ?? r.reviewedBy} · {formatDate(r.reviewedAt)}</p>}
         {reviewer && r.status === 'PENDING' && r.submittedBy !== user!.id && <div className="space-y-2"><Textarea aria-label={uiText('Decision notes')} placeholder={uiText('Decision notes')} value={notes[r.id] ?? ''} onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} /><div className="flex gap-2"><Button disabled={busy || !notes[r.id]?.trim()} onClick={() => void review(r.id, true)}>{uiText('Verify')}</Button><Button variant="outline" disabled={busy || !notes[r.id]?.trim()} onClick={() => void review(r.id, false)}>{uiText('Reject')}</Button></div></div>}
       </CardContent></Card>;

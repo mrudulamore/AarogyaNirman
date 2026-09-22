@@ -1,13 +1,20 @@
 import { outstandingBills } from './financeLedger';
 import type { StoreState } from '../store/useStore';
-import type { Bill, FundInstallment, Project } from '../types';
+import type { FundInstallment, Project } from '../types';
 import { actualTransactions } from './projectControls';
-import { buildFundReport, buildContractorFundReport } from './fundDisbursal';
+import { buildFundReport, buildContractorFundReport, type FundReportBill } from './fundDisbursal';
 
 export function verifiedFundReports(state: StoreState, projects: Project[], asOf: string) {
   const tx = projects.flatMap(p => actualTransactions(state, p.id, asOf));
   const installments: FundInstallment[] = tx.filter(r => r.kind === 'RECEIPT').map((r, index) => ({ id: r.id, projectId: r.projectId, number: index + 1, amount: Number(r.fields.amount), plannedDate: r.fields.transactionDate, receivedDate: r.fields.transactionDate, source: r.fields.accountingHead, reference: r.reference, purpose: r.fields.reason || r.reference, releaseCondition: 'Verified transaction', authority: r.reviewedBy! }));
-  const paid: Bill[] = tx.filter(r => r.kind === 'PAYMENT').flatMap(r => { const bill = state.bills.find(b => b.id === r.fields.billId); return bill ? [{ ...bill, id: r.id, billNumber: `${bill.billNumber} / ${r.reference}`, netPayable: Number(r.fields.amount), paidDate: r.fields.transactionDate, status: 'PAID' as const }] : []; });
+  // Retain verified transactions even when imported/demo records have no bill.
+  // These are report rows only; never create a bill or invent a contractor association.
+  const paid: FundReportBill[] = tx.filter(r => r.kind === 'PAYMENT').map(r => {
+    const bill = state.bills.find(b => b.id === r.fields.billId && b.projectId === r.projectId);
+    return { id: r.id, projectId: r.projectId, contractorId: bill?.contractorId ?? 'Not linked',
+      billNumber: `${bill?.billNumber ?? 'No linked bill'} / ${r.reference}`, netPayable: Number(r.fields.amount),
+      submittedDate: bill?.submittedDate ?? r.fields.transactionDate, paidDate: r.fields.transactionDate, status: 'PAID' };
+  });
   const pending = outstandingBills(state.bills.filter(b => projects.some(p => p.id === b.projectId)), state.controlRecords, asOf);
   const contractor = buildContractorFundReport(projects, [...paid, ...pending], state.contractors, asOf);
   contractor.kpis = contractor.kpis.map(k => k.label === 'Paid bill count' ? { ...k, label: 'Verified payment count' } : k);
