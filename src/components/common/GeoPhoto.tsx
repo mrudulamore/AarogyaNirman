@@ -21,7 +21,7 @@ export function GeoPhoto({ src, mediaKey, lat, lng, timestamp, location, classNa
     <div className={cn('relative overflow-hidden rounded-md', className)}>
       <EvidenceImage alt={uiText(location)} fallbackSrc={src} mediaKey={mediaKey} className={cn('h-full w-full object-cover', imgClassName)} />
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pb-2 pt-6 text-white">
-        {sample ? <p className="text-xs font-medium">{uiText('Sample construction photo')}<span className="block text-[10px]">{source ? `${source.author} · ${source.license}` : 'Illustrative photo, not project evidence'}</span></p> : <><div className="flex items-center gap-1 text-[11px] font-semibold leading-tight">
+        {sample ? <p className="text-xs font-medium"><span className="block text-[10px]">{source ? `${source.author} · ${source.license}` : 'Photo credits: /site-photos/CREDITS.md'}</span></p> : <><div className="flex items-center gap-1 text-[11px] font-semibold leading-tight">
           <MapPin size={11} className="shrink-0 text-sky-300" /> {uiText(location)}
         </div>
         <p className="mt-0.5 truncate text-[9.5px] leading-tight text-white/80">{uiText("Lat ")}{uiText(lat.toFixed(6))}{uiText(", Long ")}{uiText(lng.toFixed(6))}</p>

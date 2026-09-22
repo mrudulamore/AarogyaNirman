@@ -5,9 +5,11 @@ import { createServer } from 'vite';
 const images=JSON.parse(readFileSync('src/mock/constructionImages.json','utf8'));
 assert.equal(images.length,222);
 assert.equal(new Set(images.map(x=>x.photoId)).size,222,'Each photo record must have an assignment');
-assert.ok(new Set(images.map(x=>x.path)).size>100,'Reuse a varied library across projects');
+assert.ok(new Set(images.map(x=>x.path)).size>=10,'Reuse a varied India-only library across projects');
 assert.equal(new Set(images.map(x=>x.projectId)).size,24);
 for(const image of images) {
+ assert.equal(image.country,'India');
+ assert.ok(image.path.startsWith('/site-photos/india/'));
  assert.equal(createHash('sha256').update(readFileSync('public'+image.path)).digest('hex'),image.sha256);
  assert.ok(image.author && image.license && image.sourceUrl.startsWith('https://commons.wikimedia.org/'));
 }

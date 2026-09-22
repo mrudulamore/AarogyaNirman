@@ -97,7 +97,7 @@ export function PhotosTab({ project }: { project: Project }) {
         const count = photos.filter(photo => photo.type === checkpoint.type && photo.dataUrl).length;
         return <button key={checkpoint.type} className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-left" onClick={()=>{setForm({...form,type:checkpoint.type});setUploadOpen(true);}}><p className="text-sm font-semibold text-blue-900">{uiText(checkpoint.label)}</p><p className="mt-1 text-xs text-slate-600">{count} {uiText('captured photos')}</p><p className="mt-2 text-xs text-blue-700">{uiText('Capture Photo')} →</p></button>;
       })}</div>
-      <p className="text-xs text-slate-500">{uiText('Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity. Sample photos do not count as captured evidence.')}</p>
+      <p className="text-xs text-slate-500">{uiText('Capture a baseline before work, progress at the midpoint, and completion evidence for each building, floor and activity.')}</p>
       <details className="rounded-2xl border border-blue-100 bg-white p-4" onToggle={event => setBoundaryOpen(event.currentTarget.open)}><summary className="cursor-pointer text-sm font-semibold text-blue-900">{uiText('Site boundary and geofence')}</summary>{boundaryOpen && <div className="mt-4"><Suspense fallback={<p role="status" className="text-xs text-slate-500">{uiText('Loading map…')}</p>}><SiteBoundaryEditor project={project}/></Suspense></div>}</details>
       <details className="rounded-2xl border border-blue-100 bg-white p-4" onToggle={event => setStorageOpen(event.currentTarget.open)}><summary className="cursor-pointer text-sm font-semibold text-blue-900">{uiText('Evidence stored on this device')}</summary>{storageOpen && <div className="mt-4"><EvidenceStorage projectId={project.id}/></div>}</details>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -145,7 +145,6 @@ export function PhotosTab({ project }: { project: Project }) {
                 <div className="relative">
                   <img alt={ph.description} src={photoSrc(ph)} className="h-52 w-full object-cover transition-transform group-hover:scale-105" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
-                  {!ph.dataUrl && !ph.mediaKey && <span className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1 text-[10px] text-white">{uiText('Sample construction photo')}</span>}
                 </div>
                 <div className="p-1.5">
                   <p className="text-[10.5px] text-slate-500">{uiText(formatDate(ph.date))}</p>

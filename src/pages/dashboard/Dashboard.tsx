@@ -1,3 +1,4 @@
+import { selectRecentPhotos } from '../../lib/recentPhotos';
 import { outstandingBills } from '../../lib/financeLedger';
 import { saveBillFiles } from '../../lib/billAttachments';
 import { WorkforceHome } from '../workers/WorkforceHome';
@@ -247,8 +248,7 @@ export function Dashboard() {
     ...inspections.filter((i) => i.overallResult === 'FAIL').slice(0, 3).map((i) => ({ text: t('dashboard.alertInspectionFailed', { project: projects.find((p) => p.id === i.projectId)?.name }), id: i.id })),
     ...projects.filter((p) => p.status === 'DELAYED').slice(0, 2).map((p) => ({ text: t('dashboard.alertDelayedBy', { project: p.name, days: p.delayDays }), id: p.id })),
   ].slice(0, 5);
-  const recentPhotos = [...photos].sort((a, b) => Number(!!b.dataUrl) - Number(!!a.dataUrl)
-    || (b.capturedAt || b.date).localeCompare(a.capturedAt || a.date)).slice(0, 6);
+  const recentPhotos = selectRecentPhotos(photos, 6);
   const selectedPhoto = photos.find((photo) => photo.id === photoId);
   const selectedPhotoProject = projects.find((project) => project.id === selectedPhoto?.projectId);
   const photoTabs = tabsForRole(currentUser?.role);
@@ -661,7 +661,6 @@ export function Dashboard() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold leading-snug text-slate-800">{projects.find((project) => project.id === ph.projectId)?.name ?? ph.projectId}</p>
                   <p className="mt-1 text-[11px] text-slate-600">{uiText(ph.stage)} &middot; {uiText(ph.location)}</p>
-                  {!ph.dataUrl && !ph.mediaKey && <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-medium text-blue-700">{uiText('Sample construction photo')}</span>}
                   <p className="mt-1 flex items-start gap-1 text-[11px] font-medium tabular-nums text-navy-700"><MapPinned size={12} className="mt-0.5 shrink-0" /><span>{uiText("Lat ")}{uiText(ph.lat.toFixed(5))}{uiText(", Lng ")}{uiText(ph.lng.toFixed(5))}</span></p>
                   <p className="mt-1 text-[10px] text-slate-500">{uiText(formatDateTime(ph.capturedAt || ph.date))}</p>
                   {ph.dataUrl && <span className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">
@@ -686,7 +685,7 @@ export function Dashboard() {
               <p className="tabular-nums">{uiText("Latitude ")}{uiText(selectedPhoto.lat.toFixed(6))}{uiText(" · Longitude ")}{uiText(selectedPhoto.lng.toFixed(6))}</p>
               <p>{selectedPhoto.description}</p>
               <p>{uiText("Uploaded by ")}{uiText(selectedPhoto.uploadedBy)}</p>
-              <p>{uiText(selectedPhoto.dataUrl ? (selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.') : 'Illustrative construction photo and demo coordinates; not live evidence from this site.')}</p>
+              {selectedPhoto.dataUrl && <p>{uiText((selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.'))}</p>}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setPhotoId(null)}>{uiText("Close")}</Button>

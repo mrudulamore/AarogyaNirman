@@ -1,3 +1,4 @@
+import { selectRecentPhotos } from '../../lib/recentPhotos';
 import type { PhotoType } from '../../types';
 import { SiteCamera, type SiteCapture } from '../../components/common/SiteCamera';
 import { ProgressDocuments } from '../../components/common/ProgressDocuments';
@@ -50,7 +51,7 @@ export function FieldHome() {
   const pendingInspections = inspections.filter((i) => i.projectId === project?.id && i.status === 'SCHEDULED');
   const openDefects = defects.filter((d) => d.projectId === project?.id && d.status !== 'CLOSED');
   const projectWorkers = workers.filter((w) => w.projectId === project?.id);
-  const recentSitePhotos = allPhotos.filter((p) => p.projectId === project?.id).sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1)).slice(0, 4);
+  const recentSitePhotos = selectRecentPhotos(allPhotos.filter(p => p.projectId === project?.id), 4);
   const localEvidenceCount = allPhotos.filter(photo => photo.projectId === project?.id && photo.mediaKey).length;
 
   function closeAndToast(msg: string) { toast.success(uiText(msg)); setAction(null); setRemarks(''); setDefectDesc(''); }
