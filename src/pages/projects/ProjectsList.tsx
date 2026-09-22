@@ -194,7 +194,7 @@ export function ProjectsList() {
             return (
               <Link key={p.id} to={`/projects/${p.id}`} className="hospital-project-card group" aria-label={`${uiText('View project')}: ${p.name}`}>
                 <div className="hospital-card-banner">
-                  <div className="hospital-card-symbol"><Hospital size={28} strokeWidth={1.5} /></div>
+                  <div className="hospital-card-symbol"><Hospital size={22} strokeWidth={1.5} /></div>
                   <div className="min-w-0 flex-1"><p className="text-[11px] font-semibold uppercase tracking-widest text-blue-100">{uiText(p.district)}</p><p className="mt-1 text-xs text-blue-200">{p.id}</p></div>
                   <StatusBadge status={p.status} />
                   <div className="hospital-card-lines" aria-hidden="true" />
@@ -204,8 +204,8 @@ export function ProjectsList() {
                   <h2 className="mt-4 text-lg font-semibold leading-snug tracking-tight text-slate-900 group-hover:text-blue-800">{p.name}</h2>
                   <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500"><MapPinned size={15} className="mt-0.5 shrink-0"/>{uiText(p.taluka)} · {uiText(p.facilityType)} · {p.bedCount} {uiText('beds')}</p>
                   <div className="hospital-card-metrics">
-                    <div><p className="text-xs font-medium text-slate-500">{uiText('Sanctioned Budget')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-950">{formatCurrency(p.sanctionedBudget)}</p></div>
-                    <div className="text-right"><p className="text-xs font-medium text-slate-500">{uiText('Physical Progress')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-700">{p.physicalProgress}<span className="ml-0.5 text-sm text-slate-500">%</span></p></div>
+                    <div><p className="text-xs font-medium text-slate-500">{uiText('Sanctioned Budget')}</p><p className="mt-1 text-xl font-semibold tracking-tight text-blue-950">{formatCurrency(p.sanctionedBudget)}</p></div>
+                    <div className="text-right"><p className="text-xs font-medium text-slate-500">{uiText('Physical Progress')}</p><p className="mt-1 text-xl font-semibold tracking-tight text-blue-700">{p.physicalProgress}<span className="ml-0.5 text-sm text-slate-500">%</span></p></div>
                     <div className="col-span-2"><ProgressBar value={p.physicalProgress} className="h-1.5" /></div>
                   </div>
                   <div className="flex items-center justify-between gap-4 text-xs"><span className="text-slate-500">{uiText('Planned Completion')}</span><span className="font-semibold text-slate-700">{formatDate(p.plannedCompletionDate)}</span></div><DeadlineBadge project={p} />

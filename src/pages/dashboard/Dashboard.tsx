@@ -1,8 +1,10 @@
+import { selectRecentPhotos } from '../../lib/recentPhotos';
 import { outstandingBills } from '../../lib/financeLedger';
+import { saveBillFiles } from '../../lib/billAttachments';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
-import { lazy, Suspense, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -76,6 +78,14 @@ function matchesStatusFilter(p: Project, status: StatusFilterKey | null, photos:
 export function Dashboard() {
   useUiLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  const rolePermissions = useStore(s => s.rolePermissions);
+  useEffect(() => {
+    if (location.hash === '#contractor-progress') {
+      const frame = requestAnimationFrame(() => document.getElementById('contractor-progress')?.scrollIntoView({ block: 'start' }));
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [location.hash]);
   const { t } = useTranslation();
   const { projects: roleProjects, scopeLabel, isStatewide } = useProjectScope();
   const allApprovals = useStore((s) => s.approvals);
@@ -89,10 +99,33 @@ export function Dashboard() {
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [outcome, setOutcome] = useState('');
+  const [decisionFiles, setDecisionFiles] = useState<File[]>([]);
+  const [savingDecision, setSavingDecision] = useState(false);
+  const [decisionError, setDecisionError] = useState('');
+
+  async function recordDecision() {
+    if (!decisionId || savingDecision) return;
+    setSavingDecision(true);
+    setDecisionError('');
+    try {
+      const attachments = decisionFiles.length ? await saveBillFiles(decisionFiles.map(file => ({ file, category: 'SUPPORTING' as const }))) : [];
+      resolveDecision(decisionId, outcome.trim() || 'Decided.', attachments);
+      toast.success(uiText('Decision recorded.'));
+      setDecisionId(null);
+      setDecisionFiles([]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : uiText('Could not save the decision.');
+      setDecisionError(message);
+      toast.error(message);
+    } finally {
+      setSavingDecision(false);
+    }
+  }
 
 
   // Zone / Budget / Scheme are plain data filters; the status filter comes from clicking a KPI
   // card segment (Projects: In Progress/Completed/Delayed, Data Integrity: Anomalies/Stale).
+
   const [overviewMode, setOverviewMode] = useState<'zone' | 'budget' | 'scheme'>('zone');
   const [zoneFilter, setZoneFilter] = useState<string[]>([]);
   const [budgetFilter, setBudgetFilter] = useState<string[]>([]);
@@ -215,8 +248,7 @@ export function Dashboard() {
     ...inspections.filter((i) => i.overallResult === 'FAIL').slice(0, 3).map((i) => ({ text: t('dashboard.alertInspectionFailed', { project: projects.find((p) => p.id === i.projectId)?.name }), id: i.id })),
     ...projects.filter((p) => p.status === 'DELAYED').slice(0, 2).map((p) => ({ text: t('dashboard.alertDelayedBy', { project: p.name, days: p.delayDays }), id: p.id })),
   ].slice(0, 5);
-  const recentPhotos = [...photos].sort((a, b) => Number(!!b.dataUrl) - Number(!!a.dataUrl)
-    || (b.capturedAt || b.date).localeCompare(a.capturedAt || a.date)).slice(0, 6);
+  const recentPhotos = selectRecentPhotos(photos, 6);
   const selectedPhoto = photos.find((photo) => photo.id === photoId);
   const selectedPhotoProject = projects.find((project) => project.id === selectedPhoto?.projectId);
   const photoTabs = tabsForRole(currentUser?.role);
@@ -236,7 +268,7 @@ export function Dashboard() {
       .filter((d) => d.status === 'PENDING' && projectIds.has(d.projectId))
       .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || (a.pendingSince < b.pendingSince ? -1 : 1)),
     [allDecisions, projectIds]);
-  const activeDecision = pendingDecisions.find((d) => d.id === decisionId);
+  const activeDecision = allDecisions.find((d) => d.id === decisionId);
 
   // PM Dashboard rollup — Risk/Site-Issue/Change-Order/EOT registers already exist per-project
   // (GovernanceTab, SafetyRisksTab) but nowhere aggregates them across a manager's portfolio.
@@ -420,7 +452,7 @@ export function Dashboard() {
                     <Td><StatusBadge status={d.priority} /></Td>
                     <Td>
                       {d.pendingWith === currentUser?.role && (
-                        <Button size="sm" variant="outline" onClick={() => { setDecisionId(d.id); setOutcome(''); }}>{uiText("Decide")}</Button>
+                        <Button size="sm" variant="outline" onClick={() => { setDecisionId(d.id); setOutcome(''); setDecisionFiles([]); setDecisionError(''); }}>{uiText("Decide")}</Button>
                       )}
                     </Td>
                   </Tr>
@@ -467,7 +499,7 @@ export function Dashboard() {
         </Card>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="dashboard-insights mt-6 grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
         <Card>
           <CardHeader><CardTitle>{t('dashboard.statusDistribution')}</CardTitle></CardHeader>
           <CardContent>
@@ -513,12 +545,19 @@ export function Dashboard() {
                 <div className="mb-1 flex justify-between text-xs"><span className="text-slate-500">{t('dashboard.financialProgress')}</span><span className="font-semibold text-slate-700">{avgFinancial}%</span></div>
                 <ProgressBar value={avgFinancial} colorClass="bg-emerald-500" />
               </div>
-              <div className="space-y-3 border-t border-slate-100 pt-3">{topContractors.map(c => <div key={c.id} className="block w-full rounded-xl bg-slate-50 p-3 text-left"><p className="break-words text-sm font-semibold text-slate-800">{c.company}</p><p className="my-2 text-xs text-slate-500">{c.count} {uiText('Projects')} · {uiText('Physical Progress')} {c.physical}% · {uiText('Financial Progress')} {c.financial}%</p><ProgressBar value={c.physical} colorClass="bg-blue-500"/><div className="mt-2"><ProgressBar value={c.financial} colorClass="bg-emerald-500"/></div></div>)}</div>
-              <p className="rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                {uiText(Math.abs(avgFinancial - avgPhysical) < 5 ? t('dashboard.gapAligned')
-                  : avgFinancial > avgPhysical ? t('dashboard.gapFinancialAhead')
-                  : t('dashboard.gapPhysicalAhead'))}
-              </p>
+              <div id="contractor-progress" className="scroll-mt-4 border-t border-slate-100 pt-4">
+                <div className="mb-3 flex items-center justify-between text-xs text-slate-500"><span>{topContractors.length} {uiText('Contractors')}</span><span>{uiText('Scroll to explore')}</span></div>
+                <div className="contractor-progress-scroll" role="region" aria-label={uiText('Contractor progress')} tabIndex={0}>
+                  {topContractors.map(c => <button type="button" key={c.id} disabled={!currentUser || !(rolePermissions[currentUser.role] ?? []).includes('contractors')} onClick={() => navigate('/contractors/' + encodeURIComponent(c.id) + '?from=dashboard')} className="contractor-progress-card">
+                    <div className="flex items-start justify-between gap-3"><span className="text-sm font-semibold text-slate-800">{c.company}</span><ArrowRight size={17} className="mt-0.5 shrink-0 text-blue-600" /></div>
+                    <p className="mb-4 mt-1 text-xs text-slate-500">{c.count} {uiText('Projects')}</p>
+                    <div className="mb-1.5 flex justify-between text-xs"><span>{uiText('Physical Progress')}</span><strong className="text-blue-600">{c.physical}%</strong></div>
+                    <ProgressBar value={c.physical} colorClass="bg-blue-500" />
+                    <div className="mb-1.5 mt-3 flex justify-between text-xs"><span>{uiText('Financial Progress')}</span><strong className="text-emerald-600">{c.financial}%</strong></div>
+                    <ProgressBar value={c.financial} colorClass="bg-emerald-500" />
+                  </button>)}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -646,7 +685,7 @@ export function Dashboard() {
               <p className="tabular-nums">{uiText("Latitude ")}{uiText(selectedPhoto.lat.toFixed(6))}{uiText(" · Longitude ")}{uiText(selectedPhoto.lng.toFixed(6))}</p>
               <p>{selectedPhoto.description}</p>
               <p>{uiText("Uploaded by ")}{uiText(selectedPhoto.uploadedBy)}</p>
-              <p>{uiText(selectedPhoto.dataUrl ? (selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.') : 'Illustrative construction photo and demo coordinates; not live evidence from this site.')}</p>
+              {selectedPhoto.dataUrl && <p>{uiText((selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.'))}</p>}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setPhotoId(null)}>{uiText("Close")}</Button>
@@ -656,16 +695,32 @@ export function Dashboard() {
         )}
       </Dialog>
 
-      <Dialog open={!!decisionId} onOpenChange={(v) => !v && setDecisionId(null)}>
+      <Dialog open={!!decisionId} onOpenChange={(v) => !v && !savingDecision && setDecisionId(null)}>
         {activeDecision && (
           <DialogContent title={uiText("Record Decision")} description={uiText(activeDecision.decisionRequired)}>
             <div className="space-y-2 text-xs">
               <p className="text-slate-500">{uiText("Recommended action: ")}<span className="text-slate-700">{uiText(activeDecision.recommendedAction)}</span></p>
               <Textarea rows={3} placeholder={uiText("Decision outcome / remarks…")} value={outcome} onChange={(e) => setOutcome(e.target.value)} />
             </div>
+            <div className="mt-4 space-y-2 text-xs">
+              <label htmlFor="decision-attachments" className="block font-medium text-slate-700">{uiText('Attachments (optional)')}</label>
+              <input id="decision-attachments" type="file" multiple accept="application/pdf,image/jpeg,image/png" disabled={savingDecision} className="block w-full rounded-md border border-slate-200 p-2 text-xs" onChange={(event) => {
+                const files = Array.from(event.target.files ?? []);
+                event.target.value = '';
+                if (decisionFiles.length + files.length > 5) { toast.error(uiText('Attach up to 5 files.')); return; }
+                if (files.some(file => !['application/pdf', 'image/jpeg', 'image/png'].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024)) { toast.error(uiText('Use PDF, JPEG or PNG files up to 5 MB each.')); return; }
+                setDecisionFiles(previous => [...previous, ...files]);
+              }} />
+              <p className="text-slate-500">{uiText('PDF, JPEG or PNG. Up to 5 files, 5 MB each.')}</p>
+              {decisionFiles.map((file, index) => <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 rounded-md bg-slate-50 p-2">
+                <span className="min-w-0 break-all">{file.name}</span>
+                <Button size="sm" variant="ghost" disabled={savingDecision} aria-label={`${uiText('Remove')} ${file.name}`} onClick={() => setDecisionFiles(previous => previous.filter((_, i) => i !== index))}><X size={14} /></Button>
+              </div>)}
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDecisionId(null)}>{uiText("Cancel")}</Button>
-              <Button onClick={() => { resolveDecision(activeDecision.id, outcome.trim() || 'Decided.'); toast.success(uiText('Decision recorded.')); setDecisionId(null); }}>{uiText("Record Decision")}</Button>
+              {decisionError && <p role="alert" className="w-full text-sm text-red-600">{uiText(decisionError)}</p>}
+              <Button variant="outline" disabled={savingDecision} onClick={() => setDecisionId(null)}>{uiText("Cancel")}</Button>
+              <Button disabled={savingDecision} onClick={recordDecision}>{uiText(savingDecision ? 'Saving…' : 'Record Decision')}</Button>
             </DialogFooter>
           </DialogContent>
         )}

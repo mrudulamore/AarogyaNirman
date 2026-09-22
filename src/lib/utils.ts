@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import i18n from '../i18n';
+import { constructionImageFallback, constructionImageForPhoto } from './constructionImages';
 
 export const currentLocale = () => `${i18n.resolvedLanguage || 'en'}-IN`;
 
@@ -41,17 +42,16 @@ export function titleCase(s: string): string {
   return s.replace(/_/g, ' ').replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.substring(1).toLowerCase());
 }
 
-// Maharashtra construction illustrations; provenance in public/site-photos/CREDITS.md.
+// Phase-matched construction illustrations; provenance in public/site-photos/CREDITS.md.
 // These are samples, never proof of progress at a project.
-export function seededImageUrl(_seed: number, _w = 640, _h = 420, label?: string): string {
-  return /foundation|reinforcement|excavation/i.test(label ?? '')
-    ? '/site-photos/pune-construction.jpg' : '/site-photos/nmmc-airoli.jpg';
+export function seededImageUrl(seed: number, _w = 640, _h = 420, label?: string): string {
+  return constructionImageFallback(seed, label);
 }
 
 /** A real device-captured photo (dataUrl) always wins; seed data without one falls back to the
  * deterministic stock-photo picker so old records keep rendering something sensible. */
-export function photoSrc(p: { dataUrl?: string; seed: number; stage: string }): string {
-  return p.dataUrl || seededImageUrl(p.seed, 640, 420, p.stage);
+export function photoSrc(p: { id?: string; dataUrl?: string; mediaKey?: string; seed: number; stage: string }): string {
+  return p.dataUrl || constructionImageForPhoto(p)?.path || seededImageUrl(p.seed, 640, 420, p.stage);
 }
 
 let idCounter = 1000;

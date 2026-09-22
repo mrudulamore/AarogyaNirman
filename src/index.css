@@ -304,17 +304,17 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 
 /* Hospital portfolio: architectural header, readable metrics and a clear entry point. */
 .hospital-project-card { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid #dbe6f5; border-radius: 24px; background: white; box-shadow: 0 5px 18px -12px #16366b35; transition: border-color 180ms, box-shadow 180ms, transform 180ms; }
-.hospital-card-banner { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; padding: 20px; overflow: hidden; background: linear-gradient(115deg,#173e79,#2865ab); }
+.hospital-card-banner { position: relative; isolation: isolate; display: flex; align-items: center; gap: 10px; padding: 10px 16px; overflow: hidden; background: linear-gradient(115deg,#173e79,#2865ab); }
 .hospital-card-banner > :not(.hospital-card-lines) { position: relative; z-index: 1; }
-.hospital-card-symbol { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; flex-shrink: 0; border-radius: 16px; color: #e4f2ff; border: 1px solid #ffffff30; background: #ffffff12; }
+.hospital-card-symbol { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; color: #e4f2ff; border: 1px solid #ffffff30; background: #ffffff12; }
 .hospital-card-lines { position: absolute; right: -30px; top: -50px; width: 190px; height: 190px; border: 1px solid #ffffff18; transform: rotate(30deg); box-shadow: 0 0 0 24px #ffffff06, 0 0 0 48px #ffffff05; border-radius: 30px; }
-.hospital-card-body { flex: 1; padding: 22px; }
-.hospital-card-body h2 { min-height: 3rem; }
-.hospital-card-metrics { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 16px; padding: 18px 0; margin: 16px 0; border-top: 1px solid #edf2f9; border-bottom: 1px solid #edf2f9; }
-.hospital-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 22px; background: #f6f9fe; border-top: 1px solid #e9eff8; }
-.hospital-card-open { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #e3eeff; color: #245cab; transition: background-color 180ms, color 180ms; }
+.hospital-card-body { flex: 1; padding: 12px 16px; }
+.hospital-card-body h2 { min-height: 0; margin-top: 8px; font-size: 1rem; line-height: 1.35; }
+.hospital-card-metrics { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 8px; padding: 8px 0; margin: 8px 0; border-top: 1px solid #edf2f9; border-bottom: 1px solid #edf2f9; }
+.hospital-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 16px; background: #f6f9fe; border-top: 1px solid #e9eff8; }
+.hospital-card-open { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #e3eeff; color: #245cab; transition: background-color 180ms, color 180ms; }
 @media (hover: hover) { .hospital-project-card:hover { transform: translateY(-3px); border-color: #9cbae6; box-shadow: 0 18px 32px -20px #143a7860; } .hospital-project-card:hover .hospital-card-open { background: #245cab; color: white; } }
-@media (max-width: 639px) { .hospital-card-banner { padding: 16px; gap: 10px; } .hospital-card-body { padding: 20px; } .hospital-card-symbol { width: 44px; height: 44px; } }
+@media (max-width: 639px) { .hospital-card-banner { padding: 10px 14px; gap: 10px; } .hospital-card-body { padding: 12px 14px; } .hospital-card-footer { padding: 8px 14px; } .hospital-card-symbol { width: 36px; height: 36px; } }
 @media (prefers-reduced-motion: reduce) { .hospital-project-card:hover { transform: none; } }
 
 .hospital-project-card:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
@@ -488,3 +488,20 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .field-project p:first-child { font-size: 17px; }
   .site-photo-post { border-radius: 16px; }
 }
+
+/* Dashboard cards share a calm visual rhythm without stretching to long lists. */
+.dashboard-insights > .ui-card { overflow: hidden; border-color: #dce7f4; border-radius: 22px; box-shadow: 0 8px 24px -18px #244a7d55; }
+.dashboard-insights .ui-card-header { min-height: 72px; background: linear-gradient(120deg, #f2f7ff, #fff); padding: 20px; }
+.dashboard-insights .ui-card-header h3 { font-size: 15px; line-height: 1.5; }
+.dashboard-insights .ui-button { min-height: 40px; }
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-insights .ui-button { transition: background-color 160ms ease, box-shadow 160ms ease; }
+}
+
+.contractor-progress-scroll { display: grid; gap: 12px; max-height: 360px; overflow-y: auto; padding: 2px 8px 4px 2px; scrollbar-width: thin; scrollbar-color: #93b4e3 #edf3fb; scrollbar-gutter: stable; }
+.contractor-progress-card { width: 100%; padding: 16px; text-align: left; border: 1px solid #e1eaf6; border-radius: 16px; background: linear-gradient(140deg, #fff, #f5f9ff); color: #52647c; }
+.contractor-progress-card:hover:not(:disabled) { border-color: #93b4e3; background: #eff6ff; }
+.contractor-progress-card:focus-visible, .contractor-progress-scroll:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.contractor-progress-card:disabled { cursor: default; }
+.contractor-progress-card:disabled svg { display: none; }
+@media (prefers-reduced-motion: no-preference) { .contractor-progress-card { transition: background-color 180ms, border-color 180ms; } }
