@@ -7,7 +7,7 @@ import { RABillSubmission } from './RABillSubmission';
 import { BillEvidence } from './BillEvidence';
 import { FundDisbursalReports } from '../../../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
@@ -34,6 +34,10 @@ function ageingDays(dateIso: string): number {
 export function FinanceTab({ project }: { project: Project }) {
   useUiLanguage();
   const state = useStore();
+  const canOpenFinance = !!state.currentUser && state.rolePermissions[state.currentUser.role]?.includes('finance');
+  const financeLink = (view: string) => canOpenFinance
+    ? `/finance?project=${encodeURIComponent(project.id)}&view=${view}`
+    : `/projects/${encodeURIComponent(project.id)}?tab=${view === 'projects' ? 'overview' : view === 'bills' ? 'finance' : 'controls'}`;
   const transactions = actualTransactions(state, project.id);
   const paymentRecords = transactions.filter(r => r.kind === 'PAYMENT');
   const paidForBill = (id: string) => paymentRecords.filter(r => r.fields.billId === id).reduce((sum,r) => sum + Number(r.fields.amount), 0);
@@ -123,7 +127,20 @@ export function FinanceTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-gradient-to-r from-blue-950 to-blue-700 p-5 text-white sm:p-7"><p className="text-xs uppercase tracking-widest text-blue-200">{uiText('Project financial position')}</p><h2 className="mt-2 text-2xl font-semibold">{formatCurrency(amountPaid)} <span className="text-sm font-normal text-blue-100">{uiText('verified expenditure')}</span></h2><p className="mt-2 max-w-2xl text-sm text-blue-100">{uiText('Receipts fund the project. Payments record contractor expenditure. Pending bills are liabilities, not money spent.')}</p><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><p>{uiText('Government funds received')}<strong className="block text-lg">{formatCurrency(report.government.total)}</strong></p><p>{uiText('Receipt balance after payments')}<strong className="block text-lg">{formatCurrency(report.government.total - amountPaid)}</strong></p></div></div>
+      <div className="rounded-3xl bg-gradient-to-br from-blue-950 to-blue-700 p-5 text-white sm:p-7">
+        <p className="text-xs uppercase tracking-widest text-blue-200">{uiText('Project financial position')}</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {[
+            {label:'Sanctioned money', amount:project.sanctionedBudget, view:'projects', action:'View project budgets'},
+            {label:'Disbursed money', amount:report.government.total, view:'receipts', action:'View actual receipts'},
+            {label:'Expenditure', amount:amountPaid, view:'payments', action:'View payments & linked bills'},
+          ].map(item => <Link key={item.view} to={financeLink(item.view)} className="min-w-0 rounded-2xl border border-white/20 bg-white/5 p-4 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            <p className="text-sm text-blue-100">{uiText(item.label)}</p><p className="mt-2 break-words text-2xl font-semibold">{formatCurrency(item.amount)}</p><p className="mt-4 text-xs text-blue-100">{uiText(item.action)} →</p>
+          </Link>)}
+        </div>
+        <div className="mt-5 flex flex-wrap justify-between gap-3 border-t border-white/20 pt-4 text-sm"><p>{uiText('Available funds')}: <strong>{formatCurrency(report.government.total-amountPaid)}</strong></p><Link className="underline underline-offset-4" to={canOpenFinance ? financeLink("bills") : "#project-bills"}>{uiText('Outstanding bills')}: {formatCurrency(pendingBillsValue)} →</Link></div>
+      </div>
+      <details className="rounded-2xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer py-2 font-semibold text-slate-700">{uiText('Contract & billing breakdown')}</summary><div className="mt-3 space-y-3">
       {/* A. Financial Summary — primary KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label={uiText("Sanctioned Cost")} value={formatCurrency(project.sanctionedBudget)} />
@@ -142,6 +159,7 @@ export function FinanceTab({ project }: { project: Project }) {
         <KpiCard label={uiText("Avg. Bill Processing")} value={`${avgProcessingDays}d`} />
       </div>
 
+      </div></details>
       {gap >= 12 && (
         <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           <AlertTriangle size={14} className="shrink-0" />
@@ -206,7 +224,7 @@ export function FinanceTab({ project }: { project: Project }) {
 
       <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
       {/* B. Bill Status */}
-      <Card>
+      <Card id="project-bills" className="scroll-mt-24">
         <CardHeader>
           <CardTitle>{uiText("Bills")}</CardTitle>
           {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} />{uiText(" Submit RA Bill")}</Button>}
