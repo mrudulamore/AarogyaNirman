@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-    <item android:width="180dp" android:height="180dp" android:gravity="center">
-        <bitmap android:src="@drawable/aarogya_nirman_logo" android:gravity="fill" />
-    </item>
+    <item><shape><solid android:color="#F3F8FE" /></shape></item>
 </layer-list>

@@ -1,9 +1,9 @@
 import { KycApplication } from '../common/KycApplication';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, Search, Bell, LogOut, ChevronDown, UserCog } from 'lucide-react';
+import { ArrowLeft, Menu, Search, Bell, LogOut, ChevronDown, UserCog } from 'lucide-react';
 import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { Avatar } from '../ui/forms';
@@ -14,6 +14,7 @@ import { formatDateTime } from '../../lib/utils';
 export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   useUiLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const logout = useStore((s) => s.logout);
@@ -35,6 +36,11 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
   return (
     <header className="app-header sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-2 py-1 border-b border-slate-200 bg-white px-4">
+      {location.pathname === '/dashboard' && (
+        <Link to="/" aria-label={t('common.back')} title={t('common.back')} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-500">
+          <ArrowLeft size={20} aria-hidden="true" />
+        </Link>
+      )}
       <button aria-label={uiText("Menu")} onClick={onMenuClick} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
         <Menu size={20} />
       </button>
