@@ -1,0 +1,20 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#F3F8FE" android:clickable="true" android:focusable="true">
+    <LinearLayout android:id="@+id/splash_content" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_gravity="center"
+        android:orientation="vertical" android:gravity="center" android:padding="24dp">
+        <ImageView android:id="@+id/splash_artwork" android:layout_width="280dp" android:layout_height="280dp"
+            android:src="@drawable/splash_hospital" android:importantForAccessibility="no" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:text="AarogyaNirman"
+            android:textColor="#184E85" android:textSize="28sp" android:textStyle="bold" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:text="Building hospitals. Strengthening care."
+            android:textColor="#47739F" android:textSize="14sp" android:gravity="center" />
+        <ProgressBar style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="64dp" android:layout_height="4dp" android:layout_marginTop="32dp"
+            android:indeterminate="true" android:indeterminateTint="#3776B9"
+            android:contentDescription="Loading AarogyaNirman" />
+    </LinearLayout>
+</FrameLayout>

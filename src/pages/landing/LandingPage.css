@@ -163,6 +163,7 @@
 @media (max-width: 900px) { .an-header { padding-inline: 24px; }.an-leaders, .an-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.an-hero h1 { max-width: 650px; }.an-hero-copy > p { max-width: 700px; } }
 @media (max-width: 600px) {
   .an-header { padding: 18px 18px 10px; flex-wrap: wrap; gap: 18px; }
+  .native-app .an-header { padding-top: 0; }
   .an-brand { font-size: 15px; }.an-navigation { width: 100%; justify-content: space-between; gap: 7px; }
   .an-navigation .an-button, .an-navigation button { font-size: 12px; padding: 9px 12px; min-height: 40px; gap: 6px; }
   .an-hero { padding: 38px 16px 0; }.an-hero h1 { letter-spacing: -1.3px; }.an-hero-copy > p { margin-top: 24px; letter-spacing: -.3px; line-height: 1.7; }

@@ -28,7 +28,7 @@ export function SelectRole() {
 
   function choose(role: Role) {
     login(role);
-    navigate('/dashboard');
+    navigate('/dashboard', { replace: true });
   }
 
   if (currentUser?.role === 'WORKFORCE') return <Navigate to="/dashboard" replace />;
