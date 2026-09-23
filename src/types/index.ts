@@ -187,6 +187,7 @@ export type LocationSource = 'CAPTURED' | 'MANUAL';
 export type GeoFenceStatus = 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN';
 
 export interface SitePhoto {
+  milestoneId?: string;
   uploadedById?: string;
   review?: { status: 'APPROVED' | 'REJECTED'; reviewerId: string; reviewerName: string; reviewerRole: Role; reviewedAt: string; note: string };
   reviewHistory?: NonNullable<SitePhoto['review']>[];

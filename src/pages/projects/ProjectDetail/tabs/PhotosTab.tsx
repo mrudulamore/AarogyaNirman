@@ -23,9 +23,9 @@ const SiteBoundaryEditor = lazy(() => import('../../../../components/common/Site
 const STAGE_OPTIONS = ['Foundation', 'Structure', 'Roofing', 'MEP', 'Finishing', 'Medical Infrastructure'];
 const TYPES: PhotoType[] = ['BEFORE', 'PROGRESS', 'COMPLETION'];
 
-export function PhotosTab({ project }: { project: Project }) {
+export function PhotosTab({ project, milestoneId }: { project: Project; milestoneId?: string }) {
   useUiLanguage();
-  const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id && (!milestoneId || p.milestoneId === milestoneId)).sort((a, b) => (a.date < b.date ? 1 : -1));
   const addPhoto = useStore((s) => s.addPhoto);
   const deletePhoto = useStore((s) => s.deletePhoto);
   const currentUser = useStore((s) => s.currentUser);
@@ -83,7 +83,7 @@ export function PhotosTab({ project }: { project: Project }) {
       if (!form.building.trim() || !form.floor.trim() || !form.activity.trim()) throw new Error('Enter building, floor and activity to group the photo.');
       if (capture.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10) throw new Error('Explain why this outside or uncertain location should be submitted.');
       const now = new Date().toISOString();
-      addPhoto({ projectId: project.id, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
+      addPhoto({ projectId: project.id, milestoneId, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
         location: form.building + ' / ' + form.floor, uploadedBy: currentUser?.name ?? '', uploadedByRole: currentUser!.role,
         description: form.description, remarks: locationReason.trim() || undefined, seed: 0, ...capture, locationSource: 'CAPTURED', uploadedAt: now, deviceInfo: navigator.userAgent.slice(0, 120) });
       toast.success(uiText('Photo saved on this device.')); setCapture(null); setLocationReason(''); setUploadOpen(false);
