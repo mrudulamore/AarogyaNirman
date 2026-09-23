@@ -1,4 +1,5 @@
 import { reconcileProjects } from '../lib/financeLedger';
+import { validateMilestonePhoto } from '../lib/milestonePhoto';
 import { withDemoFinance } from '../mock/demoFinance';
 import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
 import { workforceAccount } from '../lib/workforceAccount';
@@ -358,6 +359,11 @@ export const useStore = create<StoreState>()(
       },
       addPhoto: (p) => {
         assertProjectAccess(get(), p.projectId, ['SUPERADMIN', 'CONTRACTOR', 'DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER']);
+        if (p.milestoneId) {
+          const project = get().projects.find(item => item.id === p.projectId);
+          if (!project) throw new Error('Project not found.');
+          p = validateMilestonePhoto(p, project, get().milestones);
+        }
         const actor = get().currentUser!;
         const photo: SitePhoto = { ...p, id: nid('PHO'), uploadedById: actor.id, uploadedBy: actor.name, uploadedByRole: actor.role, review: undefined, reviewHistory: [] };
         set((s) => ({ photos: [photo, ...s.photos] }));

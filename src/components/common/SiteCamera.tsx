@@ -55,7 +55,7 @@ export function SiteCamera({ project, onCapture }: {
     const next = { lat: position.coords.latitude, lng: position.coords.longitude, accuracyM: Math.ceil(position.coords.accuracy), capturedAt: new Date(timestampMs).toISOString(), timestampMs };
     if (alive.current) {
       setFix(next);
-      const result = assessProjectGeoFence(next, project);
+      const result = assessProjectGeoFence({ ...next, gpsAccuracyM: next.accuracyM }, project);
       setAssessment(project.siteLocationConfirmedAt ? result : { ...result, status: 'UNCERTAIN' });
     }
     return next;
@@ -71,7 +71,7 @@ export function SiteCamera({ project, onCapture }: {
   async function persistCapture(dataUrl: string, capturedAt: string, locationFix: LocationFix) {
     const gpsAgeMs = Math.max(0, Date.parse(capturedAt) - locationFix.timestampMs);
     if (gpsAgeMs > MAX_FIX_AGE_MS) throw new Error('The GPS fix became stale. Refresh location and retake the photo.');
-    const calculated = assessProjectGeoFence(locationFix, project);
+    const calculated = assessProjectGeoFence({ ...locationFix, gpsAccuracyM: locationFix.accuracyM }, project);
     const result = project.siteLocationConfirmedAt ? calculated : { ...calculated, status: 'UNCERTAIN' as const };
     const stored = await saveEvidenceMedia(dataUrl, { projectName: project.name, lat: locationFix.lat, lng: locationFix.lng, accuracyM: locationFix.accuracyM, capturedAt, status: result.status });
     if (!alive.current) return;

@@ -23,9 +23,9 @@ const SiteBoundaryEditor = lazy(() => import('../../../../components/common/Site
 const STAGE_OPTIONS = ['Foundation', 'Structure', 'Roofing', 'MEP', 'Finishing', 'Medical Infrastructure'];
 const TYPES: PhotoType[] = ['BEFORE', 'PROGRESS', 'COMPLETION'];
 
-export function PhotosTab({ project }: { project: Project }) {
+export function PhotosTab({ project, milestoneId }: { project: Project; milestoneId?: string }) {
   useUiLanguage();
-  const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const photos = useStore((s) => s.photos).filter((p) => p.projectId === project.id && (!milestoneId || p.milestoneId === milestoneId)).sort((a, b) => (a.date < b.date ? 1 : -1));
   const addPhoto = useStore((s) => s.addPhoto);
   const deletePhoto = useStore((s) => s.deletePhoto);
   const currentUser = useStore((s) => s.currentUser);
@@ -83,7 +83,7 @@ export function PhotosTab({ project }: { project: Project }) {
       if (!form.building.trim() || !form.floor.trim() || !form.activity.trim()) throw new Error('Enter building, floor and activity to group the photo.');
       if (capture.geoFenceStatus !== 'INSIDE' && locationReason.trim().length < 10) throw new Error('Explain why this outside or uncertain location should be submitted.');
       const now = new Date().toISOString();
-      addPhoto({ projectId: project.id, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
+      addPhoto({ projectId: project.id, milestoneId, stage: form.stage, type: form.type, date: now.slice(0, 10), building: form.building.trim(), floor: form.floor.trim(), activity: form.activity.trim(),
         location: form.building + ' / ' + form.floor, uploadedBy: currentUser?.name ?? '', uploadedByRole: currentUser!.role,
         description: form.description, remarks: locationReason.trim() || undefined, seed: 0, ...capture, locationSource: 'CAPTURED', uploadedAt: now, deviceInfo: navigator.userAgent.slice(0, 120) });
       toast.success(uiText('Photo saved on this device.')); setCapture(null); setLocationReason(''); setUploadOpen(false);
@@ -122,7 +122,7 @@ export function PhotosTab({ project }: { project: Project }) {
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[{ label: 'BEFORE', photo: before }, { label: 'LATEST', photo: after }].map(({ label, photo }) => (
               <div key={label} className="overflow-hidden rounded-md border border-slate-200">
-                <img src={photoSrc(photo)} className="h-52 w-full object-cover" />
+                <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-52" />
                 <div className="p-2.5">
                   <Badge>{uiText(label)}</Badge>
                   <p className="mt-1 text-xs font-medium text-slate-700">{uiText(photo.stage)}</p>
@@ -143,7 +143,7 @@ export function PhotosTab({ project }: { project: Project }) {
             {items.map((ph) => (
               <button key={ph.id} onClick={() => setViewerId(ph.id)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
                 <div className="relative">
-                  <img alt={ph.description} src={photoSrc(ph)} className="h-52 w-full object-cover transition-transform group-hover:scale-105" />
+                  <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-52" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
                 </div>
                 <div className="p-1.5">

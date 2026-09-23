@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from 'recharts';
 import type { Project, BillStatus } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
@@ -27,6 +27,14 @@ const PENDING_WITH: Partial<Record<BillStatus, string>> = {
 function ageingDays(dateIso: string): number {
   return Math.max(0, Math.round((Date.now() - new Date(dateIso).getTime()) / 86400000));
 }
+
+const progressPercent = (value: unknown) => `${Number(value).toFixed(1).replace(/\.0$/, '')}%`;
+const progressMonth = (value: string) => new Date(`${value}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+const progressSeries = [
+  { key: 'planned', label: 'Planned Physical', color: '#94a3b8' },
+  { key: 'verified', label: 'Reported Physical', color: '#3b82f6' },
+  { key: 'financial', label: 'Financial', color: '#0d9488' },
+] as const;
 
 /** Part 20-22: Finance simplified into one Project 360 tab — a senior user should understand
  * financial position within seconds via the primary KPI row, then drill into bill status,
@@ -171,20 +179,31 @@ export function FinanceTab({ project }: { project: Project }) {
 
       {/* Decision-oriented finance charts (max 4, each supports a management decision) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader><CardTitle>{uiText("Physical vs. Financial Progress")}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={progressTrend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
+            {progressTrend.length > 0 ? <>
+            <p className="mb-3 text-xs text-slate-500">{progressMonth(progressTrend[progressTrend.length - 1].month)}</p>
+            <div className="mb-5 grid grid-cols-3 gap-2">
+              {progressSeries.map(series => <div key={series.key} className="min-w-0 border-l-2 pl-2 sm:pl-3" style={{ borderColor: series.color }}>
+                <p className="text-[11px] leading-4 text-slate-500">{uiText(series.label)}</p>
+                <p className="mt-1 text-lg font-semibold tabular-nums text-slate-800">{progressPercent(progressTrend[progressTrend.length - 1][series.key])}</p>
+              </div>)}
+            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={progressTrend} margin={{ top: 10, right: 18, bottom: 8, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
-                <RTooltip formatter={(v: any) => `${v}%`} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="planned" name={uiText("Planned Physical")} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
-                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="verified" name={uiText("Reported Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line label={{ position: 'bottom', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="financial" name={uiText("Financial")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                <XAxis dataKey="month" tickFormatter={progressMonth} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} minTickGap={24} padding={{ left: 12, right: 12 }} />
+                <YAxis width={44} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+                <RTooltip formatter={progressPercent} labelFormatter={value => progressMonth(String(value))} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                {progressSeries.map(series => <Line key={series.key} type="linear" dataKey={series.key} name={uiText(series.label)} stroke={series.color} strokeDasharray={series.key === 'planned' ? '4 4' : undefined} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />)}
               </LineChart>
             </ResponsiveContainer>
+            <details className="mt-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+              <summary className="cursor-pointer">{uiText('Monthly progress values')}</summary>
+              <div className="mt-3 overflow-x-auto"><table className="w-full text-left tabular-nums"><thead><tr><th className="p-2">{uiText('Period')}</th>{progressSeries.map(series => <th key={series.key} className="p-2">{uiText(series.label)}</th>)}</tr></thead><tbody>{progressTrend.map(row => <tr key={row.month} className="border-t border-slate-100"><td className="p-2">{progressMonth(row.month)}</td>{progressSeries.map(series => <td key={series.key} className="p-2">{progressPercent(row[series.key])}</td>)}</tr>)}</tbody></table></div>
+            </details>
+            </> : <p className="py-16 text-center text-sm text-slate-500">{uiText('No progress reports available.')}</p>}
           </CardContent>
         </Card>
 

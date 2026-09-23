@@ -4,9 +4,8 @@ import { cn } from '../../lib/utils';
 import { EvidenceImage } from './EvidenceImage';
 
 
-/** Renders a site photo with a "GPS Map Camera"-style geo-tag overlay burned onto the bottom
- * of the image — location, lat/lng and capture timestamp — matching how real field-captured
- * evidence looks, instead of a plain untagged photo. */
+/** Displays capture metadata over the image. Samples explicitly disclose missing GPS;
+ * downloadable stamped copies are generated separately during camera capture. */
 export function GeoPhoto({ src, mediaKey, lat, lng, timestamp, location, className, imgClassName }: {
   src: string; mediaKey?: string; lat: number; lng: number; timestamp: string; location: string; className?: string; imgClassName?: string;
 }) {
@@ -20,6 +19,10 @@ export function GeoPhoto({ src, mediaKey, lat, lng, timestamp, location, classNa
   return (
     <div className={cn('relative overflow-hidden rounded-md', className)}>
       <EvidenceImage alt={uiText(location)} fallbackSrc={src} mediaKey={mediaKey} className={cn('h-full w-full object-cover', imgClassName)} />
+      {sample && <div className="absolute inset-x-0 bottom-0 bg-black/80 px-2.5 py-2 text-[11px] leading-tight text-white">
+        <p className="font-semibold">{uiText(location)}</p>
+        <p className="mt-1 text-amber-200">{uiText('Sample photo — no captured GPS')}</p>
+      </div>}
       {!sample && <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pb-2 pt-6 text-white">
         <div className="flex items-center gap-1 text-[11px] font-semibold leading-tight">
           <MapPin size={11} className="shrink-0 text-sky-300" /> {uiText(location)}
