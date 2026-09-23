@@ -291,13 +291,15 @@ export function InspectionsTab({ project }: { project: Project }) {
         <DialogContent title={uiText(appointmentActionLabel)} description={uiText(project.name)}>
           <div className="space-y-3">
             <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Inspection Type")}</p>
-              <select aria-label={uiText('Approved drawing revision')} className="mb-3 min-h-11 w-full rounded border" value={schedForm.drawingId} onChange={e => setSchedForm({ ...schedForm, drawingId: e.target.value })}><option value="">{uiText('Not referenced')}</option>{drawings.map(d => <option key={d.id} value={d.id}>{d.reference} / {d.fields.version}</option>)}</select>
-              <Select value={schedForm.category} onValueChange={(v) => setSchedForm({ ...schedForm, category: v as InspectionCategory })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{INSPECTION_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{uiText(c.replace(/_/g, ' '))}</SelectItem>)}</SelectContent>
-              </Select>
+              <label htmlFor="appointment-inspection-type" className="mb-1 block text-xs font-medium text-slate-600">{uiText("Inspection Type")}</label>
+              <select id="appointment-inspection-type" className="ui-input min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm" value={schedForm.category} onChange={e => setSchedForm({ ...schedForm, category: e.target.value as InspectionCategory })}>
+                {INSPECTION_CATEGORIES.map(c => <option key={c} value={c}>{uiText(c.replace(/_/g, ' '))}</option>)}
+              </select>
             </div>
+            {canSchedule && <div>
+              <label htmlFor="appointment-drawing" className="mb-1 block text-xs font-medium text-slate-600">{uiText('Approved drawing revision')}</label>
+              <select id="appointment-drawing" className="ui-input min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm" value={schedForm.drawingId} onChange={e => setSchedForm({ ...schedForm, drawingId: e.target.value })}><option value="">{uiText('Not referenced')}</option>{drawings.map(d => <option key={d.id} value={d.id}>{d.reference} / {d.fields.version}</option>)}</select>
+            </div>}
             <div>
               <p className="mb-1 text-xs font-medium text-slate-600">{uiText(canSchedule ? 'Scheduled Date' : 'Preferred Date')}</p>
               <input type="date" value={schedForm.date} onChange={(e) => setSchedForm({ ...schedForm, date: e.target.value })} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" />
