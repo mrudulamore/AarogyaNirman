@@ -122,7 +122,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[{ label: 'BEFORE', photo: before }, { label: 'LATEST', photo: after }].map(({ label, photo }) => (
               <div key={label} className="overflow-hidden rounded-md border border-slate-200">
-                <img src={photoSrc(photo)} className="h-52 w-full object-cover" />
+                <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-52" />
                 <div className="p-2.5">
                   <Badge>{uiText(label)}</Badge>
                   <p className="mt-1 text-xs font-medium text-slate-700">{uiText(photo.stage)}</p>
@@ -143,7 +143,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
             {items.map((ph) => (
               <button key={ph.id} onClick={() => setViewerId(ph.id)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
                 <div className="relative">
-                  <img alt={ph.description} src={photoSrc(ph)} className="h-52 w-full object-cover transition-transform group-hover:scale-105" />
+                  <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-52" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
                 </div>
                 <div className="p-1.5">
