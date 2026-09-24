@@ -2,7 +2,7 @@
 
 Use **Project Proposals** in the sidebar. Proposal data and uploaded PDFs are saved on the current browser/device, like the existing demo workflows.
 
-1. Sign in as **Minister / Secretary** (`minister.secretary`). Choose **Use demo template: Pune** or **Satara**. The template supplies illustrative project, location, land and cost details; upload a PDF proposal/drawing. Save a draft or submit for scrutiny.
+1. Sign in as **Minister / Secretary** (`minister.secretary`). Choose **Create proposal**. Select **Pune Division** and a district: Pune, Satara, Kolhapur or Solapur. Choose one of the two project names (District Hospital Extension or Rural Hospital Extension), enter land details, justification and estimated cost, and upload a PDF proposal/drawing. Save a draft or submit for scrutiny.
 2. Switch to **Commissioner** (`commissioner`), acting as the administrative department. Open the proposal, review documents and enter comments. Approve and forward, return to Ministry for correction, or reject.
 3. Switch to **Chief Engineer** (`chief.engineer`, Sanjay Deshmukh, Pune Division). Review and forward.
 4. Switch to **Superintending Engineer** (`superintending.engineer`, Meera Patil, Pune Division). Select **Archana Pawar**, the Pune Division EE, and approve the division assignment.

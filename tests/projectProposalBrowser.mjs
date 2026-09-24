@@ -32,7 +32,11 @@ try {
   async function click(text){await evaluate(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='${text}').click()`)}
   async function fill(selector,value){await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`)}
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
-  await login('MINISTER');await click('Use demo template: Satara');await until(`!!document.querySelector('[role=dialog] input[type=file]')`);
+  await login('MINISTER');await click('Create proposal');await until(`!!document.querySelector('[role=dialog] input[type=file]')`);
+  await evaluate(`(()=>{const selects=document.querySelectorAll('[role=dialog] select');const district=selects[2];district.value='Satara';district.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+  await fill('[role=dialog] input[type=number]','1200');
+  await fill('[role=dialog] textarea','Government hospital campus');
+  await evaluate(`(()=>{const e=document.querySelectorAll('[role=dialog] textarea')[1];Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,'Additional hospital capacity');e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await evaluate(`(()=>{const input=document.querySelector('[role=dialog] input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File(['%PDF-1.4 proposal evidence'],'proposal.pdf',{type:'application/pdf'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()`);
   await until(`document.querySelector('[role=dialog]').textContent.includes('proposal.pdf') && !Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Submit for scrutiny').disabled`);
   await click('Submit for scrutiny');await until(`!document.querySelector('[role=dialog]')`);
@@ -48,7 +52,7 @@ try {
   await send('Page.reload');await until(`document.body.textContent.includes('Project approved')`);
   assert.ok(await evaluate(`(async()=>{const {useStore}=await import('/src/store/useStore.ts');const s=useStore.getState();const p=s.proposals[0];return p.history.filter(h=>h.action==='APPROVE').length===4&&s.projects.some(project=>project.id===p.projectId&&project.district==='Satara');})()`));
   await evaluate(`Array.from(document.querySelectorAll('a')).find(a=>a.textContent==='Open approved project').click()`);
-  await until(`document.body.textContent.includes('Proposed Rural Hospital Extension')`);
+  await until(`document.body.textContent.includes('District Hospital Extension')`);
   assert.equal(await evaluate(`document.body.textContent.includes('This page could not be opened') || document.body.textContent.includes('NaN')`), false);
   console.log('Mobile Ministry template + PDF upload, all four reviewer screens, EE sanction, approved project link and reload passed.');
 }finally{socket?.close();browser.kill();await server.close()}
