@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { ProposalInboxLink } from '../../components/common/ProposalInboxLink';
 import { InspectionRequests } from '../../components/common/InspectionRequests';
 import { selectRecentPhotos } from '../../lib/recentPhotos';
@@ -7,7 +8,7 @@ import { saveBillFiles } from '../../lib/billAttachments';
 import { WorkforceHome } from '../workers/WorkforceHome';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -78,7 +79,7 @@ function matchesStatusFilter(p: Project, status: StatusFilterKey | null, photos:
   return true;
 }
 
-export function Dashboard() {
+function CommandDashboard() {
   useUiLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -767,4 +768,20 @@ function RollupPanel({ icon: Icon, title, count, items, emptyText }: {
       )}
     </div>
   );
+}
+
+const InsightOverview = lazy(() => import('./InsightOverview').then(m => ({default:m.InsightOverview})));
+
+export function Dashboard() {
+  useUiLanguage();
+  const [params,setParams] = useSearchParams();
+  const role = useStore(s => s.currentUser?.role);
+  const insight = params.get('tab') === 'insights';
+  if (Capacitor.isNativePlatform() || role === 'WORKFORCE') return <CommandDashboard/>;
+  return <div>
+    <nav aria-label={uiText('Dashboard views')} className="mb-5 flex flex-wrap gap-2">
+      {[['command','Command Center'],['insights','Insight Overview']].map(([key,label]) => <button key={key} aria-pressed={key === (insight?'insights':'command')} onClick={()=>setParams(previous=>{const next=new URLSearchParams(previous);next.set('tab',key);return next;})} className={`min-h-11 rounded-xl border px-5 text-sm font-semibold ${key===(insight?'insights':'command')?'border-blue-600 bg-blue-600 text-white':'border-blue-200 bg-white text-blue-800 hover:bg-blue-50'}`}>{uiText(label)}</button>)}
+    </nav>
+    {insight ? <Suspense fallback={<p role="status">{uiText('Loading…')}</p>}><InsightOverview/></Suspense> : <CommandDashboard/>}
+  </div>;
 }
