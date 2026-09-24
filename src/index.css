@@ -494,6 +494,18 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .dashboard-insights .ui-card-header { min-height: 72px; background: linear-gradient(120deg, #f2f7ff, #fff); padding: 20px; }
 .dashboard-insights .ui-card-header h3 { font-size: 15px; line-height: 1.5; }
 .dashboard-insights .ui-button { min-height: 40px; }
+@media (max-width: 639px) {
+  .app-content { padding: 18px 14px 28px; }
+  .app-content .ui-card-header { padding: 18px 16px; }
+  .app-content .ui-card-header h3 { font-size: 15px; line-height: 1.5; }
+  .app-content .ui-button { min-height: 44px; white-space: normal; line-height: 1.4; }
+  .app-content .ui-input, [role="dialog"] .ui-input { min-height: 46px; font-size: 16px; }
+  .app-content textarea, [role="dialog"] textarea { font-size: 16px; line-height: 1.6; padding: 12px; }
+  .dashboard-insights .text-xs { font-size: 13px; line-height: 1.5; }
+  .dashboard-insights > .ui-card > div:last-child { padding: 16px; }
+  [role="dialog"] { scroll-padding-bottom: 80px; }
+  [role="dialog"] .ui-button { min-height: 44px; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .dashboard-insights .ui-button { transition: background-color 160ms ease, box-shadow 160ms ease; }
 }
@@ -505,3 +517,30 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .contractor-progress-card:disabled { cursor: default; }
 .contractor-progress-card:disabled svg { display: none; }
 @media (prefers-reduced-motion: no-preference) { .contractor-progress-card { transition: background-color 180ms, border-color 180ms; } }
+
+.field-primary-dock { display: flex; flex-shrink: 0; justify-content: space-around; gap: 4px; border-top: 1px solid #d4e3f8; background: white; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+.field-primary-dock .dock-link { display: flex; min-height: 48px; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; font-size: 11px; color: #536781; }
+.field-primary-dock .dock-link.is-active { background: #edf5ff; color: #135cc2; }
+.mobile-task-home a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+
+/* Match the native status-bar surface on every shared application header. */
+:root { --app-primary: #183c72; }
+.app-header {
+  background: var(--app-primary);
+  color: white;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.app-header > a,
+.app-header > button,
+.app-header > div > button,
+.app-header .account-summary p,
+.app-header > div > button > svg { color: white; }
+.app-header > button:hover,
+.app-header > div > button:hover { background: #ffffff20; }
+.app-header > div > button { border-color: #ffffff40; }
+.app-header form { color: #183c72; }
+.field-app-header { flex-wrap: wrap; padding-block: 10px; }

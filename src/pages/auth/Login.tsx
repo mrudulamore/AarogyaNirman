@@ -9,6 +9,7 @@ import { useStore } from '../../store/useStore';
 import type { Role } from '../../types';
 
 const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
+  { role: 'SITE_SUPERVISOR', username: 'site.supervisor' },
   { role: 'WORKFORCE', username: 'workforce' },
   { role: 'SUPERADMIN', username: 'superadmin' },
   { role: 'MINISTER', username: 'minister.secretary' },

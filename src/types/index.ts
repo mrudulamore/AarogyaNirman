@@ -3,6 +3,7 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'SITE_SUPERVISOR'
   | 'WORKFORCE'
   | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
   | 'MINISTER'            // Minister / Secretary (Public Health) — State, read-oriented oversight
@@ -187,6 +188,7 @@ export type LocationSource = 'CAPTURED' | 'MANUAL';
 export type GeoFenceStatus = 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN';
 
 export interface SitePhoto {
+  isReference?: boolean;
   milestoneId?: string;
   uploadedById?: string;
   review?: { status: 'APPROVED' | 'REJECTED'; reviewerId: string; reviewerName: string; reviewerRole: Role; reviewedAt: string; note: string };
@@ -230,7 +232,7 @@ export type InspectionCategory =
   | 'FINISHING' | 'SITE_SAFETY';
 
 export type InspectionResult = 'PASS' | 'FAIL' | 'CONDITIONAL' | 'NOT_INSPECTED';
-export type InspectionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
+export type InspectionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'PENDING_REVIEW' | 'REVERIFY' | 'COMPLETED';
 
 export interface ChecklistItem {
   id: string;
@@ -243,6 +245,18 @@ export interface ChecklistItem {
 }
 
 export interface Inspection {
+  sourceDefectId?: string;
+  photos?: { dataUrl: string; mediaKey: string; capturedAt: string; lat: number; lng: number }[];
+  reviewHistory?: { decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY'; reviewer: string; date: string; comments: string; items: ChecklistItem[]; photos: NonNullable<Inspection['photos']>; findings: string }[];
+  assignedToId?: string;
+  assignedRole?: Role;
+  createdById?: string;
+  scheduledTime?: string;
+  location?: string;
+  scope?: string;
+  requiredDocuments?: string;
+  instructions?: string;
+  assignmentHistory?: { assignedToId: string; assignedToName: string; role: Role; assignedBy: string; date: string; reason: string }[];
   drawingId?: string;
   id: string;
   projectId: string;

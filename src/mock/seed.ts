@@ -1102,6 +1102,13 @@ export function generateMockData(): SeedResult {
     });
   }
 
+  // Stable demo supervisor accounts; existing staff can also be assigned this role.
+  projects.forEach(project => users.push({
+    id: `SUPERVISOR-${project.id}`, name: `Site Supervisor — ${project.name}`,
+    role: 'SITE_SUPERVISOR', designation: 'Site Supervisor', department: 'Site supervision',
+    email: `supervisor.${project.id.toLowerCase()}@example.test`, phone: '',
+    assignedProjectIds: [project.id], avatarInitials: 'SS',
+  }));
   return {
     users, projects, tenders, milestones, progressReports, photos, inspections, defects, approvals,
     contractors, workers, attendance, bills, measurements, boqItems, materials, materialTests,

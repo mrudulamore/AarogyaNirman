@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils';
 import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
 const ROLE_ICONS: Record<Role, typeof Building2> = {
+  SITE_SUPERVISOR: HardHat,
   WORKFORCE: HardHat,
   SUPERADMIN: KeyRound, MINISTER: Crown, COMMISSIONER: Landmark, REGIONAL_DIRECTOR: MapPinned, CIVIL_SURGEON: Building2,
   EXECUTIVE_ENGINEER: Hammer, PROJECT_MANAGER: Briefcase, DEPUTY_ENGINEER: HardHat, CONTRACTOR: ClipboardList,

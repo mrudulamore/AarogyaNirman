@@ -1,11 +1,13 @@
+import { SiteCamera } from '../../../../components/common/SiteCamera';
 import { InspectionDetails } from '../../../../components/common/InspectionDetails';
-import { activeControls } from '../../../../lib/projectControls';
+import { InspectionAllocation } from '../../../../components/common/InspectionAllocation';
+import { canReviewInspection, canManageInspection } from '../../../../lib/inspectionAccess';
 import { drawingWarning } from '../../../../lib/pendingWork';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CalendarPlus, ClipboardCheck, ShieldCheck, ShieldAlert, RefreshCw, FileWarning, FileBarChart2, Download } from 'lucide-react';
-import type { Project, ChecklistItem, InspectionCategory, InspectionResult } from '../../../../types';
+import type { Project, ChecklistItem, Inspection, InspectionResult } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, SeverityBadge, Table, THead, TBody, Tr, Th, Td, EmptyState } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
@@ -94,7 +96,7 @@ export function QualityTab({ project }: { project: Project }) {
         <CardHeader><CardTitle className="flex items-center gap-2"><FileBarChart2 size={15} />{uiText(" Quality Reports")}</CardTitle></CardHeader>
         {qualityReports.length === 0 ? <EmptyState title={uiText("No quality reports filed for this project")} /> : (
           <Table>
-            <THead><Tr><Th>{uiText("Report No.")}</Th><Th>{uiText("Type")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Agency")}</Th><Th>{uiText("Test Type")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
+            <THead><Tr><Th>{uiText("Report No.")}</Th><Th>{uiText("Type")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Agency")}</Th><Th>{uiText("Test Type")}</Th><Th>{uiText("Status")}</Th></Tr></THead>
             <TBody>
               {qualityReports.map((r) => (
                 <Tr key={r.id}>
@@ -161,69 +163,57 @@ function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between border-b border-slate-50 pb-1.5"><span className="text-slate-400">{uiText(label)}</span><span className="font-medium text-slate-700">{uiText(value)}</span></div>;
 }
 
-// Part 15 permission matrix — the label AND availability of the scheduling action both depend
-// on role, rather than one button being manually hidden per page.
-const APPOINTMENT_ACTION_LABEL: Partial<Record<string, string>> = {
-  CONTRACTOR: 'Request Inspection',
-  DEPUTY_ENGINEER: 'Propose Appointment',
-  EXECUTIVE_ENGINEER: 'Schedule Inspection',
-};
-
 export function InspectionsTab({ project }: { project: Project }) {
   const controlState = useStore();
-  const drawings = activeControls(controlState, project.id).filter(r => r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing' || r.kind === 'PROCUREMENT' && r.category === 'Approved drawings / estimate');
   useUiLanguage();
   const currentUser = useStore((s) => s.currentUser);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id).sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
   const defects = useStore((s) => s.defects).filter((d) => d.projectId === project.id);
   const appointments = useStore((s) => s.inspectionAppointments).filter((a) => a.projectId === project.id).sort((a, b) => (a.date < b.date ? 1 : -1));
-  const requestAppointment = useStore((s) => s.requestAppointment);
-  const scheduleAppointment = useStore((s) => s.scheduleAppointment);
-  const cancelAppointment = useStore((s) => s.cancelAppointment);
-  const canSchedule = currentUser?.role === 'EXECUTIVE_ENGINEER';
-  const canRequest = currentUser?.role === 'CONTRACTOR' || currentUser?.role === 'DEPUTY_ENGINEER';
-  const canConduct = currentUser?.role === 'DEPUTY_ENGINEER' || currentUser?.role === 'EXECUTIVE_ENGINEER';
-  const appointmentActionLabel = currentUser ? (APPOINTMENT_ACTION_LABEL[currentUser.role] ?? 'Schedule Inspection') : 'Schedule Inspection';
-  const [scheduleTargetId, setScheduleTargetId] = useState<string | null>(null);
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleTime, setScheduleTime] = useState('10:00');
-  const users = useStore((s) => s.users).filter((u) => u.role === 'DEPUTY_ENGINEER');
-  const scheduleInspection = useStore((s) => s.scheduleInspection);
+  const canSchedule = canReviewInspection(currentUser);
+  const startInspection = useStore(s => s.startInspection);
   const submitInspection = useStore((s) => s.submitInspection);
   const reinspect = useStore((s) => s.reinspect);
-  const passReinspection = useStore((s) => s.passReinspection);
+
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [checklistId, setChecklistId] = useState<string | null>(null);
-  const [schedForm, setSchedForm] = useState({ drawingId: '', category: INSPECTION_CATEGORIES[0] as InspectionCategory, date: new Date().toISOString().slice(0, 10), inspector: users[0]?.name ?? 'Deputy Engineer' });
+  const [assignId, setAssignId] = useState<string | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [comments, setComments] = useState('');
 
   const active = inspections.find((i) => i.id === checklistId);
 
-  function openChecklist(insp: { id: string; category: InspectionCategory; items: ChecklistItem[]; comments: string }) {
+  function openChecklist(insp: Inspection) {
+    try { startInspection(insp.id); } catch (error) { toast.error(uiText((error as Error).message)); return; }
     const reqs = CHECKLIST_REQUIREMENTS[insp.category];
     setItems(insp.items.length ? insp.items : reqs.map((r, idx) => ({
-      id: `chk-${idx}`, requirement: r, measurement: 'Within tolerance', standard: CHECKLIST_STANDARDS[insp.category], result: 'PASS', evidence: 'Photo & instrument reading logged', remarks: '',
+      id: `chk-${idx}`, requirement: r, measurement: '', standard: CHECKLIST_STANDARDS[insp.category], result: 'NOT_INSPECTED', evidence: '', remarks: '',
     })));
     setComments(insp.comments);
     setChecklistId(insp.id);
   }
 
   function submit() {
+    if (items.some(item => item.result !== 'PASS' && !item.remarks.trim())) {
+      toast.error(uiText('Add a comment for every checklist item that has not passed.'));
+      return;
+    }
     const anyFail = items.some((i) => i.result === 'FAIL');
     const anyConditional = items.some((i) => i.result === 'CONDITIONAL');
-    const result: InspectionResult = anyFail ? 'FAIL' : anyConditional ? 'CONDITIONAL' : 'PASS';
-    submitInspection(checklistId!, items, result, comments);
-    toast[result === 'FAIL' ? 'error' : 'success'](result === 'FAIL' ? 'Inspection marked FAIL — a defect has been created automatically.' : `Inspection marked ${result}.`);
+    const result: InspectionResult = anyFail ? 'FAIL' : anyConditional ? 'CONDITIONAL' : items.some(i => i.result === 'NOT_INSPECTED') ? 'NOT_INSPECTED' : 'PASS';
+    try { submitInspection(checklistId!, items, result, comments); }
+    catch (error) { toast.error(uiText((error as Error).message)); return; }
+    toast.success(uiText('Inspection submitted for EE review.'));
     setChecklistId(null);
   }
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-slate-600">{uiText('EE assigns > JE inspects and captures photos / measurements > EE reviews > Approve, raise defect or reverify')}</p>
       <div className="flex justify-end">
-        {(canSchedule || canRequest) && <Button onClick={() => setScheduleOpen(true)}><CalendarPlus size={15} /> {uiText(appointmentActionLabel)}</Button>}
+        {canSchedule && <Button onClick={() => setScheduleOpen(true)}><CalendarPlus size={15} /> {uiText('Add inspection')}</Button>}
       </div>
 
       {appointments.length > 0 && (
@@ -240,14 +230,7 @@ export function InspectionsTab({ project }: { project: Project }) {
                   <Td>{uiText(formatDate(a.date))}</Td>
                   <Td>{uiText(a.time)}</Td>
                   <Td><StatusBadge status={a.status} /></Td>
-                  <Td className="space-x-1.5 whitespace-nowrap">
-                    {canSchedule && (a.status === 'REQUESTED' || a.status === 'RESCHEDULED') && (
-                      <Button size="sm" variant="outline" onClick={() => { setScheduleTargetId(a.id); setScheduleDate(a.date); setScheduleTime(a.time); }}>{uiText("Schedule")}</Button>
-                    )}
-                    {canSchedule && a.status !== 'CANCELLED' && a.status !== 'COMPLETED' && (
-                      <Button size="sm" variant="destructive" onClick={() => { cancelAppointment(a.id, 'Cancelled by Executive Engineer.'); toast.error(uiText('Appointment cancelled.')); }}>{uiText("Cancel")}</Button>
-                    )}
-                  </Td>
+
                 </Tr>
               ))}
             </TBody>
@@ -260,7 +243,8 @@ export function InspectionsTab({ project }: { project: Project }) {
           <THead><Tr><Th>{uiText("Category")}</Th><Th>{uiText("Scheduled")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Result")}</Th><Th>{uiText("Score")}</Th><Th /></Tr></THead>
           <TBody>
             {inspections.map((insp) => {
-              const canReinspectSource = insp.overallResult === 'FAIL' && defects.find((d) => d.sourceInspectionId === insp.id && d.status === 'FIXED');
+              const canConduct = canManageInspection(currentUser, insp);
+              const canReinspectSource = defects.find((d) => d.sourceInspectionId === insp.id && d.status === 'FIXED');
               return (
                 <Tr key={insp.id} onClick={() => setDetailId(insp.id)}>
                   <Td className="font-medium text-slate-800">{insp.isReinspection && <RefreshCw size={11} className="mr-1 inline text-purple-500" />}{uiText(insp.category.replace(/_/g, ' '))}</Td>
@@ -270,10 +254,11 @@ export function InspectionsTab({ project }: { project: Project }) {
                   <Td><StatusBadge status={insp.overallResult} /></Td>
                   <Td>{uiText(insp.status === 'COMPLETED' ? `${insp.score}%` : '—')}</Td>
                   <Td className="space-x-1.5 whitespace-nowrap">
-                    <Button size="sm" variant="ghost" onClick={event => { event.stopPropagation(); setDetailId(insp.id); }}>{uiText('View details')}</Button>
-                    {canConduct && insp.status !== 'COMPLETED' && <Button size="sm" variant="outline" onClick={event => { event.stopPropagation(); openChecklist(insp); }}><ClipboardCheck size={12} /> {uiText(insp.isReinspection ? 'Submit Result' : 'Start Inspection')}</Button>}
-                    {canConduct && canReinspectSource && (
-                      <Button size="sm" onClick={event => { event.stopPropagation(); const r = reinspect(canReinspectSource.id); toast.success(uiText('Re-inspection started.')); openChecklist(r); }}>
+                    <Button size="sm" variant="ghost" onClick={event => { event.stopPropagation(); setDetailId(insp.id); }}>{uiText(canSchedule && insp.status === 'PENDING_REVIEW' ? 'Review inspection' : 'View details')}</Button>
+                    {canSchedule && ['SCHEDULED', 'REVERIFY'].includes(insp.status) && <Button size="sm" variant="outline" onClick={event => { event.stopPropagation(); setAssignId(insp.id); }}>{uiText('Reassign')}</Button>}
+                    {canConduct && ['SCHEDULED', 'IN_PROGRESS', 'REVERIFY'].includes(insp.status) && <Button size="sm" variant="outline" onClick={event => { event.stopPropagation(); openChecklist(insp); }}><ClipboardCheck size={12} /> {uiText(insp.isReinspection ? 'Submit Result' : 'Start Inspection')}</Button>}
+                    {canSchedule && canReinspectSource && (
+                      <Button size="sm" onClick={event => { event.stopPropagation(); try { const r = reinspect(canReinspectSource.id); toast.success(uiText('Reinspection assigned to JE.')); setDetailId(r.id); } catch (error) { toast.error(uiText((error as Error).message)); } }}>
                         <RefreshCw size={12} />{uiText(" Re-inspect")}</Button>
                     )}
                     {!canConduct && insp.status === 'COMPLETED' && <span className="text-[11px] text-slate-400">{uiText("View only")}</span>}
@@ -287,76 +272,16 @@ export function InspectionsTab({ project }: { project: Project }) {
       </Card>
 
       <div className="space-y-2">{inspections.filter(i => drawingWarning(controlState, project.id, i.drawingId)).map(i => <p role="alert" key={i.id} className="rounded bg-amber-50 p-3 text-sm text-amber-800">{i.id}: {uiText(drawingWarning(controlState, project.id, i.drawingId))}</p>)}</div>
-      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-        <DialogContent title={uiText(appointmentActionLabel)} description={uiText(project.name)}>
-          <div className="space-y-3">
-            <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Inspection Type")}</p>
-              <select aria-label={uiText('Approved drawing revision')} className="mb-3 min-h-11 w-full rounded border" value={schedForm.drawingId} onChange={e => setSchedForm({ ...schedForm, drawingId: e.target.value })}><option value="">{uiText('Not referenced')}</option>{drawings.map(d => <option key={d.id} value={d.id}>{d.reference} / {d.fields.version}</option>)}</select>
-              <Select value={schedForm.category} onValueChange={(v) => setSchedForm({ ...schedForm, category: v as InspectionCategory })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{INSPECTION_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{uiText(c.replace(/_/g, ' '))}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">{uiText(canSchedule ? 'Scheduled Date' : 'Preferred Date')}</p>
-              <input type="date" value={schedForm.date} onChange={(e) => setSchedForm({ ...schedForm, date: e.target.value })} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" />
-            </div>
-            {canSchedule && (
-              <div>
-                <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Inspector")}</p>
-                <Select value={schedForm.inspector} onValueChange={(v) => setSchedForm({ ...schedForm, inspector: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{users.map((u) => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setScheduleOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => {
-              if (canSchedule) {
-                scheduleInspection({ drawingId: schedForm.drawingId || undefined, projectId: project.id, category: schedForm.category, scheduledDate: schedForm.date, inspector: schedForm.inspector, comments: '' });
-                requestAppointment({ projectId: project.id, inspectionType: schedForm.category, requestedBy: currentUser?.name ?? 'Executive Engineer', requestedByRole: currentUser?.role ?? 'EXECUTIVE_ENGINEER', assignedInspector: schedForm.inspector, date: schedForm.date, time: '10:00', site: `${project.taluka}, ${project.district}`, attendees: [], requiredDocuments: [], remarks: '' });
-                toast.success(uiText('Inspection scheduled.'));
-              } else {
-                requestAppointment({ projectId: project.id, inspectionType: schedForm.category, requestedBy: currentUser?.name ?? 'Field Team', requestedByRole: currentUser?.role ?? 'CONTRACTOR', date: schedForm.date, time: '10:00', site: `${project.taluka}, ${project.district}`, attendees: [], requiredDocuments: [], remarks: '' });
-                toast.success(uiText('Inspection appointment requested — awaiting scheduling by Executive Engineer.'));
-              }
-              setScheduleOpen(false);
-            }}>{uiText(canSchedule ? 'Schedule' : 'Submit Request')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!scheduleTargetId} onOpenChange={(v) => !v && setScheduleTargetId(null)}>
-        <DialogContent title={uiText("Confirm Appointment")} description={uiText(project.name)}>
-          <div className="space-y-3">
-            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Date")}</p><input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" /></div>
-            <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Time")}</p><input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm" /></div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Inspector")}</p>
-              <Select value={schedForm.inspector} onValueChange={(v) => setSchedForm({ ...schedForm, inspector: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{users.map((u) => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setScheduleTargetId(null)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => {
-              if (scheduleTargetId) scheduleAppointment(scheduleTargetId, scheduleDate, scheduleTime, schedForm.inspector);
-              toast.success(uiText('Appointment confirmed.')); setScheduleTargetId(null);
-            }}>{uiText("Confirm")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {scheduleOpen && <InspectionAllocation project={project} onClose={() => setScheduleOpen(false)} />}
+      {assignId && <InspectionAllocation project={project} inspection={inspections.find(i => i.id === assignId)} onClose={() => setAssignId(null)} />}
 
       <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} />
       <Dialog open={!!checklistId} onOpenChange={(v) => !v && setChecklistId(null)}>
         {active && (
           <DialogContent title={uiMessage("{{0}} Inspection Checklist", [active.category.replace(/_/g, ' ')])} description={uiText(project.name)} size="lg">
             <div className="space-y-3">
+              <SiteCamera project={project} onCapture={photo => { try { controlState.setInspectionPhotos(active.id, [...(active.photos ?? []), photo]); } catch (error) { toast.error((error as Error).message); } }} />
+              <p className="text-sm">{uiText('Photos captured')}: {active.photos?.length ?? 0}</p>
               {items.map((it, idx) => (
                 <div key={it.id} className="rounded-md border border-slate-200 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -372,21 +297,19 @@ export function InspectionsTab({ project }: { project: Project }) {
                     </Select>
                   </div>
                   <p className="mt-1 text-[10.5px] text-slate-400">{uiText("Standard: ")}{uiText(it.standard)}{uiText(" · Evidence: ")}{uiText(it.evidence)}</p>
+                  <label className="mt-3 block text-xs">{uiText('Measurement')}<input className="ui-input w-full" value={it.measurement} onChange={e => setItems(items.map((item, index) => index === idx ? { ...item, measurement: e.target.value } : item))} /></label>
+                  <label htmlFor={`checklist-comment-${it.id}`} className="mb-1 mt-3 block text-xs font-medium text-slate-600">{uiText(it.result === 'PASS' ? 'Item comments (optional)' : 'Item comments (required)')}</label>
+                  <Textarea id={`checklist-comment-${it.id}`} rows={1} className="min-h-12 h-12 resize-y" required={it.result !== 'PASS'} value={it.remarks} onChange={e => setItems(items.map((item, itemIndex) => itemIndex === idx ? { ...item, remarks: e.target.value } : item))} />
                 </div>
               ))}
               <div>
                 <p className="mb-1 text-xs font-medium text-slate-600">{uiText("Inspector Comments")}</p>
-                <Textarea rows={2} value={comments} onChange={(e) => setComments(e.target.value)} />
+                <Textarea rows={1} className="min-h-12 h-12 resize-y" value={comments} onChange={(e) => setComments(e.target.value)} />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setChecklistId(null)}>{uiText("Cancel")}</Button>
-              {active.isReinspection ? (
-                <Button variant="success" onClick={() => { try {  passReinspection(active.id, items, comments); toast.success(uiText('Re-inspection PASSED. Defect closed and project progress updated.')); setChecklistId(null);  } catch (error) { toast.error(uiText((error as Error).message)); } }}>
-                  <ShieldCheck size={14} />{uiText(" Confirm PASS")}</Button>
-              ) : (
-                <Button onClick={submit}><ShieldAlert size={14} />{uiText(" Submit Result")}</Button>
-              )}
+              <Button onClick={submit}><ShieldAlert size={14} />{uiText('Submit for review')}</Button>
             </DialogFooter>
           </DialogContent>
         )}

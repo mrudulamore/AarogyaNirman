@@ -1,0 +1,104 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createServer } from 'vite';
+
+const server = await createServer({ cacheDir: '.tmp/vite-inspection', server: { host: '127.0.0.1', port: 4197, strictPort: true }, logLevel: 'error' });
+await server.listen();
+const profile = await mkdtemp(join(tmpdir(), 'aarogya-browser-test-'));
+const browser = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9247', `--user-data-dir=${profile}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
+let socket;
+try {
+  let targets;
+  for (let n = 0; n < 40; n++) {
+    try { targets = await (await fetch('http://127.0.0.1:9247/json', { signal: AbortSignal.timeout(1000) })).json(); if (targets.some(t => t.type === 'page')) break; } catch {}
+    await new Promise(r => setTimeout(r, 250));
+  }
+  assert.ok(targets?.length, 'Headless browser did not start');
+  socket = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl);
+  await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
+  let seq = 0;
+  const pending = new Map();
+  socket.onmessage = event => { const msg = JSON.parse(event.data); if (pending.has(msg.id)) { const { resolve, reject } = pending.get(msg.id); pending.delete(msg.id); if (msg.error) reject(new Error(msg.error.message)); else resolve(msg.result); } };
+  const send = (method, params = {}) => new Promise((resolve, reject) => { const id = ++seq; pending.set(id, { resolve, reject }); socket.send(JSON.stringify({ id, method, params })); });
+  async function evaluate(expression) { const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description ?? JSON.stringify(result.exceptionDetails)); return result.result.value; }
+  await send('Page.navigate',{url:'http://127.0.0.1:4197/login'});
+  await new Promise(r=>setTimeout(r,2000));
+
+  const reviewTarget = await evaluate(`(async () => {
+    const { useStore } = await import('/src/store/useStore.ts');
+    const { computeProjectScope } = await import('/src/lib/projectScope.ts');
+    const state = () => useStore.getState();
+    const check = (v, m) => { if (!v) throw new Error(m); };
+    const rejects = (fn, m) => { let rejected = false; try { fn(); } catch { rejected = true; } check(rejected, m); };
+    state().login('DEPUTY_ENGINEER');
+    const junior = state().currentUser;
+    const project = computeProjectScope(junior, state().projects, state().contractors).projects[0];
+    state().login('EXECUTIVE_ENGINEER');
+    const ee = { ...state().currentUser, assignedProjectIds: [project.id], circle: project.circle };
+    useStore.setState({ currentUser: ee });
+    const input = { projectId: project.id, category: 'PLUMBING', scheduledDate: '2026-10-01', scheduledTime: '10:30', location: 'Ward B', scope: 'Pressure test', assignedToId: junior.id, inspector: '', comments: '' };
+    const inspection = state().scheduleInspection(input);
+    rejects(() => state().startInspection(inspection.id), 'EE conducted inspection');
+    useStore.setState({currentUser: junior});
+    rejects(() => state().scheduleInspection(input), 'JE allocated inspection');
+    state().startInspection(inspection.id);
+    const items = [{ id: 'pressure', requirement: 'Pressure test', measurement: '2 bar', standard: '3 bar', evidence: '', result: 'FAIL', remarks: 'Leak' }];
+    rejects(() => state().submitInspection(inspection.id, items, 'FAIL', 'Leak'), 'Missing photo accepted');
+    state().setInspectionPhotos(inspection.id, [{ mediaKey: 'fixture', dataUrl: 'data:image/png;base64,fixture', lat: 18, lng: 73, capturedAt: new Date().toISOString() }]);
+    state().submitInspection(inspection.id, items, 'FAIL', 'Leak');
+    check(!state().defects.some(d => d.sourceInspectionId === inspection.id), 'Defect created before review');
+    rejects(() => state().reviewInspection(inspection.id, 'REVERIFY', 'Repeat'), 'JE reviewed inspection');
+    rejects(() => state().startInspection(inspection.id), 'Pending review reopened');
+    useStore.setState({currentUser: ee});
+    rejects(() => state().reviewInspection(inspection.id, 'REVERIFY', ' '), 'Blank reason accepted');
+    state().reviewInspection(inspection.id, 'REVERIFY', 'Repeat measurement');
+    let saved = state().inspections.find(i => i.id === inspection.id);
+    check(saved.status === 'REVERIFY' && saved.reviewHistory[0].items[0].measurement === '2 bar' && !saved.photos.length, 'Reverify lost history or reused photos');
+    useStore.setState({currentUser: {...junior, id: 'unassigned'}});
+    rejects(() => state().startInspection(inspection.id), 'Unassigned JE conducted inspection');
+    useStore.setState({currentUser: junior});
+    state().startInspection(inspection.id);
+    state().setInspectionPhotos(inspection.id, [{ mediaKey: 'fresh', dataUrl: 'data:image/png;base64,fixture', lat: 18, lng: 73, capturedAt: new Date().toISOString() }]);
+    state().submitInspection(inspection.id, items, 'FAIL', 'Still leaking');
+    useStore.setState({currentUser: ee});
+    rejects(() => state().reviewInspection(inspection.id, 'APPROVE', ''), 'Failed findings approved');
+    state().reviewInspection(inspection.id, 'RAISE_DEFECT', 'Repair leakage');
+    check(state().defects.filter(d => d.sourceInspectionId === inspection.id).length === 1, 'Defect not created');
+    rejects(() => state().reviewInspection(inspection.id, 'RAISE_DEFECT', 'Duplicate'), 'Duplicate review accepted');
+    const passing = state().scheduleInspection(input);
+    useStore.setState({currentUser: junior});
+    state().startInspection(passing.id);
+    state().setInspectionPhotos(passing.id, [{ mediaKey: 'pass', dataUrl: 'data:image/png;base64,fixture', lat: 18, lng: 73, capturedAt: new Date().toISOString() }]);
+    state().submitInspection(passing.id, [{...items[0], result: 'PASS', measurement: '3 bar'}], 'PASS', 'Verified');
+    useStore.setState({currentUser: ee});
+    rejects(() => state().reviewInspection(passing.id, 'APPROVE', ''), 'Approval bypassed quality evidence');
+    const proof = { id: 'proof', projectId: project.id, kind: 'QUALITY', status: 'VERIFIED', fields: { inspectionId: passing.id, result: 'PASS' } };
+    useStore.setState({controlRecords: [...state().controlRecords, proof]});
+    state().reviewInspection(passing.id, 'APPROVE', 'Accepted');
+    check(state().inspections.find(i => i.id === passing.id).status === 'COMPLETED', 'Approval did not complete inspection');
+    const pending = state().scheduleInspection(input);
+    useStore.setState({currentUser: junior});
+    state().startInspection(pending.id);
+    state().setInspectionPhotos(pending.id, [{mediaKey: 'ui-proof', dataUrl: 'data:image/png;base64,fixture', lat: 18, lng: 73, capturedAt: new Date().toISOString()}]);
+    state().submitInspection(pending.id, items, 'FAIL', 'Review through UI');
+    useStore.setState({currentUser: ee});
+    return {id: pending.id, projectId: project.id};
+  })()`);
+  await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+  await send('Page.navigate', {url: 'http://127.0.0.1:4197/projects/' + reviewTarget.projectId + '?tab=inspections'});
+  async function until(expression) { for(let n=0;n<100;n++) { if(await evaluate(expression)) return; await new Promise(r=>setTimeout(r,100)); } throw new Error('Timed out: ' + expression); }
+  await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Review inspection')`);
+  await evaluate(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Review inspection').click()`);
+  await until(`!!document.querySelector('[role="dialog"] textarea')`);
+  assert.ok(await evaluate(`['Approve','Raise defect','Reverify'].every(label=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(b=>b.textContent===label))`));
+  await evaluate(`(() => {const field=document.querySelector('[role="dialog"] textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(field,'Repeat pressure measurement');field.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] button')).find(b=>b.textContent==='Reverify').click()`);
+  await until(`!document.querySelector('[role="dialog"]')`);
+  assert.equal(await evaluate(`(async()=>{const {useStore}=await import('/src/store/useStore.ts');return useStore.getState().inspections.find(i=>i.id==='${reviewTarget.id}').status;})()`), 'REVERIFY');
+  assert.ok(await evaluate(`document.documentElement.scrollWidth <= 390`));
+  console.log('Mobile review dialog and Reverify action passed.');
+  console.log('Inspection assignment, evidence requirements, permissions, review, reverify, defect and approval checks passed.');
+} finally { socket?.close(); browser.kill(); await server.close(); }

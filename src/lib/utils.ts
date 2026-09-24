@@ -48,10 +48,9 @@ export function seededImageUrl(seed: number, _w = 640, _h = 420, label?: string)
   return constructionImageFallback(seed, label);
 }
 
-/** A real device-captured photo (dataUrl) always wins; seed data without one falls back to the
- * deterministic stock-photo picker so old records keep rendering something sensible. */
+/** Existing reference records use the library; captured media keeps its own source. */
 export function photoSrc(p: { id?: string; dataUrl?: string; mediaKey?: string; seed: number; stage: string }): string {
-  return p.dataUrl || constructionImageForPhoto(p)?.path || seededImageUrl(p.seed, 640, 420, p.stage);
+  return p.dataUrl || (p.mediaKey ? '' : constructionImageForPhoto(p)?.path || seededImageUrl(p.seed, 640, 420, p.stage));
 }
 
 let idCounter = 1000;

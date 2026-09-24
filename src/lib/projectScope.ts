@@ -91,6 +91,10 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
       const assigned = allProjects.filter((p) => p.projectManagerId === user.id || user.assignedProjectIds.includes(p.id));
       return scoped(assigned, `${assigned.length} managed project${assigned.length === 1 ? '' : 's'} (Portfolio)`);
     }
+    case 'SITE_SUPERVISOR': {
+      const assigned = allProjects.filter(p => user.assignedProjectIds.includes(p.id));
+      return scoped(assigned, `${assigned.length} assigned site${assigned.length === 1 ? '' : 's'}`);
+    }
 
     case 'DEPUTY_ENGINEER': {
       const assigned = allProjects.filter((p) => p.siteEngineerId === user.id || user.assignedProjectIds.includes(p.id));

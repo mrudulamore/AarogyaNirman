@@ -62,14 +62,17 @@ export async function saveEvidenceMedia(dataUrl: string, metadata: {
   if (!context) throw new Error('The captured photo could not be processed.');
   context.drawImage(image, 0, 0);
   const bandHeight = Math.max(120, Math.round(stampedCanvas.height * .16));
-  context.fillStyle = 'rgba(4, 20, 45, .82)';
-  context.fillRect(0, stampedCanvas.height - bandHeight, stampedCanvas.width, bandHeight);
   const fontSize = Math.max(18, Math.round(stampedCanvas.width / 46));
+  context.fillStyle = 'rgba(2, 6, 23, .70)';
+  context.fillRect(0, stampedCanvas.height - bandHeight, stampedCanvas.width, bandHeight);
   context.fillStyle = '#fff';
+  context.shadowColor = 'rgba(0, 0, 0, .7)';
+  context.shadowBlur = Math.max(3, fontSize / 6);
+  context.shadowOffsetY = Math.max(1, fontSize / 18);
   context.font = `600 ${fontSize}px sans-serif`;
   const lines = [
     metadata.projectName,
-    `${metadata.lat.toFixed(6)}, ${metadata.lng.toFixed(6)} · ±${metadata.accuracyM}m · ${metadata.status}`,
+    `Lat ${metadata.lat.toFixed(6)}, Long ${metadata.lng.toFixed(6)} · ±${metadata.accuracyM}m · ${metadata.status}`,
     new Date(metadata.capturedAt).toLocaleString('en-IN'),
   ];
   lines.forEach((line, index) => context.fillText(line, fontSize, stampedCanvas.height - bandHeight + fontSize * (index + 1.35), stampedCanvas.width - fontSize * 2));

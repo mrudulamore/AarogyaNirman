@@ -1,4 +1,5 @@
 import { selectRecentPhotos } from '../../lib/recentPhotos';
+import { GeoPhoto } from '../../components/common/GeoPhoto';
 import { outstandingBills } from '../../lib/financeLedger';
 import { saveBillFiles } from '../../lib/billAttachments';
 import { WorkforceHome } from '../workers/WorkforceHome';
@@ -657,13 +658,15 @@ export function Dashboard() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {recentPhotos.map((ph) => (
               <button key={ph.id} onClick={() => setPhotoId(ph.id)} className="flex gap-3 rounded-lg border border-slate-200 p-2.5 text-left transition-colors hover:border-navy-300 hover:bg-navy-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-500">
-                <img src={photoSrc(ph)} alt={uiMessage("{{0}}: {{1}}", [ph.dataUrl ? 'Site capture' : 'Sample construction photo', ph.stage])} loading="lazy" className="h-24 w-20 shrink-0 rounded-md object-cover sm:w-24" />
+                <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} compact className="h-28 w-32 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold leading-snug text-slate-800">{projects.find((project) => project.id === ph.projectId)?.name ?? ph.projectId}</p>
                   <p className="mt-1 text-[11px] text-slate-600">{uiText(ph.stage)} &middot; {uiText(ph.location)}</p>
+<>
                   <p className="mt-1 flex items-start gap-1 text-[11px] font-medium tabular-nums text-navy-700"><MapPinned size={12} className="mt-0.5 shrink-0" /><span>{uiText("Lat ")}{uiText(ph.lat.toFixed(5))}{uiText(", Lng ")}{uiText(ph.lng.toFixed(5))}</span></p>
                   <p className="mt-1 text-[10px] text-slate-500">{uiText(formatDateTime(ph.capturedAt || ph.date))}</p>
-                  {ph.dataUrl && <span className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">
+</>
+                  {(ph.dataUrl || ph.mediaKey) && <span className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">
                     {uiText(ph.locationSource === 'CAPTURED' ? 'Device photo / GPS captured' : 'Device photo / manual location')}
                   </span>}
                 </div>
@@ -679,13 +682,15 @@ export function Dashboard() {
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setPhotoId(null)}>
         {selectedPhoto && (
           <DialogContent title={uiText(selectedPhotoProject?.name ?? selectedPhoto.projectId)} description={uiMessage("{{0}} - {{1}}", [selectedPhoto.stage, formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)])} size="lg">
-            <img src={photoSrc(selectedPhoto)} alt={uiText(selectedPhoto.description || selectedPhoto.stage)} className="max-h-[50vh] w-full rounded-lg bg-slate-100 object-contain" />
+            <GeoPhoto src={photoSrc(selectedPhoto)} mediaKey={selectedPhoto.mediaKey} lat={selectedPhoto.lat} lng={selectedPhoto.lng} timestamp={selectedPhoto.capturedAt} location={selectedPhoto.location} gpsAccuracyM={selectedPhoto.gpsAccuracyM} locationSource={selectedPhoto.locationSource} className="w-full bg-slate-100" imgClassName="h-[50vh] object-contain" />
             <div className="mt-3 space-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
               <p className="font-semibold text-slate-800">{uiText(selectedPhoto.location)}</p>
+<>
               <p className="tabular-nums">{uiText("Latitude ")}{uiText(selectedPhoto.lat.toFixed(6))}{uiText(" · Longitude ")}{uiText(selectedPhoto.lng.toFixed(6))}</p>
+</>
               <p>{selectedPhoto.description}</p>
               <p>{uiText("Uploaded by ")}{uiText(selectedPhoto.uploadedBy)}</p>
-              {selectedPhoto.dataUrl && <p>{uiText((selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.'))}</p>}
+              {(selectedPhoto.dataUrl || selectedPhoto.mediaKey) && <p>{uiText((selectedPhoto.locationSource === 'CAPTURED' ? `Device GPS${selectedPhoto.gpsAccuracyM !== undefined ? ` / accuracy ${selectedPhoto.gpsAccuracyM} m` : ''}` : 'Manually supplied location; not verified by device GPS.'))}</p>}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setPhotoId(null)}>{uiText("Close")}</Button>
