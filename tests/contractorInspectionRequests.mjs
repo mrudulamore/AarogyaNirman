@@ -31,6 +31,10 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await send('Page.navigate', {url:'http://127.0.0.1:4197/dashboard'});
   async function until(expression) { for (let n=0;n<100;n++) { if(await evaluate(expression)) return; await new Promise(r=>setTimeout(r,100)); } throw new Error('Timed out: '+expression); }
+  await until(`!!document.querySelector('h1')`);
+  assert.equal(await evaluate(`!!document.querySelector('[data-testid=inspection-requests]')`), false);
+  const projectId = await evaluate(`(async () => {const {useStore}=await import('/src/store/useStore.ts');return useStore.getState().currentUser.assignedProjectIds[0];})()`);
+  await send('Page.navigate', {url:'http://127.0.0.1:4197/projects/' + projectId + '?tab=inspections'});
   await until(`Array.from(document.querySelectorAll('button')).some(b => b.textContent === 'Request site inspection')`);
   await evaluate(`Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'Request site inspection').click()`);
   await until(`!!document.querySelector('[role=dialog] form')`);
@@ -82,7 +86,7 @@ try {
     state().login('CONTRACTOR');await useStore.persist.rehydrate();
     if(state().inspectionAppointments.find(a=>a.id===request.id).status!=='COMPLETED')throw new Error('Request status lost on reload');
   })()`);
-  await send('Page.navigate',{url:'http://127.0.0.1:4197/dashboard'});
+  await send('Page.navigate',{url:'http://127.0.0.1:4197/projects/' + projectId + '?tab=inspections'});
   await until(`!!document.querySelector('[data-request-id="${request.id}"]')`);
   assert.ok(await evaluate(`document.querySelector('[data-request-id="${request.id}"]').textContent.toLowerCase().includes('completed')`));
   assert.ok(await evaluate('document.documentElement.scrollWidth <= 390'));

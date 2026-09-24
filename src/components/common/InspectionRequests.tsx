@@ -26,7 +26,7 @@ export function InspectionRequests({ project }: { project?: Project }) {
   const [reason, setReason] = useState('');
   const ee = user?.role === 'EXECUTIVE_ENGINEER';
   const contractor = user?.role === 'CONTRACTOR';
-  if (!project && !ee && !contractor) return null;
+  if (!project && !ee) return null;
   const requests = state.inspectionAppointments.filter(a => hospitals.some(p => p.id === a.projectId) &&
     (!project || a.projectId === project.id) && (project || !ee || a.status === 'REQUESTED'))
     .sort((a, b) => Number(b.status === 'REQUESTED') - Number(a.status === 'REQUESTED') || b.date.localeCompare(a.date));
