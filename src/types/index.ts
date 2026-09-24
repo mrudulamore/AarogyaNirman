@@ -776,6 +776,10 @@ export interface QualityReport {
 export type AppointmentStatus = 'REQUESTED' | 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface InspectionAppointment {
+  requestedById?: string;
+  assignedById?: string;
+  assignedBy?: string;
+  assignedInspectorId?: string;
   id: string;
   projectId: string;
   milestoneId?: string;

@@ -655,18 +655,22 @@ export const useStore = create<StoreState>()(
 
       requestAppointment: (a) => {
         assertJuniorInspectionAccess(get(), a.projectId);
-        const appt: InspectionAppointment = { ...a, id: nid('APT'), status: 'REQUESTED' };
+        const actor = get().currentUser!;
+        const appt: InspectionAppointment = { ...a, requestedBy: actor.name, requestedById: actor.id, requestedByRole: actor.role, id: nid('APT'), status: 'REQUESTED' };
         set((s) => ({ inspectionAppointments: [appt, ...s.inspectionAppointments] }));
         const project = get().projects.find((p) => p.id === a.projectId);
         get().logAction(`Requested ${a.inspectionType.replace(/_/g, ' ')} inspection appointment`, project?.name);
         get().pushNotification({ message: `${a.inspectionType.replace(/_/g, ' ')} inspection requested — ${project?.name}.`, type: 'INFO', projectId: a.projectId, targetRoles: ['EXECUTIVE_ENGINEER', 'DEPUTY_ENGINEER'] });
         return appt;
       },
-      scheduleAppointment: (id, date, time, inspector) => {
-        assertJuniorInspectionAccess(get(), get().inspectionAppointments.find(a => a.id === id)?.projectId ?? '');
-        set((s) => ({ inspectionAppointments: s.inspectionAppointments.map((a) => (a.id === id ? { ...a, status: 'SCHEDULED', date, time, assignedInspector: inspector } : a)) }));
+      scheduleAppointment: (id, date, time, _inspector) => {
+        const appointment = get().inspectionAppointments.find(a => a.id === id);
+        assertJuniorInspectionAccess(get(), appointment?.projectId ?? '');
+        const project = get().projects.find(p => p.id === appointment?.projectId);
+        const assigned = get().users.find(user => user.id === project?.siteEngineerId && user.role === 'DEPUTY_ENGINEER');
+        if (!assigned) throw new Error('No Junior Engineer is assigned to this hospital.');
+        set((s) => ({ inspectionAppointments: s.inspectionAppointments.map((a) => (a.id === id ? { ...a, status: 'SCHEDULED', date, time, assignedInspector: assigned.name, assignedInspectorId: assigned.id, assignedById: s.currentUser!.id, assignedBy: s.currentUser!.name } : a)) }));
         const a = get().inspectionAppointments.find((x) => x.id === id);
-        const project = get().projects.find((p) => p.id === a?.projectId);
         get().logAction(`Scheduled inspection appointment for ${date} ${time}`, project?.name);
         get().pushNotification({ message: `Inspection scheduled for ${date} — ${project?.name}.`, type: 'INFO', projectId: a?.projectId, targetRoles: ['CONTRACTOR', 'DEPUTY_ENGINEER'] });
       },

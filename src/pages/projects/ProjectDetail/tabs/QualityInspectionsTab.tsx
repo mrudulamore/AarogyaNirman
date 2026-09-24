@@ -222,12 +222,13 @@ export function InspectionsTab({ project }: { project: Project }) {
         <Card>
           <CardHeader><CardTitle>{uiText("Inspection Appointments")}</CardTitle></CardHeader>
           <Table>
-            <THead><Tr><Th>{uiText("Type")}</Th><Th>{uiText("Requested By")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Time")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
+            <THead><Tr><Th>{uiText("Type")}</Th><Th>{uiText("Requested By")}</Th><Th>{uiText("Assigned by")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Time")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
             <TBody>
               {appointments.map((a) => (
                 <Tr key={a.id}>
                   <Td className="font-medium text-slate-800">{uiText(a.inspectionType.replace(/_/g, ' '))}</Td>
                   <Td>{uiText(a.requestedBy)}</Td>
+                  <Td>{a.assignedBy ?? '?'}</Td>
                   <Td>{uiText(a.assignedInspector ?? '—')}</Td>
                   <Td>{uiText(formatDate(a.date))}</Td>
                   <Td>{uiText(a.time)}</Td>

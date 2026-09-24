@@ -1,3 +1,4 @@
+import { withInspectionDemoPeople } from './inspectionDemoPeople';
 import type { Contractor, Project, User } from '../types';
 
 function withProjectManagerDemo<T extends { users: User[]; projects: Project[] }>(data: T): T {
@@ -19,8 +20,9 @@ function withProjectManagerDemo<T extends { users: User[]; projects: Project[] }
 
 /** One-time demo account setup; retain project records and submitted inspection history. */
 export function withPuneDemo<T extends { users: User[]; projects: Project[]; contractors: Contractor[]; puneDemoVersion?: number }>(data: T): T {
-  if (data.puneDemoVersion === 3) return data;
-  if (data.puneDemoVersion === 2) return withProjectManagerDemo(data);
+  if (data.puneDemoVersion === 4) return data;
+  if (data.puneDemoVersion === 3) return withInspectionDemoPeople(data);
+  if (data.puneDemoVersion === 2) return withInspectionDemoPeople(withProjectManagerDemo(data));
   const pune = data.projects.filter(p => p.division === 'Pune Division');
   const ids = pune.map(p => p.id);
   const ee = data.users.find(u => u.role === 'EXECUTIVE_ENGINEER');
@@ -55,5 +57,5 @@ export function withPuneDemo<T extends { users: User[]; projects: Project[]; con
     assignedProjectIds: pune.filter(p => p.contractorId === firm.id).map(p => p.id),
     avatarInitials: firm.contactPerson.split(' ').map(part => part[0]).join(''),
   });
-  return withProjectManagerDemo({ ...data, projects, users, puneDemoVersion: 2 });
+  return withInspectionDemoPeople(withProjectManagerDemo({ ...data, projects, users, puneDemoVersion: 2 }));
 }

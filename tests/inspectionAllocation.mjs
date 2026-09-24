@@ -10,6 +10,14 @@ try {
   const state = () => useStore.getState();
   state().login('DEPUTY_ENGINEER');
   const junior = state().currentUser;
+  const appointmentInput = state().inspectionAppointments.find(a => junior.assignedProjectIds.includes(a.projectId));
+  const appointment = state().requestAppointment({...appointmentInput, requestedBy: 'Old random name', requestedByRole: 'CONTRACTOR'});
+  assert.equal(appointment.requestedBy, junior.name);
+  assert.equal(appointment.requestedById, junior.id);
+  state().scheduleAppointment(appointment.id, '2026-10-01', '10:00', 'Old random inspector');
+  const scheduled = state().inspectionAppointments.find(a => a.id === appointment.id);
+  assert.equal(scheduled.assignedInspector, junior.name);
+  assert.equal(scheduled.assignedBy, junior.name);
   const project = computeProjectScope(junior, state().projects, state().contractors).projects[0];
   state().login('EXECUTIVE_ENGINEER', project.executiveEngineerId);
   const ee = state().currentUser;
