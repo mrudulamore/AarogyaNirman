@@ -1,3 +1,4 @@
+import { AUTH_ROLE_GROUPS } from '../../lib/authRoleHierarchy';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -86,17 +87,22 @@ export function Login() {
         <div className="h-px flex-1 bg-slate-200" /> {t('auth.demoAccounts').toUpperCase()} <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <div className="login-card-grid grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto pr-1">
-        {DEMO_ACCOUNTS.map((a) => (
+      <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
+        {AUTH_ROLE_GROUPS.map(group => <section key={group.key} aria-labelledby={`login-group-${group.key}`} className="space-y-1.5">
+        <h2 id={`login-group-${group.key}`} className="pt-3 pb-1 text-xs font-semibold text-navy-700">{t(`auth.roleGroups.${group.key}`)}</h2>
+        <div className="login-card-grid grid grid-cols-1 gap-1.5">
+        {group.roles.flatMap(role => DEMO_ACCOUNTS.filter(account => account.role === role)).map((a) => (
           <button
             key={a.username}
             onClick={() => quickLogin(a.role, a.userId)}
-            className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs hover:border-navy-300 hover:bg-navy-50"
+            className="flex w-full flex-wrap items-center justify-between gap-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs hover:border-navy-300 hover:bg-navy-50"
           >
-            <span className="font-medium text-slate-700">{a.name ? `${a.name} ? ${t(`roles.${a.role}`)}` : t(`roles.${a.role}`)}</span>
+            <span className="font-medium text-slate-700">{a.name ? `${a.name} — ${t(`roles.${a.role}`)}` : t(`roles.${a.role}`)}</span>
             <span className="text-[10px] text-slate-400">{a.username}</span>
           </button>
         ))}
+        </div>
+        </section>)}
       </div>
     </AuthLayout>
   );

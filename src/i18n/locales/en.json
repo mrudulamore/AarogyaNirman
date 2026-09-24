@@ -57,7 +57,7 @@
     "viewAllNotifications": "View all notifications",
     "noNotifications": "No notifications",
     "switchRole": "Switch role",
-    "signOut": "Sign out"
+    "signOut": "Logout"
   },
   "auth": {
     "unknownLoginId": "Login ID not recognised. Enter one of the demo account IDs shown below.",
@@ -90,7 +90,14 @@
     "resetSentPrefix": "A password reset link has been sent to",
     "resetSentSuffix": "Please check your inbox.",
     "selectRoleTitle": "Select your role",
-    "selectRoleSubtitle": "Your government account is provisioned with the following access levels. Choose how you'd like to continue this session."
+    "selectRoleSubtitle": "Your government account is provisioned with the following access levels. Choose how you'd like to continue this session.",
+    "roleGroups": {
+      "leadership": "Ministry & Leadership",
+      "engineering": "Engineering & Project Management",
+      "health": "Health Administration",
+      "execution": "Site Execution",
+      "administration": "Oversight & System Administration"
+    }
   },
   "roles": {
     "SITE_SUPERVISOR": "Site Supervisor",
