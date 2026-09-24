@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import type { InspectionCategory, Project } from '../../types';
 import { useStore } from '../../store/useStore';
@@ -15,6 +16,8 @@ export function InspectionRequests({ project }: { project?: Project }) {
   const user = state.currentUser;
   const hospitals = computeProjectScope(user, state.projects, state.contractors).projects;
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const requestsId = useId();
   const [projectId, setProjectId] = useState(project?.id ?? hospitals[0]?.id ?? '');
   const [category, setCategory] = useState<InspectionCategory>('STRUCTURAL');
   const [date, setDate] = useState('');
@@ -26,6 +29,7 @@ export function InspectionRequests({ project }: { project?: Project }) {
   const [reason, setReason] = useState('');
   const ee = user?.role === 'EXECUTIVE_ENGINEER';
   const contractor = user?.role === 'CONTRACTOR';
+  const compact = ee && !project;
   if (!project && !ee) return null;
   const requests = state.inspectionAppointments.filter(a => hospitals.some(p => p.id === a.projectId) &&
     (!project || a.projectId === project.id) && (project || !ee || a.status === 'REQUESTED'))
@@ -45,9 +49,14 @@ export function InspectionRequests({ project }: { project?: Project }) {
     } catch (error) { toast.error(uiText((error as Error).message)); }
   }
   return <Card className="mb-4" data-testid="inspection-requests">
-    <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle>{uiText('Inspection requests')}{ee ? ` (${requests.filter(a => a.status === 'REQUESTED').length})` : ''}</CardTitle>
+    {compact ? <button type="button" aria-expanded={expanded} aria-controls={requestsId} onClick={() => setExpanded(value => !value)} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold text-navy-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-500">
+      <span>{uiText('Inspection requests')}</span>
+      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">{requests.length}</span>
+      <ChevronDown size={18} aria-hidden="true" className={`ml-auto shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+    </button> : <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle>{uiText('Inspection requests')}{ee ? ` (${requests.filter(a => a.status === 'REQUESTED').length})` : ''}</CardTitle>
       {contractor && <Button disabled={!hospitals.length} onClick={() => setOpen(true)}>{uiText('Request site inspection')}</Button>}
-    </div></CardHeader>
+    </div></CardHeader>}
+    <div id={requestsId} hidden={compact && !expanded}>
     <CardContent className="space-y-3">
       {!requests.length && <p className="text-sm text-slate-500">{uiText('No inspection requests.')}</p>}
       {requests.map(a => <div key={a.id} data-request-id={a.id} className="rounded-lg border border-slate-200 p-3 text-sm">
@@ -65,6 +74,7 @@ export function InspectionRequests({ project }: { project?: Project }) {
         </div>}
       </div>)}
     </CardContent>
+    </div>
     {request && reviewProject && <InspectionAllocation project={reviewProject} request={request} onClose={() => setReviewId(null)} />}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title={uiText('Request site inspection')} size="lg">
       <form onSubmit={submit} className="space-y-3">
