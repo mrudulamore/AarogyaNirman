@@ -1,3 +1,4 @@
+import { InspectionRequests } from '../../../../components/common/InspectionRequests';
 import { ProgressDocumentLinks } from '../../../../components/common/ProgressDocuments';
 import { saveBillFiles } from '../../../../lib/billAttachments';
 import { InspectionDetails } from '../../../../components/common/InspectionDetails';
@@ -170,7 +171,6 @@ export function InspectionsTab({ project }: { project: Project }) {
   const currentUser = useStore((s) => s.currentUser);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id).sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
   const defects = useStore((s) => s.defects).filter((d) => d.projectId === project.id);
-  const appointments = useStore((s) => s.inspectionAppointments).filter((a) => a.projectId === project.id).sort((a, b) => (a.date < b.date ? 1 : -1));
   const canSchedule = canReviewInspection(currentUser);
   const startInspection = useStore(s => s.startInspection);
   const submitInspection = useStore((s) => s.submitInspection);
@@ -218,28 +218,7 @@ export function InspectionsTab({ project }: { project: Project }) {
         {canSchedule && <Button onClick={() => setScheduleOpen(true)}><CalendarPlus size={15} /> {uiText('Add inspection')}</Button>}
       </div>
 
-      {appointments.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>{uiText("Inspection Appointments")}</CardTitle></CardHeader>
-          <Table>
-            <THead><Tr><Th>{uiText("Type")}</Th><Th>{uiText("Requested By")}</Th><Th>{uiText("Assigned by")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Time")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
-            <TBody>
-              {appointments.map((a) => (
-                <Tr key={a.id}>
-                  <Td className="font-medium text-slate-800">{uiText(a.inspectionType.replace(/_/g, ' '))}</Td>
-                  <Td>{uiText(a.requestedBy)}</Td>
-                  <Td>{a.assignedBy ?? '?'}</Td>
-                  <Td>{uiText(a.assignedInspector ?? '—')}</Td>
-                  <Td>{uiText(formatDate(a.date))}</Td>
-                  <Td>{uiText(a.time)}</Td>
-                  <Td><StatusBadge status={a.status} /></Td>
-
-                </Tr>
-              ))}
-            </TBody>
-          </Table>
-        </Card>
-      )}
+      <InspectionRequests project={project} />
 
       <Card>
         <Table>

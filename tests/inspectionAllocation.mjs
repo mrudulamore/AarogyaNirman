@@ -11,7 +11,7 @@ try {
   state().login('DEPUTY_ENGINEER');
   const junior = state().currentUser;
   const appointmentInput = state().inspectionAppointments.find(a => junior.assignedProjectIds.includes(a.projectId));
-  const appointment = state().requestAppointment({...appointmentInput, requestedBy: 'Old random name', requestedByRole: 'CONTRACTOR'});
+  const appointment = state().requestAppointment({...appointmentInput, requestedBy: 'Old random name', requestedByRole: 'CONTRACTOR', remarks: 'Inspect readiness'});
   assert.equal(appointment.requestedBy, junior.name);
   assert.equal(appointment.requestedById, junior.id);
   state().scheduleAppointment(appointment.id, '2026-10-01', '10:00', 'Old random inspector');

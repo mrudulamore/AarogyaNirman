@@ -1,3 +1,4 @@
+import { InspectionRequests } from '../../components/common/InspectionRequests';
 import { selectRecentPhotos } from '../../lib/recentPhotos';
 import { GeoPhoto } from '../../components/common/GeoPhoto';
 import { outstandingBills } from '../../lib/financeLedger';
@@ -300,6 +301,8 @@ export function Dashboard() {
         title={uiText(t('dashboard.title'))}
         description={uiText(t('dashboard.subtitle', { name: currentUser?.name }))}
       />
+
+      <InspectionRequests />
 
       {!isStatewide && (
         <div className="mb-4 flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-xs font-medium text-navy-700">

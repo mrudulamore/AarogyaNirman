@@ -245,6 +245,7 @@ export interface ChecklistItem {
 }
 
 export interface Inspection {
+  sourceRequestId?: string;
   sourceDefectId?: string;
   attachments?: BillAttachment[];
   photos?: { dataUrl: string; mediaKey: string; capturedAt: string; lat: number; lng: number }[];
@@ -776,6 +777,7 @@ export interface QualityReport {
 export type AppointmentStatus = 'REQUESTED' | 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface InspectionAppointment {
+  reviewReason?: string;
   requestedById?: string;
   assignedById?: string;
   assignedBy?: string;

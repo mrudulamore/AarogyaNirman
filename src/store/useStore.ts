@@ -7,7 +7,7 @@ import { withDemoFinance } from '../mock/demoFinance';
 import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
 import { workforceAccount } from '../lib/workforceAccount';
 import { DEFAULT_ESCALATION, pendingWork, daysLate, drawingWarning, type EscalationPolicy } from '../lib/pendingWork';
-import { ROLE_LABELS } from '../lib/constants';
+import { INSPECTION_CATEGORIES, ROLE_LABELS } from '../lib/constants';
 import { contractorAccount } from '../lib/contractorAccount';
 import { generateFundInstallments } from '../mock/fundInstallments';
 import { todayDate } from '../lib/fundDisbursal';
@@ -148,6 +148,7 @@ export interface StoreState extends ControlActions {
   closeDefect: (id: string) => void;
 
   // inspection appointments
+  declineInspectionRequest: (id: string, reason: string) => void;
   requestAppointment: (a: Omit<InspectionAppointment, 'id' | 'status'>) => InspectionAppointment;
   scheduleAppointment: (id: string, date: string, time: string, inspector: string) => void;
   rescheduleAppointment: (id: string, date: string, time: string, remarks: string) => void;
@@ -547,6 +548,8 @@ export const useStore = create<StoreState>()(
       scheduleInspection: (i) => {
         const actor = assertProjectAccess(get(), i.projectId);
         if (!canReviewInspection(actor)) throw new Error('Only EE may assign an inspection to JE.');
+        const request = i.sourceRequestId ? get().inspectionAppointments.find(a => a.id === i.sourceRequestId) : undefined;
+        if (i.sourceRequestId && (!request || request.projectId !== i.projectId || request.status !== 'REQUESTED' || request.linkedInspectionId)) throw new Error('This inspection request is no longer awaiting allocation.');
         const assignee = inspectionAssignee(get(), i.projectId, i.assignedToId ?? '');
         if (!i.scheduledDate || !i.scheduledTime || !i.location?.trim() || !i.scope?.trim()) throw new Error('Enter the inspection date, time, site location and scope.');
         const warning = drawingWarning(get(), i.projectId, i.drawingId); if (warning) throw new Error(warning);
@@ -555,10 +558,10 @@ export const useStore = create<StoreState>()(
           assignedToId: assignee.id, assignedRole: assignee.role, inspector: assignee.name, createdById: actor.id,
           assignmentHistory: [{ assignedToId: assignee.id, assignedToName: assignee.name, role: assignee.role, assignedBy: actor.name, date: new Date().toISOString(), reason: 'Initial allocation' }],
         };
-        set((s) => ({ inspections: [insp, ...s.inspections] }));
+        set((s) => ({ inspections: [insp, ...s.inspections], inspectionAppointments: s.inspectionAppointments.map(a => a.id === request?.id ? { ...a, status: 'SCHEDULED', date: insp.scheduledDate, time: insp.scheduledTime!, assignedInspector: assignee.name, assignedInspectorId: assignee.id, assignedBy: actor.name, assignedById: actor.id, linkedInspectionId: insp.id } : a) }));
         const project = get().projects.find((p) => p.id === i.projectId);
         get().logAction(`Scheduled ${i.category.replace('_', ' ')} inspection`, project?.name);
-        get().pushNotification({ message: `${i.category.replace('_', ' ')} inspection scheduled for ${project?.name}.`, type: 'INFO', projectId: i.projectId, targetRoles: ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER'] });
+        get().pushNotification({ message: `${i.category.replace('_', ' ')} inspection scheduled for ${project?.name}.`, type: 'INFO', projectId: i.projectId, targetRoles: ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', ...(request ? ['CONTRACTOR' as const] : [])] });
         return insp;
       },
       startInspection: (id) => {
@@ -621,7 +624,7 @@ export const useStore = create<StoreState>()(
           get().createDefect({ projectId: insp.projectId, location: insp.location || 'Inspection site', category: insp.category, severity: 'HIGH', description: comments.trim() + '\n' + insp.items.filter(i => i.result !== 'PASS').map(i => i.requirement + ': ' + i.remarks).join('\n'), imageSeed: 0, reportedBy: actor.name, contractorId: get().projects.find(p => p.id === insp.projectId)?.contractorId ?? '', dueDate: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10), sourceInspectionId: id });
         }
         const date = new Date().toISOString();
-        set(s => ({ inspections: s.inspections.map(i => i.id === id ? { ...i, overallResult: decision === 'RAISE_DEFECT' ? 'FAIL' : i.overallResult, status: decision === 'REVERIFY' ? 'REVERIFY' : 'COMPLETED', completedDate: decision === 'REVERIFY' ? undefined : date.slice(0, 10), reviewHistory: [...(i.reviewHistory ?? []), { decision, reviewer: actor.name, date, comments: comments.trim(), items: i.items.map(item => ({ ...item })), photos: [...(i.photos ?? [])], attachments: [...(i.attachments ?? [])], findings: i.comments }], ...(decision === 'REVERIFY' ? { photos: [], attachments: [], items: [], comments: '', score: 0, overallResult: 'NOT_INSPECTED' as const } : {}) } : i) }));
+        set(s => ({ inspections: s.inspections.map(i => i.id === id ? { ...i, overallResult: decision === 'RAISE_DEFECT' ? 'FAIL' : i.overallResult, status: decision === 'REVERIFY' ? 'REVERIFY' : 'COMPLETED', completedDate: decision === 'REVERIFY' ? undefined : date.slice(0, 10), reviewHistory: [...(i.reviewHistory ?? []), { decision, reviewer: actor.name, date, comments: comments.trim(), items: i.items.map(item => ({ ...item })), photos: [...(i.photos ?? [])], attachments: [...(i.attachments ?? [])], findings: i.comments }], ...(decision === 'REVERIFY' ? { photos: [], attachments: [], items: [], comments: '', score: 0, overallResult: 'NOT_INSPECTED' as const } : {}) } : i), inspectionAppointments: s.inspectionAppointments.map(a => a.linkedInspectionId === id ? { ...a, status: decision === 'REVERIFY' ? 'SCHEDULED' : 'COMPLETED' } : a) }));
         if (decision === 'APPROVE' && insp.isReinspection) {
           set(s => ({ defects: s.defects.map(d => d.id === insp.sourceDefectId && d.sourceInspectionId === insp.parentInspectionId && d.status === 'REINSPECTION' ? { ...d, status: 'CLOSED', closedDate: date.slice(0, 10) } : d) }));
         }
@@ -653,19 +656,33 @@ export const useStore = create<StoreState>()(
         get().submitInspection(id, items ?? insp.items, 'PASS', comments ?? '');
       },
 
+      declineInspectionRequest: (id, reason) => {
+        const request = get().inspectionAppointments.find(a => a.id === id);
+        const actor = assertProjectAccess(get(), request?.projectId ?? '');
+        if (!canReviewInspection(actor)) throw new Error('Only EE may review inspection requests.');
+        if (!request || request.status !== 'REQUESTED' || request.linkedInspectionId) throw new Error('This request is no longer pending.');
+        if (!reason.trim()) throw new Error('Enter a reason for declining the request.');
+        set(s => ({ inspectionAppointments: s.inspectionAppointments.map(a => a.id === id ? { ...a, status: 'CANCELLED', reviewReason: reason.trim(), assignedBy: actor.name, assignedById: actor.id } : a) }));
+        get().logAction('Declined inspection request ' + id + ': ' + reason.trim());
+        get().pushNotification({ message: 'Inspection request declined: ' + reason.trim(), type: 'INFO', projectId: request.projectId, targetRoles: [request.requestedByRole] });
+      },
       requestAppointment: (a) => {
-        assertJuniorInspectionAccess(get(), a.projectId);
-        const actor = get().currentUser!;
-        const appt: InspectionAppointment = { ...a, requestedBy: actor.name, requestedById: actor.id, requestedByRole: actor.role, id: nid('APT'), status: 'REQUESTED' };
+        const actor = assertProjectAccess(get(), a.projectId);
+        if (!['CONTRACTOR', 'DEPUTY_ENGINEER'].includes(actor.role)) throw new Error('Only an assigned contractor or JE may request a site inspection.');
+        if (!INSPECTION_CATEGORIES.includes(a.inspectionType) || !/^\d{4}-\d{2}-\d{2}$/.test(a.date) || !Number.isFinite(Date.parse(a.date)) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time) || !a.site.trim() || !a.remarks.trim()) throw new Error('Enter inspection type, preferred date and time, location and scope.');
+        if (!get().projects.find(p => p.id === a.projectId)?.executiveEngineerId) throw new Error('No EE is assigned to this hospital.');
+        const appt: InspectionAppointment = { ...a, linkedInspectionId: undefined, assignedInspector: undefined, assignedInspectorId: undefined, assignedBy: undefined, assignedById: undefined, reviewReason: undefined, requestedBy: actor.name, requestedById: actor.id, requestedByRole: actor.role, id: nid('APT'), status: 'REQUESTED' };
         set((s) => ({ inspectionAppointments: [appt, ...s.inspectionAppointments] }));
         const project = get().projects.find((p) => p.id === a.projectId);
         get().logAction(`Requested ${a.inspectionType.replace(/_/g, ' ')} inspection appointment`, project?.name);
-        get().pushNotification({ message: `${a.inspectionType.replace(/_/g, ' ')} inspection requested — ${project?.name}.`, type: 'INFO', projectId: a.projectId, targetRoles: ['EXECUTIVE_ENGINEER', 'DEPUTY_ENGINEER'] });
+        get().pushNotification({ message: `${a.inspectionType.replace(/_/g, ' ')} inspection requested — ${project?.name}.`, type: 'INFO', projectId: a.projectId, targetRoles: ['EXECUTIVE_ENGINEER'] });
         return appt;
       },
       scheduleAppointment: (id, date, time, _inspector) => {
         const appointment = get().inspectionAppointments.find(a => a.id === id);
-        assertJuniorInspectionAccess(get(), appointment?.projectId ?? '');
+        const actor = assertProjectAccess(get(), appointment?.projectId ?? '');
+        if (appointment?.requestedByRole === 'CONTRACTOR') throw new Error('EE must allocate contractor requests through the inspection request inbox.');
+        if (actor.role !== 'DEPUTY_ENGINEER') throw new Error('Only JE may schedule this appointment.');
         const project = get().projects.find(p => p.id === appointment?.projectId);
         const assigned = get().users.find(user => user.id === project?.siteEngineerId && user.role === 'DEPUTY_ENGINEER');
         if (!assigned) throw new Error('No Junior Engineer is assigned to this hospital.');
@@ -675,6 +692,8 @@ export const useStore = create<StoreState>()(
         get().pushNotification({ message: `Inspection scheduled for ${date} — ${project?.name}.`, type: 'INFO', projectId: a?.projectId, targetRoles: ['CONTRACTOR', 'DEPUTY_ENGINEER'] });
       },
       rescheduleAppointment: (id, date, time, remarks) => {
+        const request = get().inspectionAppointments.find(a => a.id === id);
+        if (request?.requestedByRole === 'CONTRACTOR' || request?.linkedInspectionId) throw new Error('Use the EE inspection request review workflow for this appointment.');
         assertJuniorInspectionAccess(get(), get().inspectionAppointments.find(a => a.id === id)?.projectId ?? '');
         set((s) => ({ inspectionAppointments: s.inspectionAppointments.map((a) => (a.id === id ? { ...a, status: 'RESCHEDULED', date, time, remarks } : a)) }));
         const a = get().inspectionAppointments.find((x) => x.id === id);
@@ -682,6 +701,8 @@ export const useStore = create<StoreState>()(
         get().logAction(`Rescheduled inspection appointment to ${date} ${time}`, project?.name);
       },
       cancelAppointment: (id, remarks) => {
+        const request = get().inspectionAppointments.find(a => a.id === id);
+        if (request?.requestedByRole === 'CONTRACTOR' || request?.linkedInspectionId) throw new Error('Use the EE inspection request review workflow for this appointment.');
         assertJuniorInspectionAccess(get(), get().inspectionAppointments.find(a => a.id === id)?.projectId ?? '');
         set((s) => ({ inspectionAppointments: s.inspectionAppointments.map((a) => (a.id === id ? { ...a, status: 'CANCELLED', remarks } : a)) }));
         const a = get().inspectionAppointments.find((x) => x.id === id);
@@ -689,6 +710,8 @@ export const useStore = create<StoreState>()(
         get().logAction(`Cancelled inspection appointment`, project?.name);
       },
       completeAppointment: (id) => {
+        const request = get().inspectionAppointments.find(a => a.id === id);
+        if (request?.requestedByRole === 'CONTRACTOR' || request?.linkedInspectionId) throw new Error('Use the EE inspection request review workflow for this appointment.');
         assertJuniorInspectionAccess(get(), get().inspectionAppointments.find(a => a.id === id)?.projectId ?? '');
         set((s) => ({ inspectionAppointments: s.inspectionAppointments.map((a) => (a.id === id ? { ...a, status: 'COMPLETED' } : a)) }));
         const a = get().inspectionAppointments.find((x) => x.id === id);
