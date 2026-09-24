@@ -12,6 +12,11 @@ import android.view.animation.PathInterpolator;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.os.Build;
 import android.webkit.WebView;
+import android.graphics.Color;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
@@ -38,6 +43,7 @@ public class MainActivity extends BridgeActivity {
         });
         registerPlugin(PdfExportPlugin.class);
         super.onCreate(savedInstanceState);
+        configureSystemBars();
         View splash = getLayoutInflater().inflate(R.layout.project_splash, null);
         addContentView(splash, new ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -62,6 +68,27 @@ public class MainActivity extends BridgeActivity {
             provider.remove();
             dismissSplashWhenReady(splash, SystemClock.uptimeMillis(), animate);
         });
+    }
+
+    private void configureSystemBars() {
+        // Draw the native content background beneath transparent system bars,
+        // including Android 15/16 where statusBarColor no longer controls this.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= 29) getWindow().setStatusBarContrastEnforced(false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+            .setAppearanceLightStatusBars(false);
+        View content = findViewById(android.R.id.content);
+        content.setBackgroundColor(getColor(R.color.app_primary));
+        ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets keyboard = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+            view.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, keyboard.bottom));
+            // The WebView and splash are already inset: do not apply the safe area twice.
+            return WindowInsetsCompat.CONSUMED;
+        });
+        ViewCompat.requestApplyInsets(content);
     }
 
     private void dismissSplashWhenReady(View splash, long started, boolean animate) {

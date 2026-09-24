@@ -5,7 +5,7 @@ import { ProgressDocuments } from '../../components/common/ProgressDocuments';
 import { saveBillFiles } from '../../lib/billAttachments';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Camera as CameraIcon, ClipboardList, AlertTriangle, ShieldCheck, QrCode, Siren, ChevronRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -20,6 +20,7 @@ import { deleteEvidenceMedia } from '../../lib/evidenceMedia';
 export function FieldHome() {
   useUiLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const currentUser = useStore((s) => s.currentUser);
   const { projects: scopedProjects } = useProjectScope();
   const allPhotos = useStore((s) => s.photos);
@@ -37,7 +38,10 @@ export function FieldHome() {
   const [projectId, setProjectId] = useState(myProjects[0]?.id ?? '');
   const project = myProjects.find((p) => p.id === projectId) ?? myProjects[0];
 
-  const [action, setAction] = useState<null | 'progress' | 'photo' | 'defect' | 'inspection' | 'attendance' | 'emergency'>(null);
+  const [action, setAction] = useState<null | 'progress' | 'photo' | 'defect' | 'inspection' | 'attendance' | 'emergency'>(() => {
+    const requested = searchParams.get('action');
+    return requested === 'photo' || requested === 'attendance' ? requested : requested === 'defect' && !isContractor ? 'defect' : null;
+  });
   const [progressPct, setProgressPct] = useState(project?.reportedProgress ?? 0);
   const [progressFiles, setProgressFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -142,7 +146,7 @@ export function FieldHome() {
           {recentSitePhotos.map(ph => <article key={ph.id} className="site-photo-post">
             <div className="photo-post-author"><span aria-hidden="true">{ph.uploadedBy.slice(0,1)}</span><div><p>{ph.uploadedBy}</p><time dateTime={ph.capturedAt}>{formatDate(ph.capturedAt)}</time></div></div>
             <button type="button" className="photo-post-image" aria-label={uiText('View site photos')} onClick={() => navigate(`/projects/${project.id}?tab=photos`)}>
-              <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-72" imgClassName="object-contain bg-slate-100" />
+              <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} gpsAccuracyM={ph.gpsAccuracyM} locationSource={ph.locationSource} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-72" imgClassName="object-contain bg-slate-100" />
             </button>
             <div className="photo-post-caption"><p>{ph.description}</p><span>{uiText(ph.stage)}</span></div>
           </article>)}
@@ -163,7 +167,7 @@ export function FieldHome() {
         ))}
       </Section>
 
-      <Section title={uiText("Today's Workforce")} onSeeAll={() => navigate('/workers')}>
+      <Section title={uiText("Today's Workforce")}>
         <Row primary={`${projectWorkers.filter((w) => w.attendanceStatus === 'PRESENT').length} present`} secondary={`of ${projectWorkers.length} assigned workers`} />
       </Section>
 

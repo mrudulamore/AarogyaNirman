@@ -92,6 +92,7 @@
     "selectRoleSubtitle": "Your government account is provisioned with the following access levels. Choose how you'd like to continue this session."
   },
   "roles": {
+    "SITE_SUPERVISOR": "Site Supervisor",
     "SUPERADMIN": "Super Administrator",
     "MINISTER": "Minister / Secretary (Public Health)",
     "COMMISSIONER": "Commissioner / Director (Health Services)",

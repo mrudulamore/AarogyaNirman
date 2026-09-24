@@ -172,7 +172,7 @@ export function TBody({ children }: { children: React.ReactNode }) {
   useUiLanguage();
   return <tbody className="divide-y divide-slate-100">{children}</tbody>;
 }
-export function Tr({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+export function Tr({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: React.MouseEventHandler<HTMLTableRowElement> }) {
   useUiLanguage();
   return <tr onClick={onClick} className={cn(onClick && 'cursor-pointer hover:bg-slate-50', className)}>{children}</tr>;
 }

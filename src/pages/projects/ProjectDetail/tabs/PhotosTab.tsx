@@ -1,3 +1,4 @@
+import { DemoPhotoDetails } from '../../../../components/common/DemoPhotoDetails';
 import { PhotoReview } from '../../../../components/common/PhotoReview';
 import { ROLE_LABELS } from '../../../../lib/constants';
 import type { SiteCapture } from '../../../../components/common/SiteCamera';
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogFooter, ConfirmDialog } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { photoSrc, formatDate, formatDateTime } from '../../../../lib/utils';
-import { isWithinGeofence } from '../../../../lib/geo';
+import { assessProjectGeoFence } from '../../../../lib/geo';
 import { deleteEvidenceMedia, readEvidenceMedia } from '../../../../lib/evidenceMedia';
 import { EvidenceStorage } from '../../../../components/common/EvidenceStorage';
 import { EvidenceIntegrity } from '../../../../components/common/EvidenceIntegrity';
@@ -54,6 +55,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
 
   const viewerIndex = filtered.findIndex((p) => p.id === viewerId);
   const viewerPhoto = filtered[viewerIndex];
+  const viewerFence = viewerPhoto ? viewerPhoto.geoFenceStatus ?? assessProjectGeoFence(viewerPhoto, project).status : undefined;
 
   function discardCapture() {
     if (capture?.mediaKey) void deleteEvidenceMedia(capture.mediaKey);
@@ -122,7 +124,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[{ label: 'BEFORE', photo: before }, { label: 'LATEST', photo: after }].map(({ label, photo }) => (
               <div key={label} className="overflow-hidden rounded-md border border-slate-200">
-                <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-52" />
+                <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} gpsAccuracyM={photo.gpsAccuracyM} locationSource={photo.locationSource} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-52" />
                 <div className="p-2.5">
                   <Badge>{uiText(label)}</Badge>
                   <p className="mt-1 text-xs font-medium text-slate-700">{uiText(photo.stage)}</p>
@@ -143,7 +145,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
             {items.map((ph) => (
               <button key={ph.id} onClick={() => setViewerId(ph.id)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
                 <div className="relative">
-                  <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-52" />
+                  <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} gpsAccuracyM={ph.gpsAccuracyM} locationSource={ph.locationSource} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-52" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
                 </div>
                 <div className="p-1.5">
@@ -196,7 +198,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
             <div className="relative">
               <GeoPhoto
                 src={photoSrc(viewerPhoto)}
-                mediaKey={viewerPhoto.mediaKey}
+                mediaKey={viewerPhoto.mediaKey} gpsAccuracyM={viewerPhoto.gpsAccuracyM} locationSource={viewerPhoto.locationSource}
                 lat={viewerPhoto.lat}
                 lng={viewerPhoto.lng}
                 timestamp={viewerPhoto.capturedAt}
@@ -207,6 +209,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
               {viewerIndex > 0 && <button onClick={() => setViewerId(filtered[viewerIndex - 1].id)} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronLeft size={16} /></button>}
               {viewerIndex < filtered.length - 1 && <button onClick={() => setViewerId(filtered[viewerIndex + 1].id)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronRight size={16} /></button>}
             </div>
+{viewerPhoto.isReference ? <DemoPhotoDetails photo={viewerPhoto} project={project} /> : <>
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
               <div><p className="text-slate-400">{uiText("Uploaded By")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.uploadedBy)}</p><p>{uiText(ROLE_LABELS[viewerPhoto.uploadedByRole])}</p></div>
               <div><p className="text-slate-400">{uiText("Location")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.location)}</p></div>
@@ -218,9 +221,9 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
               </div>
               <div>
                 <p className="text-slate-400">{uiText("Geo-Fence")}</p>
-                {(viewerPhoto.geoFenceStatus ?? (isWithinGeofence(viewerPhoto, { lat: project.siteLat, lng: project.siteLng }) ? 'INSIDE' : 'OUTSIDE')) === 'INSIDE' ? (
+                {viewerFence === 'INSIDE' ? (
                   <Badge className="mt-0.5 border-emerald-200 bg-emerald-50 text-emerald-700">{uiText("Within Project Geo-Fence")}</Badge>
-                ) : viewerPhoto.geoFenceStatus === 'UNCERTAIN' ? (
+                ) : viewerFence === 'UNCERTAIN' ? (
                   <Badge className="mt-0.5 border-amber-200 bg-amber-50 text-amber-700">{uiText("Location uncertain")}</Badge>
                 ) : (
                   <Badge className="mt-0.5 border-red-200 bg-red-50 text-red-700">{uiText("Outside Project Geo-Fence")}</Badge>
@@ -232,10 +235,11 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
               <div><p className="text-slate-400">{uiText("Device")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.deviceInfo ?? 'Not captured by device')}</p></div>
               <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Description")}</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
             </div>
-            {(viewerPhoto.locationSource === 'MANUAL' || viewerPhoto.geoFenceStatus === 'OUTSIDE' || viewerPhoto.geoFenceStatus === 'UNCERTAIN' || !isWithinGeofence(viewerPhoto, { lat: project.siteLat, lng: project.siteLng })) && (
-              <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-700">{uiText("This evidence is flagged for review: ")}{uiText(viewerPhoto.locationSource === 'MANUAL' ? 'coordinates were manually entered rather than device-captured' : viewerPhoto.geoFenceStatus === 'UNCERTAIN' ? 'GPS accuracy overlaps the project boundary' : 'the captured GPS location falls outside the project geo-fence')}. {viewerPhoto.remarks && <strong>{viewerPhoto.remarks}</strong>}
+            {(viewerPhoto.locationSource === 'MANUAL' || viewerPhoto.geoFenceStatus === 'OUTSIDE' || viewerFence === 'UNCERTAIN' || viewerFence !== 'INSIDE') && (
+              <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-700">{uiText("This evidence is flagged for review: ")}{uiText(viewerPhoto.locationSource === 'MANUAL' ? 'coordinates were manually entered rather than device-captured' : viewerFence === 'UNCERTAIN' ? 'GPS accuracy overlaps the project boundary' : 'the captured GPS location falls outside the project geo-fence')}. {viewerPhoto.remarks && <strong>{viewerPhoto.remarks}</strong>}
               </p>
             )}
+</>}
             <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
             <div className="mt-3"><EvidenceIntegrity mediaKey={viewerPhoto.mediaKey}/></div>
             <DialogFooter>

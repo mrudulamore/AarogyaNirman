@@ -15,7 +15,6 @@ export const NAV_ITEMS: Record<string, NavItem> = {
   projects: { label: 'Projects', path: '/projects', icon: Building2 },
   tenders: { label: 'Tenders', path: '/tenders', icon: Gavel },
   contractors: { label: 'Contractors', path: '/contractors', icon: HardHat },
-  workers: { label: 'Workforce', path: '/workers', icon: Users },
   staff: { label: 'Officers & Staff', path: '/staff', icon: Users },
   finance: { label: 'Finance & Bills', path: '/finance', icon: Wallet },
   quality: { label: 'Quality & Inspections', path: '/quality', icon: ShieldCheck },
@@ -33,17 +32,15 @@ export const NAV_ITEMS: Record<string, NavItem> = {
 };
 
 export const ROLE_NAV: Record<Role, string[]> = {
+  SITE_SUPERVISOR: ['dashboard', 'projects', 'field', 'quality', 'defects', 'documents', 'notifications', 'search'],
   WORKFORCE: ['dashboard'],
   // Superadmin — full statewide visibility across every module, plus the exclusive
   // Access Management screen where role-to-feature permissions are granted/revoked.
-  SUPERADMIN: ['dashboard', 'projects', 'tenders', 'contractors', 'workers', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'observer', 'notifications', 'audit', 'search', 'field', 'access'],
+  SUPERADMIN: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'observer', 'notifications', 'audit', 'search', 'field', 'access'],
   // Minister/Secretary — top-level statewide oversight only. Deliberately minimal:
   // no BOQ/materials/attendance/staff-roster screens — command-center summary,
   // statewide financial and contractor-performance visibility, tenders, reports, alerts, search.
   MINISTER: ['dashboard', 'projects', 'tenders', 'finance', 'contractors', 'reports', 'notifications', 'search'],
-  // Workforce (day-to-day worker roster / attendance) is intentionally Deputy-Engineer-only —
-  // it's field-level operational data. Other roles still see aggregate workforce counts via
-  // the Dashboard "Workforce on Site" widget without the granular per-worker list.
   COMMISSIONER: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   REGIONAL_DIRECTOR: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   CIVIL_SURGEON: ['dashboard', 'projects', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
@@ -51,9 +48,9 @@ export const ROLE_NAV: Record<Role, string[]> = {
   // Project Manager (PMU/PMC) — day-to-day cross-functional coordinator for their assigned
   // portfolio: schedule, budget, contractor/workforce coordination, risk & governance registers,
   // and field visibility, without the statewide/jurisdictional oversight senior roles carry.
-  PROJECT_MANAGER: ['dashboard', 'projects', 'tenders', 'contractors', 'workers', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'search', 'field', 'portfolioTimeline'],
-  DEPUTY_ENGINEER: ['dashboard', 'projects', 'field', 'workers', 'quality', 'defects', 'documents', 'notifications', 'search'],
-  CONTRACTOR: ['dashboard', 'projects', 'field', 'workers', 'finance', 'defects', 'documents', 'notifications', 'search'],
+  PROJECT_MANAGER: ['dashboard', 'projects', 'tenders', 'contractors', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'search', 'field', 'portfolioTimeline'],
+  DEPUTY_ENGINEER: ['dashboard', 'projects', 'field', 'quality', 'defects', 'documents', 'notifications', 'search'],
+  CONTRACTOR: ['dashboard', 'projects', 'field', 'finance', 'defects', 'documents', 'notifications', 'search'],
   MEDICAL_OFFICER: ['dashboard', 'projects', 'documents', 'reports', 'notifications', 'search'],
   VIGILANCE_AUDIT: ['dashboard', 'projects', 'observer', 'defects', 'approvals', 'audit', 'notifications', 'search'],
   // IT/System Admin — technical support & system health only; deliberately excluded from

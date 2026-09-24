@@ -46,6 +46,7 @@ export const PROJECT_360_TABS: Project360Tab[] = [
  * Team/Inspections/Safety & Commissioning/Approvals/Documents/Handover remain as their own tabs. */
 export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
   WORKFORCE: [],
+  SITE_SUPERVISOR: ['overview', 'milestones', 'progress', 'photos', 'field evidence', 'quality', 'inspections', 'defects', 'documents'],
   SUPERADMIN: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover', 'audit'],
   IT_ADMIN: ['overview', 'documents', 'audit'],
   MINISTER: ['overview', 'timeline', 'tender', 'boq', 'milestones', 'field evidence', 'team', 'inspections', 'safety & commissioning', 'finance', 'approvals', 'documents', 'handover'],

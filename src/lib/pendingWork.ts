@@ -17,7 +17,12 @@ export function pendingWork(s: StoreState, today: string, policy = DEFAULT_ESCAL
     result.push({ id: a.id, projectId: a.projectId, title: a.type.replaceAll('_', ' '), due: date.toISOString().slice(0, 10), tab: 'approvals', ownerRole: a.chain[a.currentStepIndex] });
   }
   for (const m of s.milestones) if (scope.has(m.projectId) && !['CERTIFIED', 'BILL_ELIGIBLE', 'PAID'].includes(m.status)) result.push({ id: m.id, projectId: m.projectId, title: m.name, due: m.plannedDate, tab: 'milestones', ownerRole: ['NOT_STARTED', 'IN_PROGRESS', 'CORRECTION_REQUIRED'].includes(m.status) ? 'CONTRACTOR' : 'EXECUTIVE_ENGINEER' });
-  for (const i of s.inspections) if (scope.has(i.projectId) && i.status !== 'COMPLETED' && (i.inspector === s.currentUser?.name || ['SUPERADMIN', 'COMMISSIONER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER'].includes(s.currentUser?.role ?? ''))) result.push({ id: i.id, projectId: i.projectId, title: `Inspection: ${i.category}`, due: i.scheduledDate, tab: 'inspections', ownerRole: s.currentUser!.role });
+  for (const i of s.inspections) {
+    if (!scope.has(i.projectId) || i.status === 'COMPLETED') continue;
+    const ownerRole: Role = i.status === 'PENDING_REVIEW' || !i.assignedToId ? 'EXECUTIVE_ENGINEER' : 'DEPUTY_ENGINEER';
+    if (mine && s.currentUser?.role === 'DEPUTY_ENGINEER' && i.assignedToId !== s.currentUser.id) continue;
+    result.push({ id: i.id, projectId: i.projectId, title: (i.status === 'PENDING_REVIEW' ? 'Review inspection: ' : i.status === 'REVERIFY' ? 'Reverify inspection: ' : 'Inspection: ') + i.category, due: i.scheduledDate, tab: 'inspections', ownerRole });
+  }
   for (const d of s.defects) if (scope.has(d.projectId) && d.status !== 'CLOSED') result.push({ id: d.id, projectId: d.projectId, title: d.description, due: d.dueDate, tab: 'defects', ownerRole: 'CONTRACTOR' });
   const billOwners: Record<string, Role> = { DRAFT: 'CONTRACTOR', SUBMITTED: 'DEPUTY_ENGINEER', SITE_VERIFIED: 'EXECUTIVE_ENGINEER', QUALITY_VERIFIED: 'EXECUTIVE_ENGINEER', APPROVED: 'COMMISSIONER' };
   for (const b of outstandingBills(s.bills, s.controlRecords, today, true)) if (scope.has(b.projectId) && billOwners[b.status]) {
