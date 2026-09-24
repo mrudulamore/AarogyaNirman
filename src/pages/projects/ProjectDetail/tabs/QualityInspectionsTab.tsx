@@ -213,7 +213,6 @@ export function InspectionsTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">{uiText('EE assigns > JE inspects and uploads documents / comments > EE reviews > Approve, raise defect or reverify')}</p>
       <div className="flex justify-end">
         {canSchedule && <Button onClick={() => setScheduleOpen(true)}><CalendarPlus size={15} /> {uiText('Add inspection')}</Button>}
       </div>
