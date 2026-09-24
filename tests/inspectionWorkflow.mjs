@@ -33,6 +33,8 @@ try {
     const {saveBillFiles} = await import('/src/lib/billAttachments.ts');
     const documents = await saveBillFiles([{file:new File(['%PDF-1.4 test'], 'inspection.pdf', {type:'application/pdf'}),category:'SUPPORTING'}]);
     const state = () => useStore.getState();
+    const { pendingWork } = await import('/src/lib/pendingWork.ts');
+    const inspectionTask = () => pendingWork(state(), '2026-10-01').find(task => task.id === inspection.id);
     const check = (v, m) => { if (!v) throw new Error(m); };
     const rejects = (fn, m) => { let rejected = false; try { fn(); } catch { rejected = true; } check(rejected, m); };
     state().login('DEPUTY_ENGINEER');
@@ -56,11 +58,16 @@ try {
     rejects(() => state().startInspection(inspection.id), 'Pending review reopened');
     useStore.setState({currentUser: ee});
     rejects(() => state().reviewInspection(inspection.id, 'REVERIFY', ' '), 'Blank reason accepted');
+    check(inspectionTask()?.title.startsWith('Review / approve inspection'), 'EE review missing from pending work');
     state().reviewInspection(inspection.id, 'REVERIFY', 'Repeat measurement');
+    check(!inspectionTask(), 'Reverification remains in EE pending work');
     let saved = state().inspections.find(i => i.id === inspection.id);
     check(saved.status === 'REVERIFY' && saved.reviewHistory[0].items[0].measurement === '2 bar' && !saved.attachments.length, 'Reverify lost history or reused photos');
     useStore.setState({currentUser: {...junior, id: 'unassigned'}});
+    check(!inspectionTask(), 'Reverification assigned to another JE');
     rejects(() => state().startInspection(inspection.id), 'Unassigned JE conducted inspection');
+    useStore.setState({currentUser: junior});
+    check(inspectionTask()?.title.startsWith('Reverify inspection'), 'Assigned JE reverification missing from pending work');
     useStore.setState({currentUser: junior});
     state().startInspection(inspection.id);
     state().setInspectionDocuments(inspection.id, documents);

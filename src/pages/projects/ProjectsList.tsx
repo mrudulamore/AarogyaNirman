@@ -3,17 +3,16 @@ import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, LayoutGrid, List as ListIcon, ArrowRight, ChevronRight, Landmark, Building2, Map, MapPinned, Hospital, RotateCcw } from 'lucide-react';
+import { LayoutGrid, List as ListIcon, ArrowRight, ChevronRight, Landmark, Building2, Map, MapPinned, Hospital, RotateCcw } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
-import { Button, Card, CardContent, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
+import { Card, CardContent, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { optionsWithCounts, type FilterOption } from '../../lib/cascadingFilters';
 import { formatCurrency, formatDate, cn } from '../../lib/utils';
 import type { Project } from '../../types';
 
-const CAN_SANCTION_PROJECTS = ['MINISTER'];
 
 type QuickFilter = 'AT_RISK' | 'DELAYED' | 'NO_RECENT_EVIDENCE' | 'QUALITY_ISSUE' | 'APPROVAL_PENDING' | 'FINANCE_ISSUE' | 'HANDOVER_DUE';
 
@@ -26,14 +25,12 @@ export function ProjectsList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
-  const currentUser = useStore((s) => s.currentUser);
   const { projects: scopedProjects, scopeLabel, isStatewide } = useProjectScope();
   const contractors = useStore((s) => s.contractors);
   const photos = useStore((s) => s.photos);
   const inspections = useStore((s) => s.inspections);
   const approvals = useStore((s) => s.approvals);
   const bills = useStore((s) => s.bills);
-  const canCreateProject = !!currentUser && CAN_SANCTION_PROJECTS.includes(currentUser.role);
 
   // Cascading hierarchy: Scheme -> Facility Type -> Region -> District -> Project/Hospital.
   const [scheme, setScheme] = useState('ALL');
@@ -118,7 +115,6 @@ export function ProjectsList() {
             <button onClick={() => setView('grid')} className={`p-1.5 ${view === 'grid' ? 'bg-navy-700 text-white' : 'bg-white text-slate-500'}`}><LayoutGrid size={15} /></button>
             <button onClick={() => setView('list')} className={`p-1.5 ${view === 'list' ? 'bg-navy-700 text-white' : 'bg-white text-slate-500'}`}><ListIcon size={15} /></button>
           </div>
-          {canCreateProject && <Button onClick={() => navigate('/project-proposals')}><Plus size={15} />{uiText(" Create Project Proposal")}</Button>}
         </>}
       />
 

@@ -10,6 +10,7 @@ import { formatDate } from '../../lib/utils';
 import { Button, Card, CardContent, CardHeader, CardTitle, StatusBadge } from '../ui/primitives';
 import { Dialog, DialogContent, DialogFooter } from '../ui/overlays';
 import { InspectionAllocation } from './InspectionAllocation';
+import { InspectionDetails } from './InspectionDetails';
 
 export function InspectionRequests({ project }: { project?: Project }) {
   const state = useStore();
@@ -25,11 +26,13 @@ export function InspectionRequests({ project }: { project?: Project }) {
   const [location, setLocation] = useState('');
   const [scope, setScope] = useState('');
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [inspectionId, setInspectionId] = useState<string | null>(null);
   const [declineId, setDeclineId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const ee = user?.role === 'EXECUTIVE_ENGINEER';
   const contractor = user?.role === 'CONTRACTOR';
   const compact = ee && !project;
+  const reviews = state.inspections.filter(i => ee && i.status === 'PENDING_REVIEW' && hospitals.some(p => p.id === i.projectId) && (!project || i.projectId === project.id));
   if (!project && !ee) return null;
   const requests = state.inspectionAppointments.filter(a => hospitals.some(p => p.id === a.projectId) &&
     (!project || a.projectId === project.id) && (project || !ee || a.status === 'REQUESTED'))
@@ -51,14 +54,20 @@ export function InspectionRequests({ project }: { project?: Project }) {
   return <Card className="mb-4" data-testid="inspection-requests">
     {compact ? <button type="button" aria-expanded={expanded} aria-controls={requestsId} onClick={() => setExpanded(value => !value)} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold text-navy-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-500">
       <span>{uiText('Inspection requests')}</span>
-      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">{requests.length}</span>
+      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">{requests.length + reviews.length}</span>
       <ChevronDown size={18} aria-hidden="true" className={`ml-auto shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-    </button> : <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle>{uiText('Inspection requests')}{ee ? ` (${requests.filter(a => a.status === 'REQUESTED').length})` : ''}</CardTitle>
+    </button> : <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle>{uiText('Inspection requests')}{ee ? ` (${requests.filter(a => a.status === 'REQUESTED').length + reviews.length})` : ''}</CardTitle>
       {contractor && <Button disabled={!hospitals.length} onClick={() => setOpen(true)}>{uiText('Request site inspection')}</Button>}
     </div></CardHeader>}
     <div id={requestsId} hidden={compact && !expanded}>
     <CardContent className="space-y-3">
-      {!requests.length && <p className="text-sm text-slate-500">{uiText('No inspection requests.')}</p>}
+      {!requests.length && !reviews.length && <p className="text-sm text-slate-500">{uiText('No inspection requests.')}</p>}
+      {reviews.map(i => <div key={i.id} className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{hospitals.find(p => p.id === i.projectId)?.name}</p><StatusBadge status={i.status} /></div>
+        <p>{uiText(i.category.replace(/_/g, ' '))} · {i.inspector}</p>
+        <p className="my-2 text-slate-600">{uiText('JE inspection submitted for approval or re-verification.')}</p>
+        <Button onClick={() => setInspectionId(i.id)}>{uiText('Review / approve inspection')}</Button>
+      </div>)}
       {requests.map(a => <div key={a.id} data-request-id={a.id} className="rounded-lg border border-slate-200 p-3 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{state.projects.find(p => p.id === a.projectId)?.name}</p><StatusBadge status={a.status} /></div>
         <p>{uiText(a.inspectionType.replace(/_/g, ' '))} · {formatDate(a.date)} · {a.time}</p>
@@ -76,6 +85,7 @@ export function InspectionRequests({ project }: { project?: Project }) {
     </CardContent>
     </div>
     {request && reviewProject && <InspectionAllocation project={reviewProject} request={request} onClose={() => setReviewId(null)} />}
+    <InspectionDetails inspection={reviews.find(i => i.id === inspectionId)} onClose={() => setInspectionId(null)} />
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title={uiText('Request site inspection')} size="lg">
       <form onSubmit={submit} className="space-y-3">
         <label className="block text-sm">{uiText('Hospital location')}<select required disabled={!!project} className={input} value={projectId} onChange={e => setProjectId(e.target.value)}>{hospitals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>

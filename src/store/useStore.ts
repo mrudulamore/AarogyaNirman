@@ -1040,7 +1040,6 @@ export const useStore = create<StoreState>()(
         const controlRecords = withDemoFinance(merged.projects, seed.projects, merged.controlRecords);
         const users = proposalAccounts([...merged.users, ...current.users.filter(user => user.role === 'SITE_SUPERVISOR' && !merged.users.some(existing => existing.id === user.id))]);
         const photos = saved?.referencePhotosRestored ? merged.photos : [...merged.photos, ...seed.photos.filter(photo => !merged.photos.some(existing => existing.id === photo.id))];
-        for (const role of ['MINISTER', 'COMMISSIONER', 'CHIEF_ENGINEER', 'SUPERINTENDING_ENGINEER', 'EXECUTIVE_ENGINEER', 'SUPERADMIN'] as Role[]) merged.rolePermissions[role] = [...new Set([...(merged.rolePermissions[role] ?? ROLE_NAV[role]), 'proposals'])];
         merged.rolePermissions.EXECUTIVE_ENGINEER = [...new Set([...merged.rolePermissions.EXECUTIVE_ENGINEER, 'tenders'])];
         return { ...merged, users, referencePhotosRestored: true, photos: photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) })), controlRecords, projects: reconcileProjects(merged.projects, controlRecords) };
       },

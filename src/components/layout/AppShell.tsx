@@ -1,3 +1,4 @@
+import { ProjectAssistant } from '../common/ProjectAssistant';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { uiText } from '../../i18n/ui';
 import { Outlet, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -89,6 +90,7 @@ export function AppShell() {
           {!mobileField && location.pathname === '/dashboard' && currentUser.role !== 'WORKFORCE' && <Suspense fallback={null}><PendingWork /></Suspense>}
           {mobileField && location.pathname === '/dashboard' ? <Suspense fallback={<p role="status">{uiText('Loading…')}</p>}><MobileFieldHome /></Suspense> : <Outlet />}
         </main>
+        <ProjectAssistant />
         <nav className={mobileField ? 'mobile-dock field-primary-dock' : 'mobile-dock'} aria-label={uiText('Navigation')}>
           {['dashboard', 'projects', 'field', 'notifications', 'search'].filter(key => currentUser.role === 'WORKFORCE' ? key === 'dashboard' : (rolePermissions[currentUser.role] ?? []).includes(key)).map(key => {
             const item = NAV_ITEMS[key];
