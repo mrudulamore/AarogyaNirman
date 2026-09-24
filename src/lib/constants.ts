@@ -17,6 +17,7 @@ export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = {
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  CHIEF_ENGINEER: 'Chief Engineer', SUPERINTENDING_ENGINEER: 'Superintending Engineer',
   SITE_SUPERVISOR: 'Site Supervisor',
   WORKFORCE: 'Workforce',
   SUPERADMIN: 'Super Administrator',
@@ -34,6 +35,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DEPARTMENTS: Record<Role, string> = {
+  CHIEF_ENGINEER: 'PWD Regional Office', SUPERINTENDING_ENGINEER: 'PWD Circle Office',
   SITE_SUPERVISOR: 'Site supervision',
   WORKFORCE: 'Site workforce',
   SUPERADMIN: 'System Administration Cell, GoM',

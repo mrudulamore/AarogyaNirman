@@ -12,6 +12,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: Record<string, NavItem> = {
   dashboard: { label: 'Command Center', path: '/dashboard', icon: LayoutDashboard },
+  proposals: { label: 'Project Proposals', path: '/project-proposals', icon: ClipboardCheck },
   projects: { label: 'Projects', path: '/projects', icon: Building2 },
   tenders: { label: 'Tenders', path: '/tenders', icon: Gavel },
   contractors: { label: 'Contractors', path: '/contractors', icon: HardHat },
@@ -32,19 +33,21 @@ export const NAV_ITEMS: Record<string, NavItem> = {
 };
 
 export const ROLE_NAV: Record<Role, string[]> = {
+  CHIEF_ENGINEER: ['dashboard', 'proposals', 'projects', 'notifications'],
+  SUPERINTENDING_ENGINEER: ['dashboard', 'proposals', 'projects', 'notifications'],
   SITE_SUPERVISOR: ['dashboard', 'projects', 'field', 'quality', 'defects', 'documents', 'notifications', 'search'],
   WORKFORCE: ['dashboard'],
   // Superadmin — full statewide visibility across every module, plus the exclusive
   // Access Management screen where role-to-feature permissions are granted/revoked.
-  SUPERADMIN: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'observer', 'notifications', 'audit', 'search', 'field', 'access'],
+  SUPERADMIN: ['proposals', 'dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'observer', 'notifications', 'audit', 'search', 'field', 'access'],
   // Minister/Secretary — top-level statewide oversight only. Deliberately minimal:
   // no BOQ/materials/attendance/staff-roster screens — command-center summary,
   // statewide financial and contractor-performance visibility, tenders, reports, alerts, search.
-  MINISTER: ['dashboard', 'projects', 'tenders', 'finance', 'contractors', 'reports', 'notifications', 'search'],
-  COMMISSIONER: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
+  MINISTER: ['proposals', 'dashboard', 'projects', 'tenders', 'finance', 'contractors', 'reports', 'notifications', 'search'],
+  COMMISSIONER: ['proposals', 'dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   REGIONAL_DIRECTOR: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   CIVIL_SURGEON: ['dashboard', 'projects', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
-  EXECUTIVE_ENGINEER: ['dashboard', 'projects', 'contractors', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
+  EXECUTIVE_ENGINEER: ['proposals', 'dashboard', 'projects', 'tenders', 'contractors', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   // Project Manager (PMU/PMC) — day-to-day cross-functional coordinator for their assigned
   // portfolio: schedule, budget, contractor/workforce coordination, risk & governance registers,
   // and field visibility, without the statewide/jurisdictional oversight senior roles carry.

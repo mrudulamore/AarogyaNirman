@@ -3,6 +3,8 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'CHIEF_ENGINEER'
+  | 'SUPERINTENDING_ENGINEER'
   | 'SITE_SUPERVISOR'
   | 'WORKFORCE'
   | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
@@ -70,6 +72,7 @@ export type ProjectType =
   | 'Community Health Centre';
 
 export interface Project {
+  proposalId?: string;
   id: string;
   name: string;
   type: ProjectType;
@@ -245,9 +248,11 @@ export interface ChecklistItem {
 }
 
 export interface Inspection {
+  sourceRequestId?: string;
   sourceDefectId?: string;
+  attachments?: BillAttachment[];
   photos?: { dataUrl: string; mediaKey: string; capturedAt: string; lat: number; lng: number }[];
-  reviewHistory?: { decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY'; reviewer: string; date: string; comments: string; items: ChecklistItem[]; photos: NonNullable<Inspection['photos']>; findings: string }[];
+  reviewHistory?: { decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY'; reviewer: string; date: string; comments: string; items: ChecklistItem[]; photos: NonNullable<Inspection['photos']>; findings: string; attachments?: BillAttachment[] }[];
   assignedToId?: string;
   assignedRole?: Role;
   createdById?: string;
@@ -775,6 +780,11 @@ export interface QualityReport {
 export type AppointmentStatus = 'REQUESTED' | 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface InspectionAppointment {
+  reviewReason?: string;
+  requestedById?: string;
+  assignedById?: string;
+  assignedBy?: string;
+  assignedInspectorId?: string;
   id: string;
   projectId: string;
   milestoneId?: string;

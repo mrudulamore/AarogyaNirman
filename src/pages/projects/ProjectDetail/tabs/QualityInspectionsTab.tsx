@@ -1,4 +1,6 @@
-import { SiteCamera } from '../../../../components/common/SiteCamera';
+import { InspectionRequests } from '../../../../components/common/InspectionRequests';
+import { ProgressDocumentLinks } from '../../../../components/common/ProgressDocuments';
+import { saveBillFiles } from '../../../../lib/billAttachments';
 import { InspectionDetails } from '../../../../components/common/InspectionDetails';
 import { InspectionAllocation } from '../../../../components/common/InspectionAllocation';
 import { canReviewInspection, canManageInspection } from '../../../../lib/inspectionAccess';
@@ -169,7 +171,6 @@ export function InspectionsTab({ project }: { project: Project }) {
   const currentUser = useStore((s) => s.currentUser);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id).sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
   const defects = useStore((s) => s.defects).filter((d) => d.projectId === project.id);
-  const appointments = useStore((s) => s.inspectionAppointments).filter((a) => a.projectId === project.id).sort((a, b) => (a.date < b.date ? 1 : -1));
   const canSchedule = canReviewInspection(currentUser);
   const startInspection = useStore(s => s.startInspection);
   const submitInspection = useStore((s) => s.submitInspection);
@@ -182,6 +183,7 @@ export function InspectionsTab({ project }: { project: Project }) {
   const [assignId, setAssignId] = useState<string | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [comments, setComments] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const active = inspections.find((i) => i.id === checklistId);
 
@@ -211,32 +213,11 @@ export function InspectionsTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">{uiText('EE assigns > JE inspects and captures photos / measurements > EE reviews > Approve, raise defect or reverify')}</p>
       <div className="flex justify-end">
         {canSchedule && <Button onClick={() => setScheduleOpen(true)}><CalendarPlus size={15} /> {uiText('Add inspection')}</Button>}
       </div>
 
-      {appointments.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>{uiText("Inspection Appointments")}</CardTitle></CardHeader>
-          <Table>
-            <THead><Tr><Th>{uiText("Type")}</Th><Th>{uiText("Requested By")}</Th><Th>{uiText("Inspector")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Time")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
-            <TBody>
-              {appointments.map((a) => (
-                <Tr key={a.id}>
-                  <Td className="font-medium text-slate-800">{uiText(a.inspectionType.replace(/_/g, ' '))}</Td>
-                  <Td>{uiText(a.requestedBy)}</Td>
-                  <Td>{uiText(a.assignedInspector ?? '—')}</Td>
-                  <Td>{uiText(formatDate(a.date))}</Td>
-                  <Td>{uiText(a.time)}</Td>
-                  <Td><StatusBadge status={a.status} /></Td>
-
-                </Tr>
-              ))}
-            </TBody>
-          </Table>
-        </Card>
-      )}
+      <InspectionRequests project={project} />
 
       <Card>
         <Table>
@@ -280,8 +261,26 @@ export function InspectionsTab({ project }: { project: Project }) {
         {active && (
           <DialogContent title={uiMessage("{{0}} Inspection Checklist", [active.category.replace(/_/g, ' ')])} description={uiText(project.name)} size="lg">
             <div className="space-y-3">
-              <SiteCamera project={project} onCapture={photo => { try { controlState.setInspectionPhotos(active.id, [...(active.photos ?? []), photo]); } catch (error) { toast.error((error as Error).message); } }} />
-              <p className="text-sm">{uiText('Photos captured')}: {active.photos?.length ?? 0}</p>
+              <label className="block text-sm font-medium">{uiText('Supporting documents (required)')}
+                <input type="file" multiple accept="application/pdf,.pdf" disabled={uploading} className="mt-2 block w-full text-sm" onChange={async event => {
+                  const files = Array.from(event.target.files ?? []);
+                  event.target.value = '';
+                  if (!files.length) return;
+                  setUploading(true);
+                  try {
+                    if (files.some(file => file.type !== 'application/pdf') || files.length + (active.attachments?.length ?? 0) > 5) throw new Error('Upload 1 to 5 PDF documents, up to 5 MB each.');
+                    const attachments = await saveBillFiles(files.map(file => ({ file, category: 'SUPPORTING' })));
+                    controlState.setInspectionDocuments(active.id, [...(active.attachments ?? []), ...attachments]);
+                  } catch (error) { toast.error(uiText((error as Error).message)); }
+                  finally { setUploading(false); }
+                }} />
+              </label>
+              <p className="text-xs text-slate-500">{uiText('Upload 1 to 5 PDF documents, up to 5 MB each.')}</p>
+              <ProgressDocumentLinks attachments={active.attachments} />
+              {active.attachments?.map(file => <button key={file.id} type="button" disabled={uploading} className="block min-h-10 text-xs text-red-600" onClick={() => {
+                try { controlState.setInspectionDocuments(active.id, active.attachments!.filter(item => item.id !== file.id)); }
+                catch (error) { toast.error(uiText((error as Error).message)); }
+              }}>{uiText('Remove')}: {file.name}</button>)}
               {items.map((it, idx) => (
                 <div key={it.id} className="rounded-md border border-slate-200 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -297,7 +296,6 @@ export function InspectionsTab({ project }: { project: Project }) {
                     </Select>
                   </div>
                   <p className="mt-1 text-[10.5px] text-slate-400">{uiText("Standard: ")}{uiText(it.standard)}{uiText(" · Evidence: ")}{uiText(it.evidence)}</p>
-                  <label className="mt-3 block text-xs">{uiText('Measurement')}<input className="ui-input w-full" value={it.measurement} onChange={e => setItems(items.map((item, index) => index === idx ? { ...item, measurement: e.target.value } : item))} /></label>
                   <label htmlFor={`checklist-comment-${it.id}`} className="mb-1 mt-3 block text-xs font-medium text-slate-600">{uiText(it.result === 'PASS' ? 'Item comments (optional)' : 'Item comments (required)')}</label>
                   <Textarea id={`checklist-comment-${it.id}`} rows={1} className="min-h-12 h-12 resize-y" required={it.result !== 'PASS'} value={it.remarks} onChange={e => setItems(items.map((item, itemIndex) => itemIndex === idx ? { ...item, remarks: e.target.value } : item))} />
                 </div>
@@ -309,7 +307,7 @@ export function InspectionsTab({ project }: { project: Project }) {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setChecklistId(null)}>{uiText("Cancel")}</Button>
-              <Button onClick={submit}><ShieldAlert size={14} />{uiText('Submit for review')}</Button>
+              <Button onClick={submit} disabled={uploading}><ShieldAlert size={14} />{uiText('Submit for review')}</Button>
             </DialogFooter>
           </DialogContent>
         )}
