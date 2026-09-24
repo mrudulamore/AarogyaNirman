@@ -40,7 +40,8 @@
     "search": "Global Search",
     "field": "Field App",
     "access": "Manage Access",
-    "portfolioTimeline": "Portfolio Timeline"
+    "portfolioTimeline": "Portfolio Timeline",
+    "proposals": "Project Proposals"
   },
   "sidebar": {
     "govName": "Govt. of Maharashtra",

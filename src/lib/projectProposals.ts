@@ -55,7 +55,7 @@ export function proposalActions(set: SetState, get: () => StoreState): ProposalA
       const previous=id?find(id):undefined;
       if(previous && (previous.createdById!==user.id || !['DRAFT','RETURNED'].includes(previous.status)))throw new Error('Only your draft or returned proposal can be edited.');
       if(!input.name.trim())throw new Error('Enter a proposal name.');
-      if(!['Pune','Satara'].includes(input.district))throw new Error('Choose Pune or Satara for this demo.');
+      if(!MAHARASHTRA_HIERARCHY.find(d=>d.division==='Pune Division')!.districts.some(d=>d.district===input.district))throw new Error('Choose a district in Pune Division.');
       const district = MAHARASHTRA_HIERARCHY.find(d=>d.division==='Pune Division')!.districts.find(d=>d.district===input.district)!;
       if(!district.talukas.includes(input.taluka) || !SCHEMES.includes(input.scheme) || !['District Hospital','Rural Hospital','Sub-District Hospital','Women & Child Hospital','Tribal Area Hospital','Community Health Centre'].includes(input.type)) throw new Error('Select a valid taluka, scheme and hospital type.');
       if(!Number.isFinite(input.estimatedCost)||input.estimatedCost<0||!Number.isInteger(input.bedCount)||input.bedCount<1)throw new Error('Enter valid cost and bed count.');
