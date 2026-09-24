@@ -64,6 +64,11 @@ try {
   })()`);
   await send('Page.navigate',{url:'http://127.0.0.1:4197/dashboard'});
   await until(`!!document.querySelector('[data-request-id="${request.id}"]')`);
+  assert.equal(await evaluate(`document.querySelector('[data-testid=inspection-requests] button[aria-expanded]').getAttribute('aria-expanded')`), 'false');
+  assert.equal(await evaluate(`document.querySelector('[data-request-id="${request.id}"]').getClientRects().length`), 0);
+  await evaluate(`document.querySelector('[data-testid=inspection-requests] button[aria-expanded]').click()`);
+  await until(`document.querySelector('[data-testid=inspection-requests] button[aria-expanded]').getAttribute('aria-expanded') === 'true'`);
+  assert.ok(await evaluate(`document.querySelector('[data-request-id="${request.id}"]').getClientRects().length > 0`));
   assert.ok(await evaluate(`document.querySelector('[data-request-id="${request.id}"]').textContent.includes('${request.requestedBy}')`));
   await evaluate(`Array.from(document.querySelectorAll('[data-request-id="${request.id}"] button')).find(b=>b.textContent==='Review and assign JE').click()`);
   await until(`!!document.querySelector('[role=dialog] form')`);
