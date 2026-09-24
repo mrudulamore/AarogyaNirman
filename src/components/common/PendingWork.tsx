@@ -8,12 +8,14 @@ import { todayDate } from '../../lib/fundDisbursal';
 import { tabsForRole } from '../../lib/projectTabAccess';
 import { Card, CardContent } from '../ui/primitives';
 import { uiText } from '../../i18n/ui';
+import { InspectionDetails } from './InspectionDetails';
 
 export function PendingWorkPage() {
   const s = useStore();
   const [filter, setFilter] = useState('ALL');
   const [project, setProject] = useState('ALL');
   const [limit, setLimit] = useState(20);
+  const [inspectionId, setInspectionId] = useState<string | null>(null);
   const policy = s.escalationPolicy ?? DEFAULT_ESCALATION;
   const tasks = pendingWork(s, todayDate(), policy);
   const tabs = tabsForRole(s.currentUser?.role).map(t => t.value);
@@ -30,7 +32,7 @@ export function PendingWorkPage() {
     <Card><CardContent className="space-y-3 p-4">
     <p className="text-xs text-slate-500">{filtered.length} {uiText('tasks')}</p>
     {!filtered.length && <div className="py-8 text-center"><CheckCircle2 className="mx-auto mb-3 text-emerald-500" size={28} /><p className="text-sm text-slate-500">{uiText(tasks.length ? 'No tasks match these filters.' : 'No pending work for your role.')}</p></div>}
-    {visible.map(task => <Link key={task.id} to={`/projects/${task.projectId}?tab=${tabs.includes(task.tab) ? task.tab : 'overview'}${task.billId ? `&bill=${encodeURIComponent(task.billId)}` : ''}`} className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 text-sm transition-colors hover:border-blue-200 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
+    {visible.map(task => <Link key={task.id} onClick={event => { if (task.tab === 'inspections' && s.inspections.some(i => i.id === task.id && i.status === 'PENDING_REVIEW')) { event.preventDefault(); setInspectionId(task.id); } }} to={`/projects/${task.projectId}?tab=${tabs.includes(task.tab) ? task.tab : 'overview'}${task.billId ? `&bill=${encodeURIComponent(task.billId)}` : ''}`} className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 text-sm transition-colors hover:border-blue-200 hover:bg-blue-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
       <span className="min-w-0 break-words"><span className="font-medium text-slate-700">{task.title}</span><span className="block text-xs text-slate-500">{s.projects.find(p => p.id === task.projectId)?.name} · {task.due}</span></span>
       <span className={daysLate(task.due, todayDate()) ? 'text-red-700' : 'text-slate-500'}>{daysLate(task.due, todayDate()) ? `${daysLate(task.due, todayDate())} ${uiText('days overdue')}` : uiText('Open')}</span>
     </Link>)}
@@ -40,7 +42,7 @@ export function PendingWorkPage() {
       <div className="grid gap-3 sm:grid-cols-3">{(['approvalDays', 'firstDays', 'secondDays'] as const).map((key, index) => <label key={key} className="text-xs">{uiText(['Approval due after (days)', 'First escalation after (days)', 'Second escalation after (days)'][index])}<input className="block min-h-11 w-full rounded border px-2" type="number" min={1} value={policy[key]} onChange={e => { const n = Number(e.target.value); if (Number.isInteger(n) && n > 0) change({ [key]: n }); }} /></label>)}</div>
       {(['firstRole', 'secondRole'] as const).map(key => <label key={key} className="mt-2 block text-xs">{uiText(key === 'firstRole' ? 'First escalation recipient' : 'Second escalation recipient')}<select className="ml-2 min-h-11 rounded border" value={policy[key]} onChange={e => change({ [key]: e.target.value as EscalationPolicy['firstRole'] })}>{['EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'CIVIL_SURGEON', 'REGIONAL_DIRECTOR', 'COMMISSIONER'].map(role => <option key={role} value={role}>{uiText(role)}</option>)}</select></label>)}
     </details>}
-  </CardContent></Card></div>;
+  </CardContent></Card><InspectionDetails inspection={s.inspections.find(i => i.id === inspectionId && i.status === 'PENDING_REVIEW')} onClose={() => setInspectionId(null)} /></div>;
 }
 
 export function PendingWork() {

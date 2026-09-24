@@ -19,9 +19,9 @@ export function pendingWork(s: StoreState, today: string, policy = DEFAULT_ESCAL
   for (const m of s.milestones) if (scope.has(m.projectId) && !['CERTIFIED', 'BILL_ELIGIBLE', 'PAID'].includes(m.status)) result.push({ id: m.id, projectId: m.projectId, title: m.name, due: m.plannedDate, tab: 'milestones', ownerRole: ['NOT_STARTED', 'IN_PROGRESS', 'CORRECTION_REQUIRED'].includes(m.status) ? 'CONTRACTOR' : 'EXECUTIVE_ENGINEER' });
   for (const i of s.inspections) {
     if (!scope.has(i.projectId) || i.status === 'COMPLETED') continue;
-    const ownerRole: Role = i.status === 'PENDING_REVIEW' || !i.assignedToId ? 'EXECUTIVE_ENGINEER' : 'DEPUTY_ENGINEER';
-    if (mine && s.currentUser?.role === 'DEPUTY_ENGINEER' && i.assignedToId !== s.currentUser.id) continue;
-    result.push({ id: i.id, projectId: i.projectId, title: (i.status === 'PENDING_REVIEW' ? 'Review inspection: ' : i.status === 'REVERIFY' ? 'Reverify inspection: ' : 'Inspection: ') + i.category, due: i.scheduledDate, tab: 'inspections', ownerRole });
+    const review = i.status === 'PENDING_REVIEW';
+    if (!review && mine && s.currentUser?.role === 'DEPUTY_ENGINEER' && i.assignedToId !== s.currentUser.id) continue;
+    result.push({ id: i.id, projectId: i.projectId, title: `${review ? 'Review / approve inspection' : i.status === 'REVERIFY' ? 'Reverify inspection' : 'Conduct inspection'}: ${i.category}`, due: i.scheduledDate, tab: 'inspections', ownerRole: review || !i.assignedToId ? 'EXECUTIVE_ENGINEER' : 'DEPUTY_ENGINEER' });
   }
   for (const request of s.inspectionAppointments) if (scope.has(request.projectId) && request.status === 'REQUESTED' && !request.linkedInspectionId) result.push({ id: request.id, projectId: request.projectId, title: 'Inspection request: ' + request.inspectionType, due: request.date, tab: 'inspections', ownerRole: 'EXECUTIVE_ENGINEER' });
   for (const d of s.defects) if (scope.has(d.projectId) && d.status !== 'CLOSED') result.push({ id: d.id, projectId: d.projectId, title: d.description, due: d.dueDate, tab: 'defects', ownerRole: 'CONTRACTOR' });
