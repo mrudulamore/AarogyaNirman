@@ -12,6 +12,7 @@ const Login = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Lo
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const SelectRole = lazy(() => import('./pages/auth/SelectRole').then(m => ({ default: m.SelectRole })));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const ProjectProposals = lazy(() => import('./pages/projects/ProjectProposals').then(m => ({ default: m.ProjectProposals })));
 const ProjectsList = lazy(() => import('./pages/projects/ProjectsList').then(m => ({ default: m.ProjectsList })));
 const ProjectDetail = lazy(() => import('./pages/projects/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
 const ContractorsList = lazy(() => import('./pages/contractors/ContractorsList').then(m => ({ default: m.ContractorsList })));
@@ -76,6 +77,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/pending-work" element={<PendingWorkPage />} />
+          <Route path="/project-proposals" element={<ProjectProposals />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/contractors" element={<ContractorsList />} />

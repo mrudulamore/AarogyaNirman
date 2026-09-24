@@ -40,7 +40,8 @@
     "search": "सर्वसमावेशक शोध",
     "field": "फील्ड अ‍ॅप",
     "access": "प्रवेश व्यवस्थापन",
-    "portfolioTimeline": "पोर्टफोलिओ टाइमलाइन"
+    "portfolioTimeline": "पोर्टफोलिओ टाइमलाइन",
+    "proposals": "??????? ????????"
   },
   "sidebar": {
     "govName": "महाराष्ट्र शासन",
@@ -105,7 +106,9 @@
     "MEDICAL_OFFICER": "वैद्यकीय अधिकारी / प्रभारी",
     "VIGILANCE_AUDIT": "दक्षता व लेखापरीक्षा अधिकारी",
     "IT_ADMIN": "आयटी / सिस्टम प्रशासक",
-    "WORKFORCE": "कामगार"
+    "WORKFORCE": "कामगार",
+    "CHIEF_ENGINEER": "????? ???????",
+    "SUPERINTENDING_ENGINEER": "??????? ???????"
   },
   "status": {
     "ON_TRACK": "योजनेनुसार",

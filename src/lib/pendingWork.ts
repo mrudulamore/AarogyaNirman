@@ -23,6 +23,7 @@ export function pendingWork(s: StoreState, today: string, policy = DEFAULT_ESCAL
     if (mine && s.currentUser?.role === 'DEPUTY_ENGINEER' && i.assignedToId !== s.currentUser.id) continue;
     result.push({ id: i.id, projectId: i.projectId, title: (i.status === 'PENDING_REVIEW' ? 'Review inspection: ' : i.status === 'REVERIFY' ? 'Reverify inspection: ' : 'Inspection: ') + i.category, due: i.scheduledDate, tab: 'inspections', ownerRole });
   }
+  for (const request of s.inspectionAppointments) if (scope.has(request.projectId) && request.status === 'REQUESTED' && !request.linkedInspectionId) result.push({ id: request.id, projectId: request.projectId, title: 'Inspection request: ' + request.inspectionType, due: request.date, tab: 'inspections', ownerRole: 'EXECUTIVE_ENGINEER' });
   for (const d of s.defects) if (scope.has(d.projectId) && d.status !== 'CLOSED') result.push({ id: d.id, projectId: d.projectId, title: d.description, due: d.dueDate, tab: 'defects', ownerRole: 'CONTRACTOR' });
   const billOwners: Record<string, Role> = { DRAFT: 'CONTRACTOR', SUBMITTED: 'DEPUTY_ENGINEER', SITE_VERIFIED: 'EXECUTIVE_ENGINEER', QUALITY_VERIFIED: 'EXECUTIVE_ENGINEER', APPROVED: 'COMMISSIONER' };
   for (const b of outstandingBills(s.bills, s.controlRecords, today, true)) if (scope.has(b.projectId) && billOwners[b.status]) {

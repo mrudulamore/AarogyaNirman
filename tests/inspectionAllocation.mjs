@@ -10,6 +10,14 @@ try {
   const state = () => useStore.getState();
   state().login('DEPUTY_ENGINEER');
   const junior = state().currentUser;
+  const appointmentInput = state().inspectionAppointments.find(a => junior.assignedProjectIds.includes(a.projectId));
+  const appointment = state().requestAppointment({...appointmentInput, requestedBy: 'Old random name', requestedByRole: 'CONTRACTOR', remarks: 'Inspect readiness'});
+  assert.equal(appointment.requestedBy, junior.name);
+  assert.equal(appointment.requestedById, junior.id);
+  state().scheduleAppointment(appointment.id, '2026-10-01', '10:00', 'Old random inspector');
+  const scheduled = state().inspectionAppointments.find(a => a.id === appointment.id);
+  assert.equal(scheduled.assignedInspector, junior.name);
+  assert.equal(scheduled.assignedBy, junior.name);
   const project = computeProjectScope(junior, state().projects, state().contractors).projects[0];
   state().login('EXECUTIVE_ENGINEER', project.executiveEngineerId);
   const ee = state().currentUser;
@@ -42,7 +50,7 @@ try {
   const items = [{id: 'test', requirement: 'Pressure', measurement: '3 bar', standard: '3 bar', result: 'PASS', evidence: '', remarks: ''}];
   useStore.setState({currentUser: other});
   state().startInspection(reinspection.id);
-  state().setInspectionPhotos(reinspection.id, [{mediaKey: 'fresh', dataUrl: 'data:image/png;base64,test', lat: 18, lng: 73, capturedAt: new Date().toISOString()}]);
+  state().setInspectionDocuments(reinspection.id, [{id: 'test-document', category: 'SUPPORTING', name: 'inspection.pdf', mimeType: 'application/pdf', size: 100}]);
   state().submitInspection(reinspection.id, items, 'PASS', 'Verified');
   useStore.setState({currentUser: ee, controlRecords: [...state().controlRecords, {id: 'quality-test', kind: 'QUALITY', status: 'VERIFIED', projectId: project.id, fields: {inspectionId: reinspection.id, result: 'PASS', defectId: 'DEFECT-B'}}]});
   assert.throws(() => state().reviewInspection(reinspection.id, 'APPROVE', ''), /reference this reinspection/);
