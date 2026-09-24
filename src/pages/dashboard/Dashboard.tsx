@@ -1,3 +1,4 @@
+import { ProposalInboxLink } from '../../components/common/ProposalInboxLink';
 import { InspectionRequests } from '../../components/common/InspectionRequests';
 import { selectRecentPhotos } from '../../lib/recentPhotos';
 import { GeoPhoto } from '../../components/common/GeoPhoto';
@@ -302,6 +303,7 @@ export function Dashboard() {
         description={uiText(t('dashboard.subtitle', { name: currentUser?.name }))}
       />
 
+      <ProposalInboxLink />
       <InspectionRequests />
 
       {!isStatewide && (

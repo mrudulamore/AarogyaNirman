@@ -1,3 +1,4 @@
+import { proposalActions, proposalAccounts, type ProposalActions } from '../lib/projectProposals';
 import { withPuneDemo } from '../mock/puneDemo';
 import { reconcileProjects } from '../lib/financeLedger';
 import { isRealSitePhoto } from '../lib/sitePhotoEvidence';
@@ -31,11 +32,12 @@ import type {
 } from '../types';
 
 const seed = withPuneDemo(extendDemoPortfolio(generateMockData()));
+seed.users = proposalAccounts(seed.users);
 seed.photos = seed.photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) }));
 let auditSeq = 0;
 const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toString(36)}`;
 
-export interface StoreState extends ControlActions {
+export interface StoreState extends ControlActions, ProposalActions {
   referencePhotosRestored: boolean;
   customRoles: { id: string; name: string; baseRole: Role }[];
   createCustomRole: (name: string, baseRole: Role) => void;
@@ -206,6 +208,7 @@ export interface StoreState extends ControlActions {
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
+      ...proposalActions(set, get),
       customRoles: [],
       createCustomRole: (name, baseRole) => {
         if (get().currentUser?.role !== 'SUPERADMIN') throw new Error('Only superadmins can create roles.');
@@ -326,20 +329,7 @@ export const useStore = create<StoreState>()(
         }));
       },
 
-      addProject: (p) => {
-        const project: Project = {
-          id: nid('PRJ'), status: 'ON_TRACK', stage: 'ADMIN_SANCTION', reportedProgress: 0, verifiedProgress: 0, physicalProgress: 0, financialProgress: 0,
-          bedCount: 50, sanctionedBudget: 0, tenderAmount: 0, workOrderValue: 0, revisedEstimate: 0,
-          amountReleased: 0, amountSpent: 0, contractorId: '', pmcName: '', executiveEngineerId: '', siteEngineerId: '',
-          startDate: new Date().toISOString().slice(0, 10), originalCompletionDate: new Date().toISOString().slice(0, 10), plannedCompletionDate: new Date().toISOString().slice(0, 10),
-          delayDays: 0, lat: 50, lng: 50, siteLat: 19.5, siteLng: 76.0, description: '', qualityScore: 0, imageSeed: Math.floor(Math.random() * 1000),
-          division: '', district: '', taluka: '', type: 'District Hospital', scheme: 'State Plan', facilityType: 'District / Civil Hospital',
-          projectManagerId: get().currentUser?.id ?? '', ownerDirectorId: get().currentUser?.id ?? '', ...p,
-        } as Project;
-        set((s) => ({ projects: [project, ...s.projects] }));
-        get().logAction(`Created new project`, project.name);
-        return project;
-      },
+      addProject: () => { throw new Error('Create a Ministry proposal and complete all approval stages before creating a project.'); },
       updateProject: (id, patch) => {
         assertProjectAccess(get(), id);
         if (['stage', 'status', 'workOrderValue', 'tenderAmount', 'sanctionedBudget', 'revisedEstimate', 'originalCompletionDate', 'plannedCompletionDate', 'amountSpent', 'amountReleased', 'financialProgress', 'physicalProgress'].some(key => Object.hasOwn(patch, key))) throw new Error('Use verified contract controls for financial, schedule and lifecycle changes.');
@@ -1048,8 +1038,10 @@ export const useStore = create<StoreState>()(
           if (account) merged.currentUser = account.role === 'CONTRACTOR' && firm ? contractorAccount(firm, merged.projects, account) : account;
         }
         const controlRecords = withDemoFinance(merged.projects, seed.projects, merged.controlRecords);
-        const users = [...merged.users, ...current.users.filter(user => user.role === 'SITE_SUPERVISOR' && !merged.users.some(existing => existing.id === user.id))];
+        const users = proposalAccounts([...merged.users, ...current.users.filter(user => user.role === 'SITE_SUPERVISOR' && !merged.users.some(existing => existing.id === user.id))]);
         const photos = saved?.referencePhotosRestored ? merged.photos : [...merged.photos, ...seed.photos.filter(photo => !merged.photos.some(existing => existing.id === photo.id))];
+        for (const role of ['MINISTER', 'COMMISSIONER', 'CHIEF_ENGINEER', 'SUPERINTENDING_ENGINEER', 'EXECUTIVE_ENGINEER', 'SUPERADMIN'] as Role[]) merged.rolePermissions[role] = [...new Set([...(merged.rolePermissions[role] ?? ROLE_NAV[role]), 'proposals'])];
+        merged.rolePermissions.EXECUTIVE_ENGINEER = [...new Set([...merged.rolePermissions.EXECUTIVE_ENGINEER, 'tenders'])];
         return { ...merged, users, referencePhotosRestored: true, photos: photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) })), controlRecords, projects: reconcileProjects(merged.projects, controlRecords) };
       },
       partialize: (state) => {

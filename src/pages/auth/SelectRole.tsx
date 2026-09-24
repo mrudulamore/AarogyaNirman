@@ -12,6 +12,7 @@ import { cn } from '../../lib/utils';
 import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
 const ROLE_ICONS: Record<Role, typeof Building2> = {
+  CHIEF_ENGINEER: Hammer, SUPERINTENDING_ENGINEER: Hammer,
   SITE_SUPERVISOR: HardHat,
   WORKFORCE: HardHat,
   SUPERADMIN: KeyRound, MINISTER: Crown, COMMISSIONER: Landmark, REGIONAL_DIRECTOR: MapPinned, CIVIL_SURGEON: Building2,
@@ -107,7 +108,7 @@ export function SelectRole() {
                   <Icon size={18} />
                 </div>
                 <div className="relative min-w-0">
-                  <p className="text-sm font-semibold text-white">{t(`roles.${role}`)}</p>
+                  <p className="text-sm font-semibold text-white">{t(`roles.${role}`, { defaultValue: ROLE_LABELS[role] })}</p>
                   <p className="mt-0.5 truncate text-[11px] text-navy-300">{uiText(ROLE_DEPARTMENTS[role])}</p>
                 </div>
                 <ArrowRight size={15} className="relative ml-auto mt-1 shrink-0 text-navy-400 opacity-0 transition-opacity group-hover:opacity-100" />

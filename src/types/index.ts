@@ -3,6 +3,8 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'CHIEF_ENGINEER'
+  | 'SUPERINTENDING_ENGINEER'
   | 'SITE_SUPERVISOR'
   | 'WORKFORCE'
   | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
@@ -70,6 +72,7 @@ export type ProjectType =
   | 'Community Health Centre';
 
 export interface Project {
+  proposalId?: string;
   id: string;
   name: string;
   type: ProjectType;
