@@ -105,7 +105,9 @@
     "MEDICAL_OFFICER": "Medical Officer / Facility In-Charge",
     "VIGILANCE_AUDIT": "Vigilance & Audit Officer",
     "IT_ADMIN": "IT / System Administrator",
-    "WORKFORCE": "Workforce"
+    "WORKFORCE": "Workforce",
+    "CHIEF_ENGINEER": "Chief Engineer",
+    "SUPERINTENDING_ENGINEER": "Superintending Engineer"
   },
   "status": {
     "ON_TRACK": "On Track",

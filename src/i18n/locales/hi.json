@@ -105,7 +105,9 @@
     "MEDICAL_OFFICER": "चिकित्सा अधिकारी / प्रभारी",
     "VIGILANCE_AUDIT": "सतर्कता एवं लेखा परीक्षा अधिकारी",
     "IT_ADMIN": "आईटी / सिस्टम प्रशासक",
-    "WORKFORCE": "कार्यबल"
+    "WORKFORCE": "कार्यबल",
+    "CHIEF_ENGINEER": "????? ???????",
+    "SUPERINTENDING_ENGINEER": "??????? ???????"
   },
   "status": {
     "ON_TRACK": "योजनानुसार",

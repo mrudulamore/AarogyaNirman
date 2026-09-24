@@ -72,6 +72,8 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
       // Independent oversight function — spans every division/district by mandate.
       return statewide('Statewide vigilance & audit oversight');
 
+    case 'CHIEF_ENGINEER':
+    case 'SUPERINTENDING_ENGINEER':
     case 'REGIONAL_DIRECTOR': {
       const inDivision = allProjects.filter((p) => p.division === user.division);
       return scoped(inDivision, user.division ? `${user.division}` : 'No division assigned');
