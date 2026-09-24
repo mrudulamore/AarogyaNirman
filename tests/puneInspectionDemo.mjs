@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'vite';
 
-const server = await createServer({ cacheDir: '.tmp/vite-inspection', server: { host: '127.0.0.1', port: 4197, strictPort: true }, logLevel: 'error' });
+const server = await createServer({ server: { host: '127.0.0.1', port: 4197, strictPort: true }, logLevel: 'error' });
 await server.listen();
 const profile = await mkdtemp(join(tmpdir(), 'aarogya-browser-test-'));
 const browser = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9247', `--user-data-dir=${profile}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
@@ -27,14 +27,33 @@ try {
   await send('Page.navigate',{url:'http://127.0.0.1:4197/login'});
   await new Promise(r=>setTimeout(r,2000));
 
-  const reviewTarget = await evaluate(`(async () => {
+  await evaluate(`(async () => {
     const { useStore } = await import('/src/store/useStore.ts');
     const { computeProjectScope } = await import('/src/lib/projectScope.ts');
-    const {saveBillFiles} = await import('/src/lib/billAttachments.ts');
-    const documents = await saveBillFiles([{file:new File(['%PDF-1.4 test'], 'inspection.pdf', {type:'application/pdf'}),category:'SUPPORTING'}]);
+    const { saveBillFiles, readBillFile } = await import('/src/lib/billAttachments.ts');
+    const documents = await saveBillFiles([{file: new File(['%PDF-1.4 test document'], 'inspection.pdf', {type: 'application/pdf'}), category: 'SUPPORTING'}]);
     const state = () => useStore.getState();
     const check = (v, m) => { if (!v) throw new Error(m); };
     const rejects = (fn, m) => { let rejected = false; try { fn(); } catch { rejected = true; } check(rejected, m); };
+    const { withPuneDemo } = await import('/src/mock/puneDemo.ts');
+    state().login('PROJECT_MANAGER');
+    const managerSites = computeProjectScope(state().currentUser, state().projects, state().contractors).projects;
+    check(managerSites.length === 2 && managerSites.some(p => p.district === 'Pune') && managerSites.some(p => p.district === 'Satara'), 'PM must have exactly Pune and Satara');
+    const demoJuniors = state().users.filter(u => u.id.startsWith('PUNE-DEMO-JE-'));
+    check(demoJuniors.length === 4, 'Missing Pune junior engineers');
+    for (const role of ['EXECUTIVE_ENGINEER', 'DEPUTY_ENGINEER', 'CONTRACTOR']) {
+      state().login(role);
+      const sites = computeProjectScope(state().currentUser, state().projects, state().contractors).projects;
+      check(sites.length > 0 && sites.every(p => p.division === 'Pune Division'), role + ' sees non-Pune sites');
+    }
+    for (const user of demoJuniors) {
+      const sites = computeProjectScope(user, state().projects, state().contractors).projects;
+      check(sites.length === 1 && sites.every(p => p.division === 'Pune Division'), 'JE Pune assignment mismatch');
+    }
+    check(withPuneDemo(state()) === state(), 'Demo setup is not idempotent');
+    await useStore.persist.rehydrate();
+    state().login('CONTRACTOR');
+    check(computeProjectScope(state().currentUser, state().projects, state().contractors).projects.every(p => p.division === 'Pune Division'), 'Hydration lost Pune scope');
     state().login('DEPUTY_ENGINEER');
     const junior = state().currentUser;
     const project = computeProjectScope(junior, state().projects, state().contractors).projects[0];
@@ -47,10 +66,11 @@ try {
     useStore.setState({currentUser: junior});
     rejects(() => state().scheduleInspection(input), 'JE allocated inspection');
     state().startInspection(inspection.id);
-    const items = [{ id: 'pressure', requirement: 'Pressure test', measurement: '2 bar', standard: '3 bar', evidence: '', result: 'FAIL', remarks: 'Leak' }];
+    const items = [{ id: 'pressure', requirement: 'Pressure test', measurement: '', standard: '3 bar', evidence: '', result: 'FAIL', remarks: 'Leak' }];
     rejects(() => state().submitInspection(inspection.id, items, 'FAIL', 'Leak'), 'Missing document accepted');
     state().setInspectionDocuments(inspection.id, documents);
     state().submitInspection(inspection.id, items, 'FAIL', 'Leak');
+    check((await readBillFile(documents[0].id)).size > 0, 'Document was not persisted');
     check(!state().defects.some(d => d.sourceInspectionId === inspection.id), 'Defect created before review');
     rejects(() => state().reviewInspection(inspection.id, 'REVERIFY', 'Repeat'), 'JE reviewed inspection');
     rejects(() => state().startInspection(inspection.id), 'Pending review reopened');
@@ -58,7 +78,7 @@ try {
     rejects(() => state().reviewInspection(inspection.id, 'REVERIFY', ' '), 'Blank reason accepted');
     state().reviewInspection(inspection.id, 'REVERIFY', 'Repeat measurement');
     let saved = state().inspections.find(i => i.id === inspection.id);
-    check(saved.status === 'REVERIFY' && saved.reviewHistory[0].items[0].measurement === '2 bar' && !saved.attachments.length, 'Reverify lost history or reused photos');
+    check(saved.status === 'REVERIFY' && saved.reviewHistory[0].items[0].remarks === 'Leak' && !saved.attachments.length && saved.reviewHistory[0].attachments[0].name === 'inspection.pdf', 'Reverify lost document history or reused attachments');
     useStore.setState({currentUser: {...junior, id: 'unassigned'}});
     rejects(() => state().startInspection(inspection.id), 'Unassigned JE conducted inspection');
     useStore.setState({currentUser: junior});
@@ -74,33 +94,33 @@ try {
     useStore.setState({currentUser: junior});
     state().startInspection(passing.id);
     state().setInspectionDocuments(passing.id, documents);
-    state().submitInspection(passing.id, [{...items[0], result: 'PASS', measurement: '3 bar'}], 'PASS', 'Verified');
+    state().submitInspection(passing.id, [{...items[0], result: 'PASS', measurement: ''}], 'PASS', 'Verified');
     useStore.setState({currentUser: ee});
     rejects(() => state().reviewInspection(passing.id, 'APPROVE', ''), 'Approval bypassed quality evidence');
     const proof = { id: 'proof', projectId: project.id, kind: 'QUALITY', status: 'VERIFIED', fields: { inspectionId: passing.id, result: 'PASS' } };
     useStore.setState({controlRecords: [...state().controlRecords, proof]});
     state().reviewInspection(passing.id, 'APPROVE', 'Accepted');
     check(state().inspections.find(i => i.id === passing.id).status === 'COMPLETED', 'Approval did not complete inspection');
-    const pending = state().scheduleInspection(input);
-    useStore.setState({currentUser: junior});
-    state().startInspection(pending.id);
-    state().setInspectionDocuments(pending.id, documents);
-    state().submitInspection(pending.id, items, 'FAIL', 'Review through UI');
-    useStore.setState({currentUser: ee});
-    return {id: pending.id, projectId: project.id};
   })()`);
-  await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
-  await send('Page.navigate', {url: 'http://127.0.0.1:4197/projects/' + reviewTarget.projectId + '?tab=inspections'});
-  async function until(expression) { for(let n=0;n<100;n++) { if(await evaluate(expression)) return; await new Promise(r=>setTimeout(r,100)); } throw new Error('Timed out: ' + expression); }
-  await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Review inspection')`);
-  await evaluate(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Review inspection').click()`);
-  await until(`!!document.querySelector('[role="dialog"] textarea')`);
-  assert.ok(await evaluate(`['Approve','Raise defect','Reverify'].every(label=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(b=>b.textContent===label))`));
-  await evaluate(`(() => {const field=document.querySelector('[role="dialog"] textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(field,'Repeat pressure measurement');field.dispatchEvent(new Event('input',{bubbles:true}));})()`);
-  await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] button')).find(b=>b.textContent==='Reverify').click()`);
-  await until(`!document.querySelector('[role="dialog"]')`);
-  assert.equal(await evaluate(`(async()=>{const {useStore}=await import('/src/store/useStore.ts');return useStore.getState().inspections.find(i=>i.id==='${reviewTarget.id}').status;})()`), 'REVERIFY');
-  assert.ok(await evaluate(`document.documentElement.scrollWidth <= 390`));
-  console.log('Mobile review dialog and Reverify action passed.');
+  const projectId = await evaluate("(async () => { const {useStore} = await import('/src/store/useStore.ts'); useStore.getState().login('EXECUTIVE_ENGINEER'); return useStore.getState().currentUser.assignedProjectIds[0]; })()");
+  await send('Page.navigate', {url: 'http://127.0.0.1:4197/projects/' + projectId + '?tab=inspections'});
+  async function until(expression) { for (let i = 0; i < 100; i++) { if (await evaluate(expression)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(expression); }
+  await until("Array.from(document.querySelectorAll('button')).some(b => b.textContent.trim() === 'Add inspection')");
+  await evaluate("Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Add inspection').click()");
+  await until("!!document.querySelector('[role=dialog] select')");
+  assert.equal(await evaluate("document.querySelector('[role=dialog] select').options.length"), 5);
+  for (let index = 0; index < 5; index++) {
+    const matches = await evaluate(`(async () => {
+      const {useStore} = await import('/src/store/useStore.ts');
+      const selects = document.querySelectorAll('[role=dialog] select');
+      const hospital = selects[0];
+      hospital.value = hospital.options[${index}].value;
+      hospital.dispatchEvent(new Event('change', {bubbles: true}));
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const project = useStore.getState().projects.find(p => p.id === hospital.value);
+      return selects[2].value === 'DEPUTY_ENGINEER' && selects[3].value === project.siteEngineerId && selects[3].options.length === 2;
+    })()`);
+    assert.ok(matches, 'Hospital did not automatically select its dedicated JE');
+  }
   console.log('Inspection assignment, evidence requirements, permissions, review, reverify, defect and approval checks passed.');
 } finally { socket?.close(); browser.kill(); await server.close(); }

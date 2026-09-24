@@ -1,3 +1,4 @@
+import { withPuneDemo } from '../mock/puneDemo';
 import { reconcileProjects } from '../lib/financeLedger';
 import { isRealSitePhoto } from '../lib/sitePhotoEvidence';
 import { canReviewInspection, canManageInspection, inspectionAccounts, inspectionAssignmentRoles } from '../lib/inspectionAccess';
@@ -29,7 +30,7 @@ import type {
   ContractorPoc, QualityFailure, QualityReport, InspectionAppointment,
 } from '../types';
 
-const seed = extendDemoPortfolio(generateMockData());
+const seed = withPuneDemo(extendDemoPortfolio(generateMockData()));
 seed.photos = seed.photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) }));
 let auditSeq = 0;
 const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toString(36)}`;
@@ -132,6 +133,7 @@ export interface StoreState extends ControlActions {
   submitInspection: (id: string, items: Inspection['items'], result: InspectionResult, comments: string) => void;
   startInspection: (id: string) => void;
   reviewInspection: (id: string, decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY', comments: string) => void;
+  setInspectionDocuments: (id: string, attachments: NonNullable<Inspection['attachments']>) => void;
   setInspectionPhotos: (id: string, photos: NonNullable<Inspection['photos']>) => void;
   assignInspection: (id: string, userId: string, reason: string) => void;
   reinspect: (defectId: string) => Inspection;
@@ -577,6 +579,12 @@ export const useStore = create<StoreState>()(
         get().logAction(`Assigned inspection ${id} to ${assignee.name}: ${reason.trim()}`);
         get().pushNotification({ message: `Inspection ${id} assigned to ${assignee.name}.`, type: 'INFO', projectId: inspection.projectId, targetRoles: [assignee.role] });
       },
+      setInspectionDocuments: (id, attachments) => {
+        const insp = assertInspectionOperator(get(), id);
+        if (insp.status !== 'IN_PROGRESS') throw new Error('Start the inspection before attaching documents.');
+        if (attachments.length > 5 || attachments.some(file => file.mimeType !== 'application/pdf' || !file.size || file.size > 5 * 1024 * 1024)) throw new Error('Upload 1 to 5 PDF documents, up to 5 MB each.');
+        set(s => ({ inspections: s.inspections.map(i => i.id === id ? { ...i, attachments } : i) }));
+      },
       setInspectionPhotos: (id, photos) => {
         const insp = assertInspectionOperator(get(), id);
         if (insp.status !== 'IN_PROGRESS') throw new Error('Start the inspection before attaching photos.');
@@ -585,8 +593,8 @@ export const useStore = create<StoreState>()(
       submitInspection: (id, items, result, comments) => {
         const original = assertInspectionOperator(get(), id);
         if (original.status !== 'IN_PROGRESS') throw new Error('Start the inspection before submitting.');
-        if (!items.length || items.some(i => !i.measurement.trim() || i.result === 'NOT_INSPECTED' || (i.result !== 'PASS' && !i.remarks.trim()))) throw new Error('Record every measurement and result, with comments for items that did not pass.');
-        if (!original.photos?.length) throw new Error('Capture site photos before submitting.');
+        if (!items.length || items.some(i => i.result === 'NOT_INSPECTED' || (i.result !== 'PASS' && !i.remarks.trim()))) throw new Error('Record every result, with comments for items that did not pass.');
+        if (!original.attachments?.length) throw new Error('Upload supporting documents before submitting.');
         const computed = items.some(i => i.result === 'FAIL') ? 'FAIL' : items.some(i => i.result === 'CONDITIONAL') ? 'CONDITIONAL' : 'PASS';
         if (result !== computed) throw new Error('Inspection result must match the checklist findings.');
         const score = Math.round(items.filter(i => i.result === 'PASS').length / items.length * 100);
@@ -613,7 +621,7 @@ export const useStore = create<StoreState>()(
           get().createDefect({ projectId: insp.projectId, location: insp.location || 'Inspection site', category: insp.category, severity: 'HIGH', description: comments.trim() + '\n' + insp.items.filter(i => i.result !== 'PASS').map(i => i.requirement + ': ' + i.remarks).join('\n'), imageSeed: 0, reportedBy: actor.name, contractorId: get().projects.find(p => p.id === insp.projectId)?.contractorId ?? '', dueDate: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10), sourceInspectionId: id });
         }
         const date = new Date().toISOString();
-        set(s => ({ inspections: s.inspections.map(i => i.id === id ? { ...i, overallResult: decision === 'RAISE_DEFECT' ? 'FAIL' : i.overallResult, status: decision === 'REVERIFY' ? 'REVERIFY' : 'COMPLETED', completedDate: decision === 'REVERIFY' ? undefined : date.slice(0, 10), reviewHistory: [...(i.reviewHistory ?? []), { decision, reviewer: actor.name, date, comments: comments.trim(), items: i.items.map(item => ({ ...item })), photos: [...(i.photos ?? [])], findings: i.comments }], ...(decision === 'REVERIFY' ? { photos: [], items: [], comments: '', score: 0, overallResult: 'NOT_INSPECTED' as const } : {}) } : i) }));
+        set(s => ({ inspections: s.inspections.map(i => i.id === id ? { ...i, overallResult: decision === 'RAISE_DEFECT' ? 'FAIL' : i.overallResult, status: decision === 'REVERIFY' ? 'REVERIFY' : 'COMPLETED', completedDate: decision === 'REVERIFY' ? undefined : date.slice(0, 10), reviewHistory: [...(i.reviewHistory ?? []), { decision, reviewer: actor.name, date, comments: comments.trim(), items: i.items.map(item => ({ ...item })), photos: [...(i.photos ?? [])], attachments: [...(i.attachments ?? [])], findings: i.comments }], ...(decision === 'REVERIFY' ? { photos: [], attachments: [], items: [], comments: '', score: 0, overallResult: 'NOT_INSPECTED' as const } : {}) } : i) }));
         if (decision === 'APPROVE' && insp.isReinspection) {
           set(s => ({ defects: s.defects.map(d => d.id === insp.sourceDefectId && d.sourceInspectionId === insp.parentInspectionId && d.status === 'REINSPECTION' ? { ...d, status: 'CLOSED', closedDate: date.slice(0, 10) } : d) }));
         }
@@ -1006,7 +1014,12 @@ export const useStore = create<StoreState>()(
           const user = (saved.users ?? current.users).find(u => u.id === saved.currentUser?.id && u.role === saved.currentUser?.role);
           saved.currentUser = user ?? null;
         }
-        const merged = { ...current, ...saved, ...mergeDemoSamples({ ...current, ...saved }, current), currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: (saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR).filter(key => key !== 'workers') }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()) };
+        const merged = withPuneDemo({ ...current, ...saved, ...mergeDemoSamples({ ...current, ...saved }, current), currentUser: saved?.currentUser?.role === 'CONTRACTOR' && !saved.currentUser.contractorId ? null : saved?.currentUser ?? null, rolePermissions: { ...current.rolePermissions, ...saved?.rolePermissions, WORKFORCE: ['dashboard'], CONTRACTOR: (saved?.rolePermissions?.CONTRACTOR ?? current.rolePermissions.CONTRACTOR).filter(key => key !== 'workers') }, fundInstallments: saved?.fundInstallments ?? generateFundInstallments(saved?.projects ?? current.projects, todayDate()), puneDemoVersion: (saved as { puneDemoVersion?: number } | undefined)?.puneDemoVersion });
+        if (merged.currentUser) {
+          const account = merged.users.find(u => u.id === merged.currentUser!.id);
+          const firm = merged.contractors.find(c => c.id === account?.contractorId);
+          if (account) merged.currentUser = account.role === 'CONTRACTOR' && firm ? contractorAccount(firm, merged.projects, account) : account;
+        }
         const controlRecords = withDemoFinance(merged.projects, seed.projects, merged.controlRecords);
         const users = [...merged.users, ...current.users.filter(user => user.role === 'SITE_SUPERVISOR' && !merged.users.some(existing => existing.id === user.id))];
         const photos = saved?.referencePhotosRestored ? merged.photos : [...merged.photos, ...seed.photos.filter(photo => !merged.photos.some(existing => existing.id === photo.id))];

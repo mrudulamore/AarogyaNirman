@@ -42,7 +42,7 @@ try {
   const items = [{id: 'test', requirement: 'Pressure', measurement: '3 bar', standard: '3 bar', result: 'PASS', evidence: '', remarks: ''}];
   useStore.setState({currentUser: other});
   state().startInspection(reinspection.id);
-  state().setInspectionPhotos(reinspection.id, [{mediaKey: 'fresh', dataUrl: 'data:image/png;base64,test', lat: 18, lng: 73, capturedAt: new Date().toISOString()}]);
+  state().setInspectionDocuments(reinspection.id, [{id: 'test-document', category: 'SUPPORTING', name: 'inspection.pdf', mimeType: 'application/pdf', size: 100}]);
   state().submitInspection(reinspection.id, items, 'PASS', 'Verified');
   useStore.setState({currentUser: ee, controlRecords: [...state().controlRecords, {id: 'quality-test', kind: 'QUALITY', status: 'VERIFIED', projectId: project.id, fields: {inspectionId: reinspection.id, result: 'PASS', defectId: 'DEFECT-B'}}]});
   assert.throws(() => state().reviewInspection(reinspection.id, 'APPROVE', ''), /reference this reinspection/);

@@ -1,4 +1,6 @@
 import { BrandLogo } from '../../components/common/BrandLogo';
+import { useState } from 'react';
+import { Dialog, DialogContent } from '../../components/ui/overlays';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -24,10 +26,20 @@ export function SelectRole() {
   const currentUser = useStore((s) => s.currentUser);
   const login = useStore((s) => s.login);
   const logout = useStore((s) => s.logout);
+  const users = useStore((s) => s.users);
+  const projects = useStore((s) => s.projects);
+  const [chooseJunior, setChooseJunior] = useState(false);
+  const puneHospitals = projects.filter(project => project.division === 'Pune Division');
+  const juniors = users.filter(user => user.role === 'DEPUTY_ENGINEER' &&
+    puneHospitals.some(project => project.siteEngineerId === user.id));
   const roles: Role[] = (Object.keys(ROLE_LABELS) as Role[]).filter(role => role !== 'WORKFORCE');
   roles.splice(roles.indexOf('DEPUTY_ENGINEER') + 1, 0, 'WORKFORCE');
 
   function choose(role: Role) {
+    if (role === 'DEPUTY_ENGINEER') {
+      setChooseJunior(true);
+      return;
+    }
     login(role);
     navigate('/dashboard', { replace: true });
   }
@@ -43,6 +55,21 @@ export function SelectRole() {
         }} />
       </div>
 
+      <Dialog open={chooseJunior} onOpenChange={setChooseJunior}>
+        <DialogContent title={uiText('Junior Engineer')} size="sm">
+          <div className="space-y-2">
+            {juniors.map(user => (
+              <button key={user.id} type="button" onClick={() => {
+                login('DEPUTY_ENGINEER', user.id);
+                navigate('/dashboard', { replace: true });
+              }} className="flex min-h-12 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-govblue-500">
+                <span><span className="block text-sm font-medium">{user.name}</span><span className="block text-xs text-slate-500">{uiText('Junior Engineer')} — {uiText(puneHospitals.find(project => project.siteEngineerId === user.id)!.district)}</span></span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="relative mx-auto max-w-5xl">
         <Link to="/" className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-400">
           <ArrowLeft size={20} aria-hidden="true" />

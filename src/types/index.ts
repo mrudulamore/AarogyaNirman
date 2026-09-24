@@ -246,8 +246,9 @@ export interface ChecklistItem {
 
 export interface Inspection {
   sourceDefectId?: string;
+  attachments?: BillAttachment[];
   photos?: { dataUrl: string; mediaKey: string; capturedAt: string; lat: number; lng: number }[];
-  reviewHistory?: { decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY'; reviewer: string; date: string; comments: string; items: ChecklistItem[]; photos: NonNullable<Inspection['photos']>; findings: string }[];
+  reviewHistory?: { decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY'; reviewer: string; date: string; comments: string; items: ChecklistItem[]; photos: NonNullable<Inspection['photos']>; findings: string; attachments?: BillAttachment[] }[];
   assignedToId?: string;
   assignedRole?: Role;
   createdById?: string;
