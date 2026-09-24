@@ -1,7 +1,6 @@
-import { AUTH_ROLE_GROUPS } from '../../lib/authRoleHierarchy';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { AuthLayout } from './AuthLayout';
@@ -41,11 +40,6 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState(false);
-
-  function quickLogin(role: Role, userId?: string) {
-    login(role, userId);
-    navigate('/dashboard', { replace: true });
-  }
 
   function manualSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,23 +81,9 @@ export function Login() {
         <div className="h-px flex-1 bg-slate-200" /> {t('auth.demoAccounts').toUpperCase()} <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
-        {AUTH_ROLE_GROUPS.map(group => <section key={group.key} aria-labelledby={`login-group-${group.key}`} className="space-y-1.5">
-        <h2 id={`login-group-${group.key}`} className="pt-3 pb-1 text-xs font-semibold text-navy-700">{t(`auth.roleGroups.${group.key}`)}</h2>
-        <div className="login-card-grid grid grid-cols-1 gap-1.5">
-        {group.roles.flatMap(role => DEMO_ACCOUNTS.filter(account => account.role === role)).map((a) => (
-          <button
-            key={a.username}
-            onClick={() => quickLogin(a.role, a.userId)}
-            className="flex w-full flex-wrap items-center justify-between gap-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs hover:border-navy-300 hover:bg-navy-50"
-          >
-            <span className="font-medium text-slate-700">{a.name ? `${a.name} — ${t(`roles.${a.role}`)}` : t(`roles.${a.role}`)}</span>
-            <span className="text-[10px] text-slate-400">{a.username}</span>
-          </button>
-        ))}
-        </div>
-        </section>)}
-      </div>
+      <Link to="/select-role" className="flex min-h-11 w-full items-center justify-center rounded-lg border border-navy-300 px-4 py-3 text-sm font-semibold text-navy-700 hover:bg-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-500">
+        {t('auth.selectDemoRole')}
+      </Link>
     </AuthLayout>
   );
 }

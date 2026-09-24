@@ -60,7 +60,7 @@
     "signOut": "Logout"
   },
   "auth": {
-    "unknownLoginId": "Login ID not recognised. Enter one of the demo account IDs shown below.",
+    "unknownLoginId": "Login ID not recognised. Enter a valid login ID or select your role below.",
     "heroTitle": "Hospital Construction Monitoring & Project Management System",
     "heroSubtitle": "End-to-end visibility of public hospital infrastructure — from administrative sanction to operational handover — with transparent progress, evidence-backed quality verification and accountable financial approvals.",
     "heroFooterNote": "Secure government access · Role-based authorization · Full audit trail",
@@ -97,7 +97,8 @@
       "health": "Health Administration",
       "execution": "Site Execution",
       "administration": "Oversight & System Administration"
-    }
+    },
+    "selectDemoRole": "Select demo role"
   },
   "roles": {
     "SITE_SUPERVISOR": "Site Supervisor",
