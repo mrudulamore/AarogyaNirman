@@ -1,3 +1,4 @@
+import { AUTH_ROLE_GROUPS } from '../../lib/authRoleHierarchy';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import { useState } from 'react';
 import { Dialog, DialogContent } from '../../components/ui/overlays';
@@ -26,15 +27,13 @@ export function SelectRole() {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const login = useStore((s) => s.login);
-  const logout = useStore((s) => s.logout);
+
   const users = useStore((s) => s.users);
   const projects = useStore((s) => s.projects);
   const [chooseJunior, setChooseJunior] = useState(false);
   const puneHospitals = projects.filter(project => project.division === 'Pune Division');
   const juniors = users.filter(user => user.role === 'DEPUTY_ENGINEER' &&
     puneHospitals.some(project => project.siteEngineerId === user.id));
-  const roles: Role[] = (Object.keys(ROLE_LABELS) as Role[]).filter(role => role !== 'WORKFORCE');
-  roles.splice(roles.indexOf('DEPUTY_ENGINEER') + 1, 0, 'WORKFORCE');
 
   function choose(role: Role) {
     if (role === 'DEPUTY_ENGINEER') {
@@ -86,12 +85,14 @@ export function SelectRole() {
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             <LanguageSwitcher variant="inline" />
-            <button type="button" onClick={() => { logout(); navigate('/login', { replace: true }); }} className="rounded-md border border-white/30 px-3 py-2 text-xs text-white hover:bg-white/10">{t('header.switchAccount')}</button>
           </div>
         </div>
 
-        <div className="role-card-grid mt-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {roles.map((role) => {
+        <div className="mt-8 space-y-6">
+          {AUTH_ROLE_GROUPS.map(group => <section key={group.key} aria-labelledby={`role-group-${group.key}`}>
+          <h2 id={`role-group-${group.key}`} className="mb-3 text-sm font-semibold text-navy-200">{t(`auth.roleGroups.${group.key}`)}</h2>
+          <div className="role-card-grid grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+          {group.roles.map((role) => {
             const Icon = ROLE_ICONS[role];
             const active = currentUser?.role === role;
             return (
@@ -115,6 +116,7 @@ export function SelectRole() {
               </button>
             );
           })}
+          </div></section>)}
         </div>
       </div>
     </div>
