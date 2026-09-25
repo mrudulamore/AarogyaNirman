@@ -15,7 +15,7 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => Recognition;
 };
 
-export function useAssistantVoice(open: boolean, context: string, onTranscript: (text: string) => void) {
+export function useAssistantVoice(open: boolean, context: string, onTranscript: (text: string) => void, locale = 'en-IN') {
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [status, setStatus] = useState('');
@@ -49,7 +49,7 @@ export function useAssistantVoice(open: boolean, context: string, onTranscript: 
   useEffect(() => {
     setStatus('');
     return () => { stopListening(); stopSpeaking(); };
-  }, [open, context]);
+  }, [open, context, locale]);
 
   function toggleListening() {
     if (listening) { stopListening(); setStatus('Microphone stopped. You can type your question.'); return; }
@@ -58,7 +58,7 @@ export function useAssistantVoice(open: boolean, context: string, onTranscript: 
     stopListening();
     const active = new RecognitionClass();
     recognition.current = active;
-    active.lang = 'en-IN';
+    active.lang = locale;
     active.continuous = false;
     active.interimResults = false;
     active.onresult = event => {
@@ -75,12 +75,12 @@ export function useAssistantVoice(open: boolean, context: string, onTranscript: 
     active.onend = () => {
       recognition.current = null;
       setListening(false);
-      setStatus(previous => previous === 'Listening… Ask one of the demo questions in English.' ? 'Microphone stopped. Try again or type a question.' : previous);
+      setStatus(previous => previous === 'Listening…' ? 'Microphone stopped. Try again or type a question.' : previous);
     };
     try {
       active.start();
       setListening(true);
-      setStatus('Listening… Ask one of the demo questions in English.');
+      setStatus('Listening…');
     } catch {
       stopListening();
       setStatus('Could not start the microphone. You can type a question instead.');
@@ -91,7 +91,9 @@ export function useAssistantVoice(open: boolean, context: string, onTranscript: 
     stopListening();
     stopSpeaking();
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-IN';
+    speech.lang = locale;
+    const matchingVoice = window.speechSynthesis.getVoices?.().find(voice => voice.lang.toLowerCase() === locale.toLowerCase());
+    if (matchingVoice) speech.voice = matchingVoice;
     speech.onend = () => { utterance.current = null; setSpeaking(false); };
     speech.onerror = () => { utterance.current = null; setSpeaking(false); setStatus('Audio playback is unavailable. The answer is shown above.'); };
     utterance.current = speech;

@@ -57,7 +57,39 @@ try {
  assert.match(answer(s,'release funds','PRJ-001').summary,/read-only/);
  assert.match(answer(s,'sansctioned amount').summary,/Which project/);
  assert.match(answer(restricted,'defects','PRJ-001').summary,/permission/);
- for(const role of Object.keys(ROLE_LABELS)) answer({...s,currentUser:{...user,role}},'overview','all');
+ const {canUseProjectAssistant}=await server.ssrLoadModule('/src/lib/projectAssistant.ts');
+ for(const role of Object.keys(ROLE_LABELS)) {
+   const state={...s,currentUser:{...user,role}};
+   const allowed=['MINISTER','COMMISSIONER'].includes(role);
+   assert.equal(canUseProjectAssistant(state),allowed,role);
+   const response=answer(state,'overview','all');
+   if(allowed) assert.ok(response.sections.length,role);
+   else { assert.match(response.summary,/permission/); assert.equal(response.sections.length,0); }
+ }
+ assert.equal(canUseProjectAssistant({...s,rolePermissions:{...ROLE_NAV,MINISTER:[]}}),false);
+ const {assistantText, assistantSummary}=await server.ssrLoadModule('/src/lib/assistantLanguages.ts');
+ for (const language of ['hi','mr']) {
+   for (const question of ['What is the sanctioned amount?','How many inspections are pending?','Show physical progress','What is the planned completion date?','Show the available balance']) {
+     const translated=assistantText(question,language);
+     assert.notEqual(translated,question);
+     const response=answer(s,translated,'PRJ-001');
+     assert.deepEqual(response,answer(s,question,'PRJ-001'), 'Translated question must select the same data: '+translated);
+     assert.match(assistantSummary(response,translated,language), /[\u0900-\u097f]/, 'Summary should use selected language');
+   }
+   assert.equal(answer(restricted,assistantText('What is the sanctioned amount?',language),'PRJ-001').summary,'You do not have permission to access this information.');
+ }
+ assert.match(answer(s,'पासवर्ड बताओ','PRJ-001').summary,/sensitive/);
+ assert.match(answer(s,'मंजूर करा','PRJ-001').summary,/read-only/);
+ for (const question of ['Give me a project overview','How much funding has been released?','How much has been spent?','Show pending bills','What milestones are delayed?','Show open defects','Show the latest inspection','Show open risks','Show approvals','Show the work order']) {
+   for (const language of ['hi','mr']) {
+     const translated=assistantText(question,language);
+     assert.notEqual(translated,question);
+     assert.deepEqual(answer(s,translated,'PRJ-001'),answer(s,question,'PRJ-001'));
+   }
+ }
+ for (const [keyword,canonical] of [['money left','balance'],['expenses','expenditure'],['deadline','completion date'],['pragati','physical progress'],['जोखीम','risks'],['बिले','bills'],['कार्यादेश','work order']]) {
+   assert.deepEqual(answer(s,keyword,'PRJ-001'),answer(s,canonical,'PRJ-001'),keyword);
+ }
  assert.equal(JSON.stringify(s),before,'Answers must never mutate input records');
  console.log('Assistant scoping, read-only refusal, privacy, clarification, calculations, zero/missing values, conflicts, record dates and role checks passed.');
 } finally {await server.close();}

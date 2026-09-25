@@ -43,13 +43,13 @@ try {
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
       speak(value) { spoken = value; }, cancel() { canceled++; }
     }});
-    function Harness({open, context}) {
-      api = useAssistantVoice(open, context, text => { transcript = text; });
+    function Harness({open, context, locale}) {
+      api = useAssistantVoice(open, context, text => { transcript = text; }, locale);
       return null;
     }
     const container = document.createElement('div'); document.body.append(container);
     const root = createRoot(container);
-    const render = async (open = true, context = 'project-a') => { root.render(React.createElement(Harness, {open, context})); await tick(); };
+    const render = async (open = true, context = 'project-a', locale = 'en-IN') => { root.render(React.createElement(Harness, {open, context, locale})); await tick(); };
     await render();
     check(api.canListen && api.canSpeak, 'Voice capabilities missing');
     api.toggleListening(); await tick();
@@ -66,6 +66,13 @@ try {
     check(stale.aborted && stale.onresult === null && !api.listening, 'Context switch left microphone running');
     api.readAnswer('Another answer'); await tick(); await render(false, 'project-b');
     check(!api.speaking && canceled === 2, 'Close left audio playing');
+    for (const locale of ['hi-IN', 'mr-IN']) {
+      await render(true, 'project-b', locale);
+      api.toggleListening(); await tick();
+      check(active.lang === locale, 'Recognition language incorrect');
+      api.readAnswer('नमस्कार'); await tick();
+      check(spoken.lang === locale && !api.listening, 'Spoken answer language incorrect');
+    }
     window.SpeechRecognition = undefined; window.webkitSpeechRecognition = undefined;
     await render(); check(!api.canListen, 'Unsupported browser not detected');
     root.unmount();
