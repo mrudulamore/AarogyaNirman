@@ -33,7 +33,7 @@ export function withPuneDemo<T extends { users: User[]; projects: Project[]; con
   const demoJeIds = [je.id, 'PUNE-DEMO-JE-1', 'PUNE-DEMO-JE-2', 'PUNE-DEMO-JE-3', 'PUNE-DEMO-JE-4'];
   const projects = data.projects.map(p => ({ ...p,
     executiveEngineerId: ids.includes(p.id) ? ee.id : p.executiveEngineerId === ee.id ? otherEe.id : p.executiveEngineerId,
-    siteEngineerId: ids.includes(p.id) ? demoJeIds[ids.indexOf(p.id)] ?? p.siteEngineerId : demoJeIds.includes(p.siteEngineerId) ? otherJe.id : p.siteEngineerId,
+    siteEngineerId: ids.includes(p.id) ? demoJeIds[ids.indexOf(p.id) % demoJeIds.length] : demoJeIds.includes(p.siteEngineerId) ? otherJe.id : p.siteEngineerId,
   }));
   const users = data.users.map(u => u.id === ee.id
     ? { ...u, division: 'Pune Division', department: 'PWD, Pune Division', assignedProjectIds: ids }

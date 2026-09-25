@@ -1,0 +1,29 @@
+.nirman-panel { border-radius: 26px; border: 1px solid #ffffffc9; box-shadow: 0 24px 80px #163b7330, 0 4px 16px #163b7310; }
+.nirman-header { background: linear-gradient(115deg, #3730b9, #136fe5 65%, #08a5d4); position: relative; border-radius: 0 0 42% 8% / 0 0 12px 5px; }
+.nirman-launcher { display: flex; align-items: center; gap: 12px; padding: 9px 16px 9px 9px; border-radius: 22px; color: white; background: linear-gradient(120deg, #3934bd, #087de0); box-shadow: 0 8px 28px #2463cf45; transition: transform .2s; }
+.nirman-launcher:hover { transform: translateY(-3px); }
+.nirman-avatar { position: relative; display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 17px; background: linear-gradient(145deg, #fff, #d5ebff); box-shadow: inset 0 -3px 5px #b4d3f480, 0 4px 10px #123c8b20; }
+.nirman-face { position: relative; width: 31px; height: 25px; border-radius: 10px; background: #183b77; border: 2px solid #7ebcf0; }
+.nirman-antenna { position: absolute; height: 6px; width: 2px; background: #99dfff; top: -4px; }
+.nirman-antenna::before { content: ''; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #66e6e3; top: -3px; left: -2px; }
+.nirman-eyes { display: flex; justify-content: space-between; padding: 6px 5px 0; }
+.nirman-eyes i { width: 5px; height: 6px; background: #9af3ff; border-radius: 5px; box-shadow: 0 0 5px #62d6ff90; }
+.nirman-smile { position: absolute; width: 9px; height: 4px; border-bottom: 2px solid #b9faff; border-radius: 50%; left: 9px; bottom: 4px; }
+.nirman-avatar-large { width: 78px; height: 78px; border-radius: 27px; transform: rotate(-6deg); }
+.nirman-avatar-large .nirman-face { transform: scale(1.55); }
+.nirman-avatar-large .nirman-antenna { height: 10px; top: -6px; }
+.nirman-body { background: radial-gradient(ellipse at 50% 0%, #eaf3ff 0%, #f8faff 45%, #fff 100%); }
+.nirman-orbit { position: relative; display: flex; align-items: center; justify-content: center; width: 112px; height: 106px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle, #e2eaff 55%, #edf3ff 56%, #edf3ff 70%, transparent 71%); }
+.nirman-sparkle { position: absolute; right: 0; top: 10px; color: #588ce6; }
+.nirman-talk { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 24px; background: #eaf2ff; border: 1px solid #cddfff; color: #235cbc; font-size: 13px; font-weight: 600; }
+.nirman-talk:hover { background: #dceaff; }
+.nirman-prompt { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 12px; border: 1px solid #e4ebf5; border-radius: 13px; background: #ffffffd9; color: #425671; text-align: left; font-size: 12px; transition: border-color .2s, background .2s; }
+.nirman-prompt:hover { border-color: #8ebaff; background: #f0f6ff; }
+.nirman-prompt-number { color: #7899c7; font-size: 10px; }
+.nirman-question { background: linear-gradient(120deg, #3263db, #0889dd); border-radius: 18px 18px 5px 18px; }
+.nirman-answer { border: 1px solid #e8edf5; border-radius: 5px 18px 18px; background: #fff; box-shadow: 0 3px 12px #20447705; }
+.nirman-send { background: linear-gradient(130deg, #3938d1, #00a5e5); box-shadow: 0 3px 10px #1c79d530; }
+.nirman-panel button:focus-visible { outline: 2px solid #5ca2ef; outline-offset: 3px; }
+.nirman-avatar-listening { animation: nirman-listen 1.4s ease-in-out infinite; }
+@keyframes nirman-listen { 50% { box-shadow: 0 0 0 9px #53cfff25, 0 0 0 16px #53cfff10; } }
+@media (prefers-reduced-motion: reduce) { .nirman-avatar-listening { animation: none; } .nirman-launcher, .nirman-prompt { transition: none; } }

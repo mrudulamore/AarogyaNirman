@@ -3,6 +3,7 @@ import type { Project } from '../types';
 import { computeProjectScope } from './projectScope';
 import { tabsForRole } from './projectTabAccess';
 import { ledgerTransactions } from './financeLedger';
+import { normalizeAssistantQuestion } from './assistantLanguages';
 
 export type AssistantData = Pick<StoreState, 'currentUser' | 'rolePermissions' | 'projects' | 'contractors' | 'controlRecords' | 'bills' | 'inspections' | 'defects' | 'risks' | 'documents' | 'approvals' | 'milestones' | 'boqItems' | 'progressReports'>;
 export interface AssistantSection { title: string; lines?: string[]; columns?: string[]; rows?: string[][]; }
@@ -16,13 +17,18 @@ const missing = 'Not recorded';
 const denied = 'You do not have permission to access this information.';
 const days = (a: string, b: string) => Math.round((Date.parse(a) - Date.parse(b)) / 86400000);
 
+export function canUseProjectAssistant(s: Pick<AssistantData, 'currentUser' | 'rolePermissions'>): boolean {
+  const role = s.currentUser?.role;
+  return !!role && ['MINISTER', 'COMMISSIONER'].includes(role) && (s.rolePermissions[role] ?? []).includes('projects');
+}
+
 /** Pure query function: no store actions, networking, credentials or mutation. */
 export function answerProjectQuestion(s: AssistantData, question: string, selectedId = '', today = new Date().toISOString().slice(0, 10)): AssistantAnswer {
   const result: AssistantAnswer = { summary: '', sections: [], asOf: 'Not recorded for these values', sources: [] };
   const reply = (summary: string) => ({ ...result, summary });
   const user = s.currentUser;
-  if (!user || user.role === 'WORKFORCE' || !(s.rolePermissions[user.role] ?? []).includes('projects')) return reply(denied);
-  const q = question.toLowerCase().trim()
+  if (!user || !canUseProjectAssistant(s)) return reply(denied);
+  const q = normalizeAssistantQuestion(question).toLowerCase().trim()
     .replace(/\b(sansctioned|sanctoined|sanctiond)\b/g, 'sanctioned')
     .replace(/\b(relesed|realeased)\s+(amount|funds)\b/g, 'released $2')
     .replace(/\b(balence|balnce)\b/g, 'balance')
