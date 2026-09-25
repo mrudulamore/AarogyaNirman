@@ -1,28 +1,19 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bot, Maximize2, Minimize2, MessageCircle, Send, X } from 'lucide-react';
+import { Bot, Maximize2, Minimize2, MessageCircle, Mic, Send, Square, Volume2, X } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { answerProjectQuestion, type AssistantAnswer } from '../../lib/projectAssistant';
 import { todayDate } from '../../lib/fundDisbursal';
+import { useAssistantVoice } from '../../lib/useAssistantVoice';
 
 const SUGGESTIONS = [
   { label: 'Sanctioned amount', question: 'What is the sanctioned amount?' },
-  { label: 'Overview', question: 'Give me a project overview' },
-  { label: 'Finance', question: 'Show me the financial position' },
   { label: 'Inspections', question: 'How many inspections are pending?' },
   { label: 'Progress', question: 'Show physical progress' },
   { label: 'Completion date', question: 'What is the planned completion date?' },
-  { label: 'Delayed milestones', question: 'What milestones are delayed?' },
-  { label: 'Pending bills', question: 'Show pending bills' },
   { label: 'Funds available', question: 'Show the available balance' },
-  { label: 'Open defects', question: 'Show open defects' },
-  { label: 'Latest inspection', question: 'Show the latest inspection' },
-  { label: 'Open risks', question: 'Show open risks' },
-  { label: 'Approvals', question: 'Show approvals' },
-  { label: 'Technical sanction', question: 'Show the Technical Sanction' },
-  { label: 'Work order', question: 'Show the work order' },
 ];
 function answerPreview(answer: AssistantAnswer): string[] {
   if (answer.directAnswer) return [];
@@ -55,6 +46,7 @@ function AssistantPanel({ initial }: { initial: string }) {
   const [selection, setSelection] = useState(initial);
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<{ question: string; answer: AssistantAnswer }[]>([]);
+  const voice = useAssistantVoice(open, selection, setQuestion);
   const conversation = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const panel = conversation.current;
@@ -62,6 +54,8 @@ function AssistantPanel({ initial }: { initial: string }) {
   }, [messages, open]);
   function ask(value: string) {
     if (!value.trim()) return;
+    voice.stopListening();
+    voice.stopSpeaking();
     const answer = answerProjectQuestion(useStore.getState(), value, selection, todayDate());
     setMessages(previous => [...previous.slice(-9), { question: value, answer }]);
     setQuestion('');
@@ -96,12 +90,13 @@ function AssistantPanel({ initial }: { initial: string }) {
           {!messages.length && <div className="pt-6">
             <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-govblue-100 bg-govblue-50 text-govblue-800"><Bot size={24} aria-hidden="true" /></span>
             <p className="text-base font-semibold text-slate-800">How can I help?</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500">Choose a project and ask a question, or try a topic below.</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">Choose a project, then type, speak, or select a demo question below.</p>
           </div>}
           {messages.map((message, index) => <article key={index} className="space-y-3 text-sm">
             <div className="flex justify-end"><p className="max-w-[90%] whitespace-pre-wrap break-words rounded-2xl rounded-br-sm bg-govblue-800 px-3 py-2.5 text-white">{message.question}</p></div>
             <div className="space-y-3 rounded-2xl rounded-bl-sm border border-slate-200/80 bg-white p-3 leading-relaxed text-slate-700">
               <p className="font-medium text-slate-900">{message.answer.summary}</p>
+              {voice.canSpeak && <button type="button" onClick={() => voice.readAnswer([message.answer.summary, ...answerPreview(message.answer), ...(message.answer.sections.find(section => section.title === 'At a glance')?.lines ?? [])].join('. '))} className="inline-flex min-h-9 items-center gap-2 text-xs font-medium text-govblue-700"><Volume2 size={15} />Read answer aloud</button>}
               {answerPreview(message.answer).map((line, n) => <p key={n}>{line}</p>)}
               {message.answer.sections.filter(s => s.title === 'At a glance' || s.title === 'Record inconsistencies').map((section, n) => <div key={n} className={section.title === 'Record inconsistencies' ? 'rounded-lg bg-amber-50 p-2 text-xs text-amber-900' : 'space-y-1'}>{section.lines?.map((line, k) => <p key={k}>{line}</p>)}</div>)}
               {message.answer.sections.some(s => s.title !== 'At a glance' && s.title !== 'Record inconsistencies' && s.title !== 'Calculation sources') && <details className="group">
@@ -116,11 +111,15 @@ function AssistantPanel({ initial }: { initial: string }) {
           </article>)}
         </div>
         <div className="shrink-0 border-t border-slate-100 bg-white p-3">
-          <div aria-label="Suggested questions" className="mb-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto overscroll-contain">{SUGGESTIONS.map(item => <button key={item.label} type="button" title={item.question} onClick={() => ask(item.question)} className="min-h-9 shrink-0 rounded-full border border-slate-200 px-3 text-xs text-slate-600 transition-colors hover:border-govblue-200 hover:bg-govblue-50 hover:text-govblue-800">{item.label}</button>)}</div>
+          <p className="mb-2 text-xs font-semibold text-slate-600">Try a demo question</p>
+          <div aria-label="Suggested questions" className="mb-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto overscroll-contain">{SUGGESTIONS.map(item => <button key={item.label} type="button" onClick={() => ask(item.question)} className="min-h-9 rounded-xl border border-slate-200 px-3 text-left text-xs text-slate-600 transition-colors hover:border-govblue-200 hover:bg-govblue-50 hover:text-govblue-800">{item.question}</button>)}</div>
           <form onSubmit={event => { event.preventDefault(); ask(question); }} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 focus-within:border-govblue-400 focus-within:ring-2 focus-within:ring-govblue-100">
             <input aria-label="Ask a project question" maxLength={600} value={question} onChange={event => setQuestion(event.target.value)} placeholder="Ask about your project..." className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
+            {voice.canListen && <button type="button" onClick={voice.toggleListening} aria-label={voice.listening ? 'Stop microphone' : 'Ask with microphone'} aria-pressed={voice.listening} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${voice.listening ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-700'}`}>{voice.listening ? <Square size={17} /> : <Mic size={17} />}</button>}
             <button type="submit" disabled={!question.trim()} aria-label="Send question" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-govblue-800 text-white hover:bg-govblue-900 disabled:cursor-not-allowed disabled:opacity-40"><Send size={17} aria-hidden="true" /></button>
           </form>
+          <p role="status" className="mt-2 text-[11px] text-slate-500">{voice.status || (voice.canListen ? 'Voice: English. Your browser may send audio to its speech service.' : 'Voice input is not supported in this browser. Type or select a demo question.')}</p>
+          {voice.speaking && <button type="button" onClick={voice.stopSpeaking} className="mt-1 inline-flex min-h-9 items-center gap-2 text-xs text-govblue-700"><Square size={14} />Stop reading</button>}
           <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-slate-400"><span>Local records only · Read-only</span>{!!messages.length && <button type="button" onClick={() => setMessages([])} className="py-1 text-slate-500 hover:text-govblue-800">Clear chat</button>}</div>
         </div>
       </Dialog.Content>
