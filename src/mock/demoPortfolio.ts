@@ -1,11 +1,12 @@
 import hospitalReferences from './hospitalReferences.json';
 
 const PUNE_DEMO_HOSPITALS = [
-  'Demo Rural Hospital — Baramati', 'Demo Sub-District Hospital — Indapur',
-  'Demo Women & Child Hospital — Shirur', 'Demo Rural Hospital — Junnar',
-  'Demo Community Health Centre — Bhor', 'Demo Rural Hospital — Wai',
-  'Demo Sub-District Hospital — Karad', 'Demo Women & Child Hospital — Miraj',
-  'Demo Rural Hospital — Pandharpur', 'Demo Community Health Centre — Ichalkaranji',
+  'Rural Hospital — Baramati', 'Sub-District Hospital — Indapur',
+  'Women & Child Hospital — Shirur', 'Rural Hospital — Junnar',
+  'Community Health Centre — Bhor', 'Rural Hospital — Wai',
+  'Sub-District Hospital — Karad', 'Women & Child Hospital — Miraj',
+  'Rural Hospital — Pandharpur', 'Community Health Centre — Ichalkaranji',
+  'Rural Hospital — Daund', 'Sub-District Hospital — Phaltan',
 ];
 
 /** Real facility names with explicitly illustrative project records. IDs stay stable. */
@@ -43,7 +44,10 @@ export function mergeDemoSamples<T extends { projects: any[] }>(saved: T, seed: 
   const renamed = new Map<string, string>();
   result.projects = saved.projects.map((project: any) => {
     const reference = seed.projects.find((p: any) => p.id === project.id);
-    if (!reference || !/^Demo Hospital (21|22|23|24) /.test(project.name) || !project.id.startsWith('DEMO24-PRJ-')) return project;
+    if (!reference || !project.id.startsWith('DEMO24-PRJ-')) return project;
+    const legacyName = /^Demo Hospital (21|22|23|24) /.test(project.name);
+    const prefixedName = project.name === `Demo ${reference.name}`;
+    if (!legacyName && !prefixedName) return project;
     renamed.set(project.name, reference.name);
     return { ...project, name: reference.name, description: reference.description };
   });
