@@ -103,16 +103,16 @@ body {
   background: radial-gradient(ellipse at 0% 0%, #234f92, transparent 65%), #142b50;
   border-color: #345382;
 }
-.app-sidebar .sidebar-brand { padding-block: 1.5rem; border-color: #ffffff15; }
+.app-sidebar .sidebar-brand { padding-block: 1rem; border-color: #ffffff15; }
 .sidebar-brand > div:first-child { background: #c4e4ff; color: #183c72; border-radius: 14px; }
 .sidebar-brand > div:first-child svg { color: #183c72; }
-.app-sidebar nav { padding-top: 1.25rem; }
-.app-sidebar nav a { color: #c6d8f1; padding-block: .8rem; border-radius: 12px; }
+.app-sidebar nav { padding-block: .75rem; scrollbar-gutter: stable; }
+.app-sidebar nav a { color: #c6d8f1; padding-block: .625rem; border-radius: 12px; }
 .app-sidebar nav a:hover { background: #ffffff0d; color: white; }
 .app-sidebar nav a[aria-current="page"] { background: #c4e4ff; color: #183c72; box-shadow: 0 5px 18px #00000015; }
 .app-sidebar nav a[aria-current="page"] > svg { stroke-width: 2.2; }
 .app-sidebar .text-navy-300, .app-sidebar .text-navy-200 { color: #c6d8f1; }
-.app-sidebar > div:last-child { border-color: #ffffff15; padding-block: 1.25rem; }
+.app-sidebar .sidebar-account { border-color: #ffffff15; padding-block: .75rem; }
 .page-heading {
   position: relative; isolation: isolate; overflow: hidden;
   padding: 2rem; border: 1px solid #ffffff20; border-radius: 24px;
@@ -178,7 +178,7 @@ body {
 .auth-form-area > div { background: rgba(255, 255, 255, .92); border-radius: 28px; padding-block: 2.5rem; border-color: #dce7f5; box-shadow: 0 24px 70px -35px #234e8645; }
 .auth-form-area h2 { color: #193f79; font-size: 2rem; letter-spacing: -.04em; }
 @media (min-width: 1024px) {
-  .app-sidebar { margin: .75rem 0 .75rem .75rem; border-radius: 22px; border: 0; width: 248px; box-shadow: 0 10px 30px -15px #20478166; }
+  .app-sidebar { width: 260px; }
   .app-header { margin: .75rem .75rem 0; border-radius: 18px; border: 1px solid var(--workspace-line); }
 }
 @media (max-width: 639px) {

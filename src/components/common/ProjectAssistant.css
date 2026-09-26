@@ -1,7 +1,8 @@
 .nirman-panel { border-radius: 26px; border: 1px solid #ffffffc9; box-shadow: 0 24px 80px #163b7330, 0 4px 16px #163b7310; }
 .nirman-header { background: linear-gradient(115deg, #3730b9, #136fe5 65%, #08a5d4); position: relative; border-radius: 0 0 42% 8% / 0 0 12px 5px; }
 .nirman-launcher { display: flex; align-items: center; gap: 12px; padding: 9px 16px 9px 9px; border-radius: 22px; color: white; background: linear-gradient(120deg, #3934bd, #087de0); box-shadow: 0 8px 28px #2463cf45; transition: transform .2s; }
-.nirman-launcher:hover { transform: translateY(-3px); }
+.nirman-launcher, .nirman-header[data-movable="true"] { touch-action: none; user-select: none; cursor: grab; }
+.nirman-launcher:active, .nirman-header[data-movable="true"]:active { cursor: grabbing; }
 .nirman-avatar { position: relative; display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 17px; background: linear-gradient(145deg, #fff, #d5ebff); box-shadow: inset 0 -3px 5px #b4d3f480, 0 4px 10px #123c8b20; }
 .nirman-face { position: relative; width: 31px; height: 25px; border-radius: 10px; background: #183b77; border: 2px solid #7ebcf0; }
 .nirman-antenna { position: absolute; height: 6px; width: 2px; background: #99dfff; top: -4px; }
