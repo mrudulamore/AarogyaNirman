@@ -26,18 +26,18 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
     <>
       {mobileOpen && <div className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside className={cn(
-        'app-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-navy-800 bg-navy-900 text-slate-200 transition-transform lg:static lg:translate-x-0',
+        'app-sidebar fixed inset-y-0 left-0 z-50 flex min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-navy-800 bg-navy-900 text-slate-200 transition-transform lg:static lg:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
-        <div className="sidebar-brand flex items-center gap-2.5 border-b border-navy-800/70 px-5 py-4">
+        <div className="sidebar-brand flex shrink-0 items-center gap-2.5 border-b border-navy-800/70 px-4 py-4">
           <BrandLogo className="h-14 w-14" />
-          <div className="leading-tight">
+          <div className="min-w-0 leading-tight">
             <p className="text-[13px] font-semibold text-white">{t('sidebar.govName')}</p>
             <p className="text-[11px] text-navy-200">{t('sidebar.govTagline')}</p>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
           {keys.map((key) => {
             const item = NAV_ITEMS[key];
             const count = COUNTED_KEYS.has(key) ? counts[key] : undefined;
@@ -65,7 +65,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
         </nav>
 
         {currentUser && (
-          <div className="border-t border-navy-800/70 px-4 py-3">
+          <div className="sidebar-account shrink-0 border-t border-navy-800/70 px-4 py-3">
             <p className="text-[11px] text-navy-300">{t('sidebar.signedInAs')}</p>
             <p className="truncate text-xs font-medium text-white">{t(`roles.${currentUser.role}`)}</p>
             <p className="mt-1.5 flex items-center gap-1 truncate text-[10.5px] text-navy-300">

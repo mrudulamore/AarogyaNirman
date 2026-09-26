@@ -10,6 +10,7 @@ import { useAssistantVoice } from '../../lib/useAssistantVoice';
 import './ProjectAssistant.css';
 import { assistantText, assistantSummary, assistantLocales, type AssistantLanguage } from '../../lib/assistantLanguages';
 import i18n from '../../i18n';
+import { useFloatingDrag } from '../../lib/useFloatingDrag';
 
 function BotAvatar({ large = false, listening = false }: { large?: boolean; listening?: boolean }) {
   return <span aria-hidden="true" className={`nirman-avatar ${large ? 'nirman-avatar-large' : ''} ${listening ? 'nirman-avatar-listening' : ''}`}>
@@ -62,6 +63,8 @@ function AssistantPanel({ initial }: { initial: string }) {
   const { projects } = useProjectScope();
   const [open, setOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
+  const launcherDrag = useFloatingDrag();
+  const panelDrag = useFloatingDrag(open && !maximized);
   const [selection, setSelection] = useState(initial);
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<{ question: string; answer: AssistantAnswer }[]>([]);
@@ -83,14 +86,14 @@ function AssistantPanel({ initial }: { initial: string }) {
   }
   return <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
     <Dialog.Trigger asChild>
-      <button type="button" aria-label="Open AI Assistant" title="Ask Nirman" className="nirman-launcher fixed right-4 z-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}>
+      <button type="button" aria-label="Open AI Assistant" title="Drag to move; click to ask Nirman. Arrow keys move when focused." ref={node => { launcherDrag.ref.current = node; }} {...launcherDrag.handlers} className="nirman-launcher fixed right-4 z-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))', ...launcherDrag.style }}>
         <BotAvatar /><span className="hidden sm:block text-left"><span className="block text-[10px] font-medium text-blue-100">{t("YOUR PROJECT GUIDE")}</span><span className="text-sm font-semibold">{t("Ask Nirman")}</span></span><Sparkles size={16} aria-hidden="true" />
       </button>
     </Dialog.Trigger>
     <Dialog.Portal>
       {open && <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-40 bg-slate-900/5 backdrop-blur-[3px]" />}
-      <Dialog.Content lang={language} onInteractOutside={event => event.preventDefault()} className={`nirman-panel fixed z-50 flex flex-col overflow-hidden bg-white focus:outline-none ${maximized ? 'left-1/2 top-1/2 h-[780px] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2' : 'bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-3 h-[690px] max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom,0px))] w-[calc(100vw-1.5rem)] sm:w-[420px]'}`}>
-        <header className="nirman-header flex shrink-0 items-center gap-3 px-5 py-4 text-white">
+      <Dialog.Content ref={node => { panelDrag.ref.current = node; }} style={panelDrag.style} lang={language} onInteractOutside={event => event.preventDefault()} className={`nirman-panel fixed z-50 flex flex-col overflow-hidden bg-white focus:outline-none ${maximized ? 'left-1/2 top-1/2 h-[780px] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2' : 'bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-3 h-[690px] max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom,0px))] w-[calc(100vw-1.5rem)] sm:w-[420px]'}`}>
+        <header {...panelDrag.handlers} tabIndex={maximized ? undefined : 0} aria-label="Move assistant with arrow keys or drag this header" title={maximized ? undefined : "Drag to move"} data-movable={!maximized} className="nirman-header flex shrink-0 items-center gap-3 px-5 py-4 text-white">
           <BotAvatar listening={voice.listening} />
           <div className="flex-1">
             <Dialog.Title className="text-lg font-semibold tracking-tight">Nirman <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 align-middle text-[10px] font-medium tracking-wide">{t("AI GUIDE")}</span></Dialog.Title>
