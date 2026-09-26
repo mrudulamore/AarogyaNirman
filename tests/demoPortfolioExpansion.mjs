@@ -7,13 +7,15 @@ try {
  const {withPuneDemo}=await server.ssrLoadModule('/src/mock/puneDemo.ts');
  const {computeProjectScope}=await server.ssrLoadModule('/src/lib/projectScope.ts');
  const seed=withPuneDemo(extendDemoPortfolio(generateMockData()));
+ assert.equal(seed.projects.length,36);
+ assert.ok(seed.projects.every(p=>!/^Demo\b/.test(p.name)));
  const ee=seed.users.find(u=>u.role==='EXECUTIVE_ENGINEER');
  const scope=computeProjectScope(ee,seed.projects,seed.contractors);
  assert.ok(scope.projects.length>=15);
  assert.ok(scope.projects.every(p=>p.division==='Pune Division'));
  assert.equal(new Set(seed.projects.map(p=>p.id)).size,seed.projects.length);
- const added=seed.projects.filter(p=>/^DEMO24-PRJ-(2[5-9]|3[0-4])$/.test(p.id));
- assert.equal(added.length,10);
+ const added=seed.projects.filter(p=>/^DEMO24-PRJ-(2[5-9]|3[0-6])$/.test(p.id));
+ assert.equal(added.length,12);
  for(const p of added) {
    assert.ok(seed.milestones.some(m=>m.projectId===p.id));
    assert.ok(seed.users.some(u=>u.id===p.siteEngineerId));
@@ -23,5 +25,11 @@ try {
  assert.equal(merged.projects[0].name,'User edited name');
  assert.equal(merged.projects.length,seed.projects.length);
  assert.equal(mergeDemoSamples(merged,seed).projects.length,seed.projects.length);
- console.log('15-project Pune portfolio, linked records, unique IDs and non-destructive hydration checks passed.');
+ const old={...seed,projects:seed.projects.filter(p=>!['DEMO24-PRJ-35','DEMO24-PRJ-36'].includes(p.id)).map(p=>p.id==='DEMO24-PRJ-25'?{...p,name:`Demo ${p.name}`,physicalProgress:77}:p.id==='DEMO24-PRJ-26'?{...p,name:'Custom hospital name'}:p)};
+ const migrated=mergeDemoSamples(old,seed);
+ assert.equal(migrated.projects.length,36);
+ assert.equal(migrated.projects.find(p=>p.id==='DEMO24-PRJ-25').name,seed.projects.find(p=>p.id==='DEMO24-PRJ-25').name);
+ assert.equal(migrated.projects.find(p=>p.id==='DEMO24-PRJ-25').physicalProgress,77);
+ assert.equal(migrated.projects.find(p=>p.id==='DEMO24-PRJ-26').name,'Custom hospital name');
+ console.log('36-hospital portfolio, name migration, linked records, unique IDs and non-destructive hydration checks passed.');
 } finally {await server.close();}
