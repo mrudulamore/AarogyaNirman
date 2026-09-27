@@ -4,10 +4,10 @@ import { formatDateTime } from '../../lib/utils';
 import { uiText } from '../../i18n/ui';
 
 /** Seed coordinates remain visible without presenting them as a device GPS fix. */
-export function DemoPhotoDetails({ photo, project }: { photo: SitePhoto; project: Project }) {
+export function DemoPhotoDetails({ photo, project, compact = false }: { photo: SitePhoto; project: Project; compact?: boolean }) {
   const assessment = assessProjectGeoFence(photo, project);
   return <div className="mt-3 space-y-2 rounded-md bg-slate-50 p-3 text-xs">
-    <div className="grid grid-cols-2 gap-3">
+    <div className={compact ? 'grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3' : 'grid grid-cols-2 gap-3'}>
       <div><p className="text-slate-500">{uiText('Location')}</p><p>{photo.location}</p></div>
       <div><p className="text-slate-500">{uiText('Captured')}</p><p>{formatDateTime(photo.capturedAt)}</p></div>
       <div><p className="text-slate-500">{uiText('Coordinates')}</p><p>Lat {photo.lat.toFixed(6)}, Long {photo.lng.toFixed(6)}</p></div>

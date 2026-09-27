@@ -5,12 +5,12 @@ import { ROLE_LABELS } from '../../../../lib/constants';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, MapPin, ShieldAlert, ShieldCheck } from 'lucide-react';
 import type { Project, SitePhoto } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardHeader, CardTitle, StatusBadge, EmptyState, Button } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { Dialog, DialogContent } from '../../../../components/ui/overlays';
+import { Dialog, DialogContent, DialogClose } from '../../../../components/ui/overlays';
 import { GeoPhoto } from '../../../../components/common/GeoPhoto';
 import { EvidenceIntegrity } from '../../../../components/common/EvidenceIntegrity';
 import { photoSrc, formatDateTime } from '../../../../lib/utils';
@@ -77,7 +77,11 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
 
       {filtered.length === 0 ? <EmptyState icon={<MapPin size={32} />} title={uiText("No field evidence matches this filter")} description={uiText('Capture a site photo to record its GPS coordinates and capture time.')} action={<Button onClick={() => navigate(`/projects/${project.id}?tab=photos`)}>{uiText('Capture Photo')}</Button>} /> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {filtered.map(({ photo, distanceM, within, status }, index) => <button key={photo.id} onClick={() => setViewerId(photo.id)} className="evidence-card overflow-hidden rounded-3xl border border-blue-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-          <p className="px-5 py-3 text-sm font-semibold text-blue-800">{uiText("Photo")} {index + 1} / {filtered.length}</p><GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} gpsAccuracyM={photo.gpsAccuracyM} locationSource={photo.locationSource} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-64 rounded-none" />
+          <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-blue-800">
+            <span className="min-w-0 break-words">{uiText(photo.stage)}</span>
+            <span className="ml-auto shrink-0 text-right">{uiText("Photo")} {index + 1} / {filtered.length}</span>
+          </div>
+          <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} gpsAccuracyM={photo.gpsAccuracyM} locationSource={photo.locationSource} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="aspect-square w-full [&>img]:absolute [&>img]:inset-0 rounded-none" />
           {photo.isReference ? <div className="p-5"><DemoPhotoDetails photo={photo} project={project} /></div> : <div className="space-y-3 p-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-slate-900">{uiText(photo.stage)}</h3><StatusBadge status={photo.locationSource === 'MANUAL' || status === 'UNCERTAIN' ? 'PENDING' : within ? 'APPROVED' : 'REJECTED'} label={uiText(photo.locationSource === 'MANUAL' ? 'Location unverified' : status === 'UNCERTAIN' ? 'Location uncertain' : within ? 'Within site boundary' : 'Outside site boundary')} /></div>
           <StatusBadge status={photo.review?.status ?? 'PENDING'} label={uiText(photo.review?.status === 'APPROVED' ? 'Approved by reviewer' : photo.review?.status === 'REJECTED' ? 'Rejected by reviewer' : 'Awaiting review')} /><p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{photo.description}</p>
           <div className="grid grid-cols-2 gap-3 rounded-xl bg-blue-50/70 p-3 text-xs"><div><p className="text-slate-500">{uiText('Location source')}</p><p className="mt-1 font-medium text-slate-800">{uiText(photo.locationSource === 'CAPTURED' ? 'Device GPS' : 'Manual entry')}</p></div><div><p className="text-slate-500">{uiText('Distance from site')}</p><p className="mt-1 font-medium text-slate-800">{distanceM} m</p></div></div>
@@ -87,8 +91,12 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
 
       <Dialog open={!!viewerId} onOpenChange={(v) => !v && setViewerId(null)}>
         {viewerPhoto && (
-          <DialogContent title={uiMessage("{{0}} — Field Evidence", [viewerPhoto.stage])} description={uiText(formatDateTime(viewerPhoto.capturedAt))} size="xl">
-            <div className="mb-3 flex items-center justify-between gap-2"><Button variant="outline" disabled={viewerIndex <= 0} onClick={() => setViewerId(filtered[viewerIndex-1].photo.id)}>{uiText("Previous photo")}</Button><span className="text-sm font-semibold">{viewerIndex+1} / {filtered.length}</span><Button variant="outline" disabled={viewerIndex < 0 || viewerIndex >= filtered.length-1} onClick={() => setViewerId(filtered[viewerIndex+1].photo.id)}>{uiText("Next photo")}</Button></div>
+          <DialogContent card title={uiMessage("{{0}} — Field Evidence", [viewerPhoto.stage])} description={uiText(formatDateTime(viewerPhoto.capturedAt))} className="max-h-[94dvh] w-[min(calc(100vw-1.5rem),max(280px,calc(94dvh-260px)))] max-w-[500px] rounded-3xl border border-blue-300">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-blue-800">
+              <span>{uiText(viewerPhoto.stage)}</span>
+              <span className="shrink-0">{uiText('Photo')} {viewerIndex + 1} / {filtered.length}</span>
+            </div>
+            <div className="relative">
             <GeoPhoto
               src={photoSrc(viewerPhoto)}
               mediaKey={viewerPhoto.mediaKey} gpsAccuracyM={viewerPhoto.gpsAccuracyM} locationSource={viewerPhoto.locationSource}
@@ -96,10 +104,15 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
               lng={viewerPhoto.lng}
               timestamp={viewerPhoto.capturedAt}
               location={viewerPhoto.location}
-              className="w-full bg-slate-950" imgClassName="h-[55vh] !object-contain"
+              className="aspect-square w-full rounded-none" imgClassName="absolute inset-0 h-full w-full object-cover"
             />
+              <DialogClose aria-label={uiText('Close')} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow"><X size={16} /></DialogClose>
+              {viewerIndex > 0 && <button aria-label={uiText('Previous photo')} onClick={() => setViewerId(filtered[viewerIndex - 1].photo.id)} className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow"><ChevronLeft size={18} /></button>}
+              {viewerIndex < filtered.length - 1 && <button aria-label={uiText('Next photo')} onClick={() => setViewerId(filtered[viewerIndex + 1].photo.id)} className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow"><ChevronRight size={18} /></button>}
+            </div>
+            <div className="min-w-0 p-4 [&>div:first-child]:mt-0">
 {viewerPhoto.isReference ? <DemoPhotoDetails photo={viewerPhoto} project={project} /> : <>
-            <div className="mt-3 grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 text-xs sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 text-xs">
               <div><p className="text-slate-400">{uiText("Uploaded By")}</p><p className="font-medium text-slate-700">{uiText(viewerPhoto.uploadedBy)}</p><p>{uiText(ROLE_LABELS[viewerPhoto.uploadedByRole])}</p></div>
               <div><p className="text-slate-400">{uiText("Uploaded At")}</p><p className="font-medium text-slate-700">{uiText(formatDateTime(viewerPhoto.uploadedAt))}</p></div>
               <div>
@@ -116,12 +129,13 @@ export function FieldEvidenceTab({ project }: { project: Project }) {
                   <StatusBadge status="REJECTED" label={uiText("Outside Geo-Fence")} />
                 )}
               </div>
-              <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Description")}</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
-              {viewerPhoto.remarks && <div className="col-span-2 sm:col-span-4"><p className="text-slate-400">{uiText("Remarks")}</p><p className="font-medium text-slate-700">{viewerPhoto.remarks}</p></div>}
+              <div className="col-span-full"><p className="text-slate-400">{uiText("Description")}</p><p className="font-medium text-slate-700">{viewerPhoto.description}</p></div>
+              {viewerPhoto.remarks && <div className="col-span-full"><p className="text-slate-400">{uiText("Remarks")}</p><p className="font-medium text-slate-700">{viewerPhoto.remarks}</p></div>}
             </div>
 </>}
+            {!viewerPhoto.isReference && <div className="mt-2"><EvidenceIntegrity mediaKey={viewerPhoto.mediaKey}/></div>}
             <PhotoReview key={viewerPhoto.id} photo={viewerPhoto} />
-            <div className="mt-3"><EvidenceIntegrity mediaKey={viewerPhoto.mediaKey}/></div>
+            </div>
           </DialogContent>
         )}
       </Dialog>

@@ -124,7 +124,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[{ label: 'BEFORE', photo: before }, { label: 'LATEST', photo: after }].map(({ label, photo }) => (
               <div key={label} className="overflow-hidden rounded-md border border-slate-200">
-                <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} gpsAccuracyM={photo.gpsAccuracyM} locationSource={photo.locationSource} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="h-52" />
+                <GeoPhoto src={photoSrc(photo)} mediaKey={photo.mediaKey} gpsAccuracyM={photo.gpsAccuracyM} locationSource={photo.locationSource} lat={photo.lat} lng={photo.lng} timestamp={photo.capturedAt} location={photo.location} className="aspect-square w-full [&>img]:absolute [&>img]:inset-0" />
                 <div className="p-2.5">
                   <Badge>{uiText(label)}</Badge>
                   <p className="mt-1 text-xs font-medium text-slate-700">{uiText(photo.stage)}</p>
@@ -145,7 +145,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
             {items.map((ph) => (
               <button key={ph.id} onClick={() => setViewerId(ph.id)} className="group overflow-hidden rounded-md border border-slate-200 text-left">
                 <div className="relative">
-                  <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} gpsAccuracyM={ph.gpsAccuracyM} locationSource={ph.locationSource} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-52" />
+                  <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} gpsAccuracyM={ph.gpsAccuracyM} locationSource={ph.locationSource} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="aspect-square w-full [&>img]:absolute [&>img]:inset-0" />
                   <Badge className="absolute left-1.5 top-1.5 bg-white/90">{uiText(ph.type)}</Badge>
                 </div>
                 <div className="p-1.5">
@@ -181,7 +181,7 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
               <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={uiText("Brief description of the photograph")} />
             </div>
             {(['building', 'floor', 'activity'] as const).map(key => <label key={key} className="block text-xs">{uiText(key)}<input className="block min-h-11 w-full rounded border px-2" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>)}
-            {capture && <GeoPhoto src={capture.dataUrl} mediaKey={capture.mediaKey} lat={capture.lat} lng={capture.lng} timestamp={capture.capturedAt} location={project.name} className="h-52" />}
+            {capture && <GeoPhoto src={capture.dataUrl} mediaKey={capture.mediaKey} lat={capture.lat} lng={capture.lng} timestamp={capture.capturedAt} location={project.name} className="aspect-square w-full [&>img]:absolute [&>img]:inset-0" />}
             {capture && capture.geoFenceStatus !== 'INSIDE' && <label className="block text-xs font-medium text-amber-900">{uiText('Location exception reason')}<Textarea rows={2} value={locationReason} onChange={event => setLocationReason(event.target.value)} placeholder={uiText('Explain why evidence was captured outside or near the site boundary')}/></label>}
             <Suspense fallback={<p role="status" className="text-xs text-slate-500">{uiText('Opening camera…')}</p>}><SiteCamera key={`${project.id}-${uploadOpen}`} project={project} onCapture={acceptCapture} /></Suspense>
           </div>
@@ -203,8 +203,8 @@ export function PhotosTab({ project, milestoneId }: { project: Project; mileston
                 lng={viewerPhoto.lng}
                 timestamp={viewerPhoto.capturedAt}
                 location={viewerPhoto.location}
-                className="max-h-[55vh] w-full"
-                imgClassName="max-h-[55vh]"
+                className="mx-auto aspect-square w-[min(100%,45dvh)]"
+                imgClassName="absolute inset-0 h-full w-full object-cover"
               />
               {viewerIndex > 0 && <button onClick={() => setViewerId(filtered[viewerIndex - 1].id)} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronLeft size={16} /></button>}
               {viewerIndex < filtered.length - 1 && <button onClick={() => setViewerId(filtered[viewerIndex + 1].id)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow"><ChevronRight size={16} /></button>}

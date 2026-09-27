@@ -148,7 +148,7 @@ export function FieldHome() {
           {recentSitePhotos.map(ph => <article key={ph.id} className="site-photo-post">
             <div className="photo-post-author"><span aria-hidden="true">{ph.uploadedBy.slice(0,1)}</span><div><p>{ph.uploadedBy}</p><time dateTime={ph.capturedAt}>{formatDate(ph.capturedAt)}</time></div></div>
             <button type="button" className="photo-post-image" aria-label={uiText('View site photos')} onClick={() => navigate(`/projects/${project.id}?tab=photos`)}>
-              <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} gpsAccuracyM={ph.gpsAccuracyM} locationSource={ph.locationSource} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="h-72" imgClassName="object-contain bg-slate-100" />
+              <GeoPhoto src={photoSrc(ph)} mediaKey={ph.mediaKey} gpsAccuracyM={ph.gpsAccuracyM} locationSource={ph.locationSource} lat={ph.lat} lng={ph.lng} timestamp={ph.capturedAt} location={ph.location} className="mx-auto aspect-square w-full max-w-md" imgClassName="absolute inset-0 object-cover" />
             </button>
             <div className="photo-post-caption"><p>{ph.description}</p><span>{uiText(ph.stage)}</span></div>
           </article>)}

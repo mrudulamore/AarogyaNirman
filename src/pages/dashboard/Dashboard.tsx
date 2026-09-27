@@ -686,9 +686,10 @@ function CommandDashboard() {
 
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setPhotoId(null)}>
         {selectedPhoto && (
-          <DialogContent title={uiText(selectedPhotoProject?.name ?? selectedPhoto.projectId)} description={uiMessage("{{0}} - {{1}}", [selectedPhoto.stage, formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)])} size="lg">
-            <GeoPhoto src={photoSrc(selectedPhoto)} mediaKey={selectedPhoto.mediaKey} lat={selectedPhoto.lat} lng={selectedPhoto.lng} timestamp={selectedPhoto.capturedAt} location={selectedPhoto.location} gpsAccuracyM={selectedPhoto.gpsAccuracyM} locationSource={selectedPhoto.locationSource} className="w-full bg-slate-100" imgClassName="h-[50vh] object-contain" />
-            <div className="mt-3 space-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
+          <DialogContent title={uiText(selectedPhotoProject?.name ?? selectedPhoto.projectId)} description={uiMessage("{{0}} - {{1}}", [selectedPhoto.stage, formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)])} size="lg" className="max-h-[94dvh] w-[min(calc(100vw-1.5rem),max(280px,calc(94dvh-310px)))] max-w-[500px] rounded-3xl border border-blue-300 [&>div:first-child]:px-4 [&>div:first-child]:py-3 [&>div:last-child]:p-0">
+            <GeoPhoto src={photoSrc(selectedPhoto)} mediaKey={selectedPhoto.mediaKey} lat={selectedPhoto.lat} lng={selectedPhoto.lng} timestamp={selectedPhoto.capturedAt} location={selectedPhoto.location} gpsAccuracyM={selectedPhoto.gpsAccuracyM} locationSource={selectedPhoto.locationSource} className="aspect-square w-full rounded-none" imgClassName="absolute inset-0 object-cover" />
+            <div className="p-4">
+            <div className="space-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
               <p className="font-semibold text-slate-800">{uiText(selectedPhoto.location)}</p>
 <>
               <p className="tabular-nums">{uiText("Latitude ")}{uiText(selectedPhoto.lat.toFixed(6))}{uiText(" · Longitude ")}{uiText(selectedPhoto.lng.toFixed(6))}</p>
@@ -701,6 +702,7 @@ function CommandDashboard() {
               <Button variant="outline" onClick={() => setPhotoId(null)}>{uiText("Close")}</Button>
               {photoProjectTab && <Button onClick={() => { setPhotoId(null); navigate(`/projects/${selectedPhoto.projectId}?${new URLSearchParams({ tab: photoProjectTab.value })}`); }}>{uiText("View project ")}{uiText(photoProjectTab.label.toLowerCase())} <ArrowRight size={13} /></Button>}
             </DialogFooter>
+            </div>
           </DialogContent>
         )}
       </Dialog>

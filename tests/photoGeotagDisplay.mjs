@@ -16,8 +16,9 @@ try {
   assert.ok(!html.includes('Demo geotag'),photo.id);
   assert.ok(!html.includes('bg-black'),photo.id);
   assert.ok(html.includes('bg-slate-950/70'),photo.id);
-  assert.ok(html.includes('tile.openstreetmap.org'),photo.id);
-  assert.ok(html.includes('OpenStreetMap contributors'),photo.id);
+  assert.ok(html.includes('World_Imagery/MapServer/tile/18/'),photo.id);
+  assert.ok(html.includes('Esri, Maxar, Earthstar'),photo.id);
+  assert.ok(html.includes('GMT+05:30'),photo.id);
   assert.ok(html.includes('text-white'),photo.id);
   assert.ok(!html.includes('Invalid Date'),photo.id);
   const project = data.projects.find(p => p.id === photo.projectId);
