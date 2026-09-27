@@ -160,7 +160,7 @@ export function Table({ className, children }: { className?: string; children: R
   useUiLanguage();
   return (
     <div className="table-scroll">
-      <table className={cn('w-full border-collapse text-sm', className)}>{children}</table>
+      <table className={cn('w-full border-collapse text-sm [&_tbody_tr:nth-child(even)]:bg-slate-50/60 [&_tbody_tr:hover]:bg-blue-50/60', className)}>{children}</table>
     </div>
   );
 }
@@ -182,7 +182,7 @@ export function Th({ children, className, ...props }: React.ThHTMLAttributes<HTM
 }
 export function Td({ children, className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   useUiLanguage();
-  return <td className={cn('px-4 py-3 align-middle text-slate-700', className)} {...props}>{children}</td>;
+  return <td className={cn('px-4 py-3 align-middle tabular-nums text-slate-700', className)} {...props}>{children}</td>;
 }
 
 // ---------------- Empty state ----------------

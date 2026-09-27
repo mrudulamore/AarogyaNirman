@@ -1,3 +1,4 @@
+import { validateSiteReport, REPORT_REVIEWERS } from './siteReports';
 import { ledgerTransactions } from './financeLedger';
 import type { BillAttachment, Role } from '../types';
 import type { StoreState } from '../store/useStore';
@@ -5,7 +6,7 @@ import { computeProjectScope } from './projectScope';
 import { todayDate } from './fundDisbursal';
 import { readBillFile } from './billAttachments';
 
-export type ControlKind = 'CERTIFICATE' | 'PROCUREMENT' | 'VARIATION' | 'EXTENSION' | 'CONTRACT' | 'QUALITY' | 'RECEIPT' | 'PAYMENT' | 'REVERSAL' | 'RELEASE' | 'MONTHLY' | 'DOCUMENT';
+export type ControlKind = 'MEASUREMENT' | 'MATERIAL_TEST' | 'CERTIFICATE' | 'PROCUREMENT' | 'VARIATION' | 'EXTENSION' | 'CONTRACT' | 'QUALITY' | 'RECEIPT' | 'PAYMENT' | 'REVERSAL' | 'RELEASE' | 'MONTHLY' | 'DOCUMENT';
 export interface ControlRecord {
   id: string; projectId: string; kind: ControlKind; category: string; reference: string;
   fields: Record<string, string>; attachments: BillAttachment[]; status: 'PENDING' | 'VERIFIED' | 'REJECTED';
@@ -20,8 +21,10 @@ export interface ControlActions {
 }
 export const CERTIFICATES = ['Building / occupancy', 'Fire approval', 'Electrical safety', 'Lift permission', 'MPCB consent / BMW', 'AERB licence', 'Completion certificate', 'As-built drawings', 'Commissioning acceptance', 'Health authority acceptance'];
 export const PROCUREMENT = ['DPR', 'Land / site possession', 'Administrative approval', 'Expenditure sanction', 'Technical sanction', 'Approved drawings / estimate', 'Budget availability', 'Tender publication / corrigenda', 'Bidder eligibility', 'Evaluation minutes', 'Conflict declarations', 'Award approval', 'Performance security', 'Insurance'];
-export const KIND_LABELS: Record<ControlKind, string> = { CERTIFICATE: 'Certificate register', PROCUREMENT: 'Procurement file', VARIATION: 'Contract variation', EXTENSION: 'Extension of Time', CONTRACT: 'Contract terms', QUALITY: 'Quality evidence', RECEIPT: 'Government receipt', PAYMENT: 'Contractor payment', REVERSAL: 'Transaction reversal', RELEASE: 'Security release', MONTHLY: 'Monthly report', DOCUMENT: 'Submit Documents' };
+export const KIND_LABELS: Record<ControlKind, string> = { MEASUREMENT: 'Measurement Book', MATERIAL_TEST: 'Material testing report', CERTIFICATE: 'Certificate register', PROCUREMENT: 'Procurement file', VARIATION: 'Contract variation', EXTENSION: 'Extension of Time', CONTRACT: 'Contract terms', QUALITY: 'Quality evidence', RECEIPT: 'Government receipt', PAYMENT: 'Contractor payment', REVERSAL: 'Transaction reversal', RELEASE: 'Security release', MONTHLY: 'Monthly report', DOCUMENT: 'Submit Documents' };
 export const CONTROL_FIELDS: Record<ControlKind, string[]> = {
+  MEASUREMENT: ['correctionOf','bookNumber','pageNumber','measurementDate','boqItemId','location','method','count','length','breadth','depth','measuredQuantity','deduction','quantity','unit','rate','billId','reason'],
+  MATERIAL_TEST: ['correctionOf','material','testName','sampleReference','sampleDate','testDate','location','laboratory','standardVersion','acceptanceCriteria','resultValue','resultUnit','result','boqItemId','measurementId','inspectionId','billId','reason'],
   CERTIFICATE: ['responsibleUserId', 'responsibleRole', 'authority', 'issueDate', 'expiryDate', 'applicability', 'reason'],
   PROCUREMENT: ['responsibleUserId', 'responsibleRole', 'authority', 'issueDate', 'expiryDate', 'portalReference', 'version', 'amount', 'reason'],
   VARIATION: ['contractClause', 'reason', 'boqItemId', 'quantityDelta', 'rate', 'scheduleDays', 'authority'],
@@ -83,6 +86,7 @@ export function validateControl(s: StoreState, input: ControlInput, reviewing = 
   if (!input.reference.trim() || !input.attachments.length) throw new Error('A reference and uploaded evidence are required.');
   if (input.attachments.length > 6 || new Set(input.attachments.map(a => a.id)).size !== input.attachments.length) throw new Error('Attach up to six distinct evidence files.');
   if (s.controlRecords.some(r => r.id !== (input as ControlRecord).id && r.projectId === input.projectId && r.kind === input.kind && r.reference.toLowerCase().trim() === input.reference.toLowerCase().trim())) throw new Error('This reference already exists.');
+  validateSiteReport(s, input, reviewing);
   const f = input.fields;
   if (input.supersedesId) {
     if (!['CERTIFICATE', 'PROCUREMENT', 'CONTRACT', 'DOCUMENT', 'MONTHLY', 'QUALITY'].includes(input.kind)) throw new Error('Transactions and contract adjustments cannot be overwritten.');
@@ -155,7 +159,7 @@ export function createControlActions(set: (fn: (s: StoreState) => Partial<StoreS
     reviewControl: async (id, approve, decision) => {
       const initial = get().controlRecords.find(r => r.id === id);
       if (!initial) throw new Error('Record not found.');
-      const roles: Role[] = financeKinds.includes(initial.kind) || ['VARIATION', 'EXTENSION', 'CONTRACT'].includes(initial.kind) ? ['COMMISSIONER'] : reviewers;
+      const roles: Role[] = ['MEASUREMENT','MATERIAL_TEST'].includes(initial.kind) ? REPORT_REVIEWERS as Role[] : financeKinds.includes(initial.kind) || ['VARIATION', 'EXTENSION', 'CONTRACT'].includes(initial.kind) ? ['COMMISSIONER'] : reviewers;
       const user = controlAccess(get(), initial.projectId, roles);
       if (initial.submittedBy === user.id || initial.status !== 'PENDING' || !decision.trim()) throw new Error('An independent reviewer and decision notes are required.');
       if (approve) await checkEvidence(initial);

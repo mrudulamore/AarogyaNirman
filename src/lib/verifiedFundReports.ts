@@ -20,6 +20,6 @@ export function verifiedFundReports(state: StoreState, projects: Project[], asOf
   contractor.kpis = contractor.kpis.map(k => k.label === 'Paid bill count' ? { ...k, label: 'Verified payment count' } : k);
   contractor.summary.columns = contractor.summary.columns.map(c => c === 'Paid bill count' ? 'Verified payment count' : c);
   const references = new Set(installments.filter(r => r.reference).map(r => r.projectId + ":" + r.reference));
-  const planned = state.fundInstallments.filter(r => projects.some(p => p.id === r.projectId) && !references.has(r.projectId + ":" + r.reference)).map(r => ({ ...r, receivedDate: undefined }));
+  const planned = state.fundInstallments.filter(r => projects.some(p => p.id === r.projectId) && (!r.receivedDate || r.receivedDate > asOf) && !references.has(r.projectId + ":" + r.reference)).map(r => ({ ...r, receivedDate: undefined }));
   return { government: buildFundReport(projects, [...installments, ...planned], asOf), contractor };
 }

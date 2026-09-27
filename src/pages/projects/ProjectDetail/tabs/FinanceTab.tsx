@@ -1,3 +1,5 @@
+import { SiteReportLinks } from './SiteReportLinks';
+import { ProgressComparison } from '../../../../components/common/ProgressComparison';
 import { ExpenditureCharts } from '../../../../components/common/ExpenditureCharts';
 import { actualTransactions } from '../../../../lib/projectControls';
 import { verifiedFundReports } from '../../../../lib/verifiedFundReports';
@@ -10,7 +12,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from 'recharts';
+import { FinanceBars } from '../../../../components/common/FinanceVisuals';
 import type { Project, BillStatus } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
@@ -27,14 +29,6 @@ const PENDING_WITH: Partial<Record<BillStatus, string>> = {
 function ageingDays(dateIso: string): number {
   return Math.max(0, Math.round((Date.now() - new Date(dateIso).getTime()) / 86400000));
 }
-
-const progressPercent = (value: unknown) => `${Number(value).toFixed(1).replace(/\.0$/, '')}%`;
-const progressMonth = (value: string) => new Date(`${value}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
-const progressSeries = [
-  { key: 'planned', label: 'Planned Physical', color: '#94a3b8' },
-  { key: 'verified', label: 'Reported Physical', color: '#3b82f6' },
-  { key: 'financial', label: 'Financial', color: '#0d9488' },
-] as const;
 
 /** Part 20-22: Finance simplified into one Project 360 tab — a senior user should understand
  * financial position within seconds via the primary KPI row, then drill into bill status,
@@ -104,7 +98,7 @@ export function FinanceTab({ project }: { project: Project }) {
     const months = Array.from(byMonth.keys()).sort().slice(-8);
     return months.map((m) => {
       const monthMid = new Date(`${m}-15`).getTime();
-      const plannedPct = Math.round(Math.min(100, Math.max(0, ((monthMid - start) / (planned - start)) * 100)));
+      const plannedPct = planned > start ? Math.round(Math.min(100, Math.max(0, ((monthMid - start) / (planned - start)) * 100))) : NaN;
       return { month: m, planned: plannedPct, verified: byMonth.get(m)!.verified, financial: project.sanctionedBudget ? actualTransactions(state, project.id, new Date(Date.UTC(Number(m.slice(0,4)), Number(m.slice(5,7)), 0)).toISOString().slice(0,10)).filter(r => r.kind === 'PAYMENT').reduce((sum,r) => sum + Number(r.fields.amount), 0) / project.sanctionedBudget * 100 : 0 };
     });
   }, [progressReports, project.id, project.startDate, project.plannedCompletionDate, project.sanctionedBudget, state]);
@@ -135,6 +129,8 @@ export function FinanceTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
+      <SiteReportLinks projectId={project.id} />
+      {(report.government.total > project.sanctionedBudget || amountPaid > report.government.total || amountPaid > project.sanctionedBudget) && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-950">{uiText('Financial review needed: receipts exceed sanction or payments exceed available funds. Verify the sanction and transaction records; saved entries have not been reduced automatically.')}</div>}
       <div className="rounded-3xl bg-gradient-to-br from-blue-950 to-blue-700 p-5 text-white sm:p-7">
         <p className="text-xs uppercase tracking-widest text-blue-200">{uiText('Project financial position')}</p>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
@@ -152,19 +148,19 @@ export function FinanceTab({ project }: { project: Project }) {
       {/* A. Financial Summary — primary KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label={uiText("Sanctioned Cost")} value={formatCurrency(project.sanctionedBudget)} />
-        <KpiCard label={uiText("Contract Value")} value={formatCurrency(contractValue)} />
-        <KpiCard label={uiText("Work Certified")} value={formatCurrency(workCertified)} tone="blue" />
-        <KpiCard label={uiText("Amount Paid")} value={formatCurrency(amountPaid)} tone="emerald" />
-        <KpiCard label={uiText("Pending Bills")} value={formatCurrency(pendingBillsValue)} tone="amber" />
-        <KpiCard label={uiText("Balance Contract Value")} value={formatCurrency(balanceContractValue)} />
+        <KpiCard label={uiText("Contract Value")} sub={uiText("Work-order value, or sanctioned budget when no work order is recorded.")} value={formatCurrency(contractValue)} />
+        <KpiCard label={uiText("Work Certified")} sub={uiText("Net value of bills that reached quality verification or later.")} value={formatCurrency(workCertified)} tone="blue" />
+        <KpiCard label={uiText("Amount Paid")} sub={uiText("Verified contractor payments, net of reversals.")} value={formatCurrency(amountPaid)} tone="emerald" />
+        <KpiCard label={uiText("Pending Bills")} sub={uiText("Unpaid balance of submitted bills; excludes drafts and rejected bills.")} value={formatCurrency(pendingBillsValue)} tone="amber" />
+        <KpiCard label={uiText("Balance Contract Value")} sub={uiText("Contract value minus verified payments; not the available cash balance.")} value={formatCurrency(balanceContractValue)} />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label={uiText("Financial Progress")} value={`${project.financialProgress}%`} />
-        <KpiCard label={uiText("Retention Held")} value={formatCurrency(retentionHeld)} />
-        <KpiCard label={uiText("Approved Variations")} value={formatCurrency(approvedVariations)} />
-        <KpiCard label={uiText("Total Deductions")} value={formatCurrency(totalDeductions)} />
-        <KpiCard label={uiText("Bills Under Review")} value={billsUnderReview} />
-        <KpiCard label={uiText("Avg. Bill Processing")} value={`${avgProcessingDays}d`} />
+        <KpiCard label={uiText("Financial Progress")} sub={uiText("Verified expenditure as a percentage of sanctioned budget.")} value={`${project.financialProgress}%`} />
+        <KpiCard label={uiText("Retention Held")} sub={uiText("Retention amounts recorded across bills.")} value={formatCurrency(retentionHeld)} />
+        <KpiCard label={uiText("Approved Variations")} sub={uiText("Cost impact of approved change orders.")} value={formatCurrency(approvedVariations)} />
+        <KpiCard label={uiText("Total Deductions")} sub={uiText("Deductions recorded across bills.")} value={formatCurrency(totalDeductions)} />
+        <KpiCard label={uiText("Bills Under Review")} sub={uiText("Submitted or verified bills that have not reached approval.")} value={billsUnderReview} />
+        <KpiCard label={uiText("Avg. Bill Processing")} sub={uiText("Average submission-to-payment days for bills with a recorded payment date.")} value={paidBillsWithDates.length ? `${avgProcessingDays}d` : '—'} />
       </div>
 
       </div></details>
@@ -181,60 +177,24 @@ export function FinanceTab({ project }: { project: Project }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="min-w-0">
           <CardHeader><CardTitle>{uiText("Physical vs. Financial Progress")}</CardTitle></CardHeader>
-          <CardContent>
-            {progressTrend.length > 0 ? <>
-            <p className="mb-3 text-xs text-slate-500">{progressMonth(progressTrend[progressTrend.length - 1].month)}</p>
-            <div className="mb-5 grid grid-cols-3 gap-2">
-              {progressSeries.map(series => <div key={series.key} className="min-w-0 border-l-2 pl-2 sm:pl-3" style={{ borderColor: series.color }}>
-                <p className="text-[11px] leading-4 text-slate-500">{uiText(series.label)}</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums text-slate-800">{progressPercent(progressTrend[progressTrend.length - 1][series.key])}</p>
-              </div>)}
-            </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={progressTrend} margin={{ top: 10, right: 18, bottom: 8, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
-                <XAxis dataKey="month" tickFormatter={progressMonth} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} minTickGap={24} padding={{ left: 12, right: 12 }} />
-                <YAxis width={44} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
-                <RTooltip formatter={progressPercent} labelFormatter={value => progressMonth(String(value))} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                {progressSeries.map(series => <Line key={series.key} type="linear" dataKey={series.key} name={uiText(series.label)} stroke={series.color} strokeDasharray={series.key === 'planned' ? '4 4' : undefined} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />)}
-              </LineChart>
-            </ResponsiveContainer>
-            <details className="mt-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-              <summary className="cursor-pointer">{uiText('Monthly progress values')}</summary>
-              <div className="mt-3 overflow-x-auto"><table className="w-full text-left tabular-nums"><thead><tr><th className="p-2">{uiText('Period')}</th>{progressSeries.map(series => <th key={series.key} className="p-2">{uiText(series.label)}</th>)}</tr></thead><tbody>{progressTrend.map(row => <tr key={row.month} className="border-t border-slate-100"><td className="p-2">{progressMonth(row.month)}</td>{progressSeries.map(series => <td key={series.key} className="p-2">{progressPercent(row[series.key])}</td>)}</tr>)}</tbody></table></div>
-            </details>
-            </> : <p className="py-16 text-center text-sm text-slate-500">{uiText('No progress reports available.')}</p>}
-          </CardContent>
+          <CardContent><ProgressComparison rows={progressTrend} /></CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle>{uiText("Sanction to Payment")}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={waterfallData} layout="vertical" margin={{ left: 10, right: 55, top: 24, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
-                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} />
-                <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-                <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="value" fill="#265aa0" radius={[0, 3, 3, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <p className="mb-4 text-xs leading-relaxed text-slate-600">{uiText('Separate financial measures, not amounts to add together. Balance is contract value minus payments, not cash available.')}</p>
+            <FinanceBars label="Sanction to Payment" rows={waterfallData.map(row=>({label:row.name,value:row.value,display:formatCurrency(row.value)}))}/>
+
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle>{uiText("Bill Ageing")}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={ageingBuckets} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
-                <XAxis dataKey="bucket" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <RTooltip />
-                <Bar label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value) : String(value ?? '') }} dataKey="count" name={uiText("Bills")} radius={[3, 3, 0, 0]}>
-                  {ageingBuckets.map((b, i) => <Cell key={i} fill={b.bucket === '60+ Days' || b.bucket === '31-60 Days' ? '#ef4444' : b.bucket === '16-30 Days' ? '#f59e0b' : '#3b82f6'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{pendingBills.length} {uiText('bills with an unpaid balance')} · {pendingBills.filter(b=>ageingDays(b.submittedDate)>30).length} {uiText('submitted over 30 days ago')}</p><p className="mb-4 text-xs text-slate-500">{uiText('Age is counted from submission, not from a contractual payment due date. Bar length shows the number of bills.')}</p>
+            <FinanceBars label="Bill Ageing" rows={ageingBuckets.map((row,i)=>({label:row.bucket,value:row.count,display:row.count+' '+uiText('Bills'),color:i>=3?'#b45309':'#2563eb'}))}/>
+
           </CardContent>
         </Card>
 
@@ -242,6 +202,7 @@ export function FinanceTab({ project }: { project: Project }) {
       </div>
 
       <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
+      <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-900">{uiText('Bill guide: Net equals gross plus GST minus deductions, retention and penalty. Certified shows net bills after quality verification; Paid comes from verified payment records. Ageing counts days since submission.')}</p>
       {/* B. Bill Status */}
       <Card id="project-bills" className="scroll-mt-24">
         <CardHeader>
@@ -249,7 +210,7 @@ export function FinanceTab({ project }: { project: Project }) {
           {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} />{uiText(" Submit RA Bill")}</Button>}
         </CardHeader>
         <Table>
-          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Submitted on")}</Th><Th>{uiText("Period")}</Th><Th>{uiText("Claimed")}</Th><Th>{uiText("Certified")}</Th><Th>{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
+          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Submitted on")}</Th><Th>{uiText("Period")}</Th><Th className="text-right">{uiText("Claimed")}</Th><Th className="text-right">{uiText("Certified")}</Th><Th className="text-right">{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
           <TBody>
             {bills.map((b) => {
               const certified = ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status) ? b.netPayable : 0;
@@ -260,9 +221,9 @@ export function FinanceTab({ project }: { project: Project }) {
                   <Td className="font-medium text-slate-800">{uiText(b.billNumber)}</Td>
                   <Td>{formatDate(b.submittedDate)}</Td>
                   <Td>{uiText(formatDate(b.periodFrom))} — {uiText(formatDate(b.periodTo))}</Td>
-                  <Td>{uiText(formatCurrency(b.grossAmount))}</Td>
-                  <Td>{uiText(certified ? formatCurrency(certified) : '—')}</Td>
-                  <Td>{uiText(paid ? formatCurrency(paid) : '—')}</Td>
+                  <Td className="text-right whitespace-nowrap">{uiText(formatCurrency(b.grossAmount))}</Td>
+                  <Td className="text-right whitespace-nowrap">{uiText(certified ? formatCurrency(certified) : '—')}</Td>
+                  <Td className="text-right whitespace-nowrap">{uiText(paid ? formatCurrency(paid) : '—')}</Td>
                   <Td><StatusBadge status={b.status} /></Td>
                   <Td className="text-[11px] text-slate-500">{uiText(PENDING_WITH[b.status] ?? '—')}</Td>
                   <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{uiText(['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`)}</Td>

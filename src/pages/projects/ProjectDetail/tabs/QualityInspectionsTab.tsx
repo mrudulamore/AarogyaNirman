@@ -1,3 +1,4 @@
+import { SiteReports } from './SiteReports';
 import { InspectionRequests } from '../../../../components/common/InspectionRequests';
 import { ProgressDocumentLinks } from '../../../../components/common/ProgressDocuments';
 import { saveBillFiles } from '../../../../lib/billAttachments';
@@ -45,6 +46,7 @@ export function QualityTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
+      <SiteReports key={project.id + useStore.getState().currentUser?.id} project={project} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
         <KpiCard label={uiText("Total Inspections")} value={inspections.length} icon={ClipboardCheck} />
         <KpiCard label={uiText("Passed")} value={passed} icon={ShieldCheck} tone="emerald" />

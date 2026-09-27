@@ -68,6 +68,8 @@ try {
   assert.equal(state().projects.find(p => p.id === project.id).originalCompletionDate, baseline);
   assert.throws(() => validateBillMeasurements(state(), { ...claim, grossAmount: 10, measurementLines: [{ ...claim.measurementLines[0], quantity: 1, location: 'A', measurementReference: 'mb-1' }] }), /already been claimed/);
   engineer();
+  // Isolate the ledger scenario from seeded monthly demo transactions.
+  useStore.setState({ controlRecords: state().controlRecords.filter(r => r.projectId !== project.id || !['RECEIPT', 'PAYMENT', 'REVERSAL'].includes(r.kind)) });
   const receipt = await submit(input('RECEIPT', { amount: '100', transactionDate: '2026-01-01', accountingHead: 'Health capital' }, 'TREASURY-1'));
   await review(receipt); assert.equal(actualTransactions(state(), project.id).length, 1);
   engineer();

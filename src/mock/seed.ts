@@ -260,7 +260,7 @@ export function generateMockData(): SeedResult {
       tenderAmount: Math.round(sanctioned * 0.97),
       workOrderValue: Math.round(sanctioned * 0.97),
       revisedEstimate: Math.round(sanctioned * (rng() > 0.7 ? 1.06 : 1.0)),
-      amountReleased: Math.round(sanctioned * (financialProgress / 100) * 1.05),
+      amountReleased: Math.min(sanctioned, Math.round(sanctioned * (financialProgress / 100) * 1.05)),
       amountSpent: Math.round(sanctioned * (financialProgress / 100)),
       contractorId: contractor.id,
       pmcName: pick(PMC_FIRMS),
