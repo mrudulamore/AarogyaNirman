@@ -285,6 +285,8 @@ export type DefectSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export type DefectStatus = 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIXED' | 'REINSPECTION' | 'CLOSED';
 
 export interface Defect {
+  attachments?: BillAttachment[];
+  correctiveAttachments?: BillAttachment[];
   id: string;
   projectId: string;
   location: string;
@@ -392,6 +394,7 @@ export interface AttendanceRecord {
 export type BillStatus = 'DRAFT' | 'SUBMITTED' | 'SITE_VERIFIED' | 'QUALITY_VERIFIED' | 'APPROVED' | 'REJECTED' | 'PAID';
 
 export interface BillAttachment {
+  sample?: { title: string; fields: [string, string][] };
   id: string;
   category: 'SIGNED_BILL' | 'MEASUREMENT' | 'SUPPORTING';
   name: string;
@@ -531,6 +534,7 @@ export type DocumentType =
   | 'Bills' | 'Approvals' | 'Completion Certificate' | 'Handover Documents';
 
 export interface ProjectDocument {
+  attachments?: BillAttachment[];
   id: string;
   projectId: string;
   name: string;
@@ -592,6 +596,7 @@ export interface AuditEntry {
 }
 
 export interface Observation {
+  attachments?: BillAttachment[];
   id: string;
   projectId: string;
   observer: string;

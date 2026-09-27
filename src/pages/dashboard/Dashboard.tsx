@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { AdministrationActions } from './AdministrationActions';
 import { InspectionRequests } from '../../components/common/InspectionRequests';
 import { selectRecentPhotos } from '../../lib/recentPhotos';
 import { GeoPhoto } from '../../components/common/GeoPhoto';
@@ -777,6 +778,7 @@ export function Dashboard() {
   const insight = params.get('tab') === 'insights';
   if (Capacitor.isNativePlatform() || role === 'WORKFORCE') return <CommandDashboard/>;
   return <div>
+    <AdministrationActions />
     <nav aria-label={uiText('Dashboard views')} className="mb-5 flex flex-wrap gap-2">
       {[['command','Command Center'],['insights','Insight Overview']].map(([key,label]) => <button key={key} aria-pressed={key === (insight?'insights':'command')} onClick={()=>setParams(previous=>{const next=new URLSearchParams(previous);next.set('tab',key);return next;})} className={`min-h-11 rounded-xl border px-5 text-sm font-semibold ${key===(insight?'insights':'command')?'border-blue-600 bg-blue-600 text-white':'border-blue-200 bg-white text-blue-800 hover:bg-blue-50'}`}>{uiText(label)}</button>)}
     </nav>

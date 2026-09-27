@@ -1,5 +1,6 @@
 import { SiteReportLinks } from './SiteReportLinks';
 import { ProgressComparison } from '../../../../components/common/ProgressComparison';
+import { billReviewReturnPath } from '../../../../lib/billReviewNavigation';
 import { ExpenditureCharts } from '../../../../components/common/ExpenditureCharts';
 import { actualTransactions } from '../../../../lib/projectControls';
 import { verifiedFundReports } from '../../../../lib/verifiedFundReports';
@@ -55,11 +56,20 @@ export function FinanceTab({ project }: { project: Project }) {
   
   const verifyMeasurement = useStore((s) => s.verifyMeasurement);
 
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [submitOpen, setSubmitOpen] = useState(params.get('action') === 'submit-bill' && currentUser?.role === 'CONTRACTOR');
   const [detailId, setDetailId] = useState<string | null>(params.get('bill'));
 
+  function closeBillReview() {
+    setDetailId(null);
+    const returnTo = billReviewReturnPath(params.get('returnTo'));
+    if (returnTo && params.get('bill')) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
+    setParams(previous => { const next = new URLSearchParams(previous); next.delete('bill'); next.delete('returnTo'); return next; }, { replace: true });
+  }
   const active = bills.find((b) => b.id === detailId);
   const activeMeasurements = measurements.filter((m) => m.billId === detailId);
 
@@ -263,7 +273,7 @@ export function FinanceTab({ project }: { project: Project }) {
 
       {submitOpen && currentUser?.role === 'CONTRACTOR' && <RABillSubmission project={project} onClose={() => setSubmitOpen(false)} />}
 
-      <Dialog open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)}>
+      <Dialog open={!!detailId} onOpenChange={(v) => !v && closeBillReview()}>
         {active && (
           <DialogContent title={uiText(active.billNumber)} description={uiText(project.name)} size="lg">
             <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">

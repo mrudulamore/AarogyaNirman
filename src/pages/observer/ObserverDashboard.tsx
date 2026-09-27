@@ -1,3 +1,5 @@
+import { ProgressDocuments, ProgressDocumentLinks } from '../../components/common/ProgressDocuments';
+import { saveBillFiles } from '../../lib/billAttachments';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -24,6 +26,8 @@ export function ObserverDashboard() {
   const addObservation = useStore((s) => s.addObservation);
   const updateObservationStatus = useStore((s) => s.updateObservationStatus);
 
+  const [files, setFiles] = useState<File[]>([]);
+  const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ projectId: projects[0]?.id ?? '', category: 'Progress', note: '', recommendedAction: 'Continue monitoring' });
 
@@ -53,7 +57,7 @@ export function ObserverDashboard() {
                 <Tr key={o.id}>
                   <Td className="max-w-[180px] truncate">{projects.find((p) => p.id === o.projectId)?.name}</Td>
                   <Td>{uiText(o.category)}</Td>
-                  <Td className="max-w-[220px] truncate">{uiText(o.note)}</Td>
+                  <Td className="max-w-[220px]">{uiText(o.note)}{o.attachments?.length ? <ProgressDocumentLinks attachments={o.attachments} /> : null}</Td>
                   <Td>{uiText(o.recommendedAction)}</Td>
                   <Td>{uiText(formatDate(o.date))}</Td>
                   <Td>
@@ -93,14 +97,18 @@ export function ObserverDashboard() {
                 <SelectContent>{['Continue monitoring', 'Flag to Executive Engineer', 'Schedule follow-up visit', 'No action required'].map((a) => <SelectItem key={a} value={a}>{uiText(a)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">{uiText("Simulated photo attachment")}</div>
+            <ProgressDocuments files={files} onChange={setFiles} disabled={saving} required={false} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => {
+            <Button disabled={saving} onClick={async () => {
               if (!form.note.trim()) { toast.error(uiText('Observation note required.')); return; }
-              addObservation({ projectId: form.projectId, observer: currentUser?.name ?? 'Observer', date: new Date().toISOString().slice(0, 10), category: form.category, note: form.note, recommendedAction: form.recommendedAction, status: 'OPEN', imageSeed: Math.floor(Math.random() * 99999) });
-              toast.success(uiText('Observation recorded.')); setOpen(false); setForm({ ...form, note: '' });
+              setSaving(true);
+              try {
+              const attachments = await saveBillFiles(files.map(file => ({ file, category: 'SUPPORTING' as const })));
+              addObservation({ projectId: form.projectId, observer: currentUser?.name ?? 'Observer', date: new Date().toISOString().slice(0, 10), category: form.category, note: form.note, recommendedAction: form.recommendedAction, status: 'OPEN', attachments });
+              toast.success(uiText('Observation recorded.')); setOpen(false); setForm({ ...form, note: '' }); setFiles([]);
+              } catch (error) { toast.error(uiText((error as Error).message)); } finally { setSaving(false); }
             }}>{uiText("Submit Observation")}</Button>
           </DialogFooter>
         </DialogContent>

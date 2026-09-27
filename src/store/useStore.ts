@@ -1,8 +1,9 @@
+import { withSampleDocuments } from '../lib/sampleDocuments';
 import { proposalActions, proposalAccounts, type ProposalActions } from '../lib/projectProposals';
 import { withPuneDemo } from '../mock/puneDemo';
 import { reconcileProjects } from '../lib/financeLedger';
 import { isRealSitePhoto } from '../lib/sitePhotoEvidence';
-import { canReviewInspection, canManageInspection, inspectionAccounts, inspectionAssignmentRoles } from '../lib/inspectionAccess';
+import { canAssignInspection, canReviewInspection, canManageInspection, inspectionAccounts, inspectionAssignmentRoles } from '../lib/inspectionAccess';
 import { validateMilestonePhoto } from '../lib/milestonePhoto';
 import { withDemoFinance } from '../mock/demoFinance';
 import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
@@ -24,14 +25,15 @@ import { previousClaimedQuantity, validateBillMeasurements } from '../lib/billMe
 import { createControlActions, handoverGaps, activeControls, actualTransactions, validControl, type ControlActions, type ControlRecord } from '../lib/projectControls';
 import type {
   FundInstallment, Project, User, Milestone, ProgressReport, SitePhoto, Inspection, Defect, ApprovalRequest,
-  Contractor, Worker, AttendanceRecord, Bill, MeasurementEntry, BoqItem, Material, MaterialTest,
+  Contractor, Worker, AttendanceRecord, Bill, BillAttachment, MeasurementEntry, BoqItem, Material, MaterialTest,
   SafetyRecord, Risk, ProjectDocument, CommissioningItem, HandoverStep, Notification, AuditEntry,
   Observation, Role, DefectStatus, ApprovalStatus, InspectionResult, Tender,
   ChangeOrder, ExtensionOfTime, SiteIssue, Decision,
   ContractorPoc, QualityFailure, QualityReport, InspectionAppointment,
 } from '../types';
 
-const seed = withPuneDemo(extendDemoPortfolio(generateMockData()));
+const baseSeed = withPuneDemo(extendDemoPortfolio(generateMockData()));
+const seed = withSampleDocuments(baseSeed, baseSeed);
 seed.users = proposalAccounts(seed.users);
 seed.photos = seed.photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) }));
 let auditSeq = 0;
@@ -56,6 +58,7 @@ export interface StoreState extends ControlActions, ProposalActions {
   /** Which nav sections each role can see — seeded from ROLE_NAV, editable by Superadmin via
    * the Access Management screen so permission changes apply live across Sidebar/AppShell. */
   rolePermissions: Record<Role, string[]>;
+  seniorEngineerAccessVersion?: number;
   projects: Project[];
   fundInstallments: FundInstallment[];
   tenders: Tender[];
@@ -146,7 +149,7 @@ export interface StoreState extends ControlActions, ProposalActions {
   assignDefect: (id: string, pocId?: string) => void;
   acknowledgeDefect: (id: string) => void;
   updateDefectStatus: (id: string, status: DefectStatus) => void;
-  addCorrectiveAction: (id: string, notes: string, photoSeed: number) => void;
+  addCorrectiveAction: (id: string, notes: string, photoSeed: number, attachments?: BillAttachment[]) => void;
   closeDefect: (id: string) => void;
 
   // inspection appointments
@@ -306,11 +309,14 @@ export const useStore = create<StoreState>()(
 
       setRoleNavAccess: (role, keys) => {
         if (get().currentUser?.role !== 'SUPERADMIN') throw new Error('Only superadmins can update access permissions.');
-        if (role === 'SUPERADMIN' && !keys.includes('access')) throw new Error('Superadmin must always retain Access Management.');
+        if (role !== 'SUPERADMIN' && keys.includes('access')) throw new Error('Only Super Administrators can manage access.');
+        if (role === 'SUPERADMIN' && (!keys.includes('access') || !keys.includes('dashboard'))) throw new Error('Superadmin must always retain Access Management.');
         set((s) => ({ rolePermissions: { ...s.rolePermissions, [role]: Object.keys(NAV_ITEMS).filter(key => keys.includes(key)) } }));
         get().logAction(`Updated access permissions for role ${role}`);
       },
       updateUserRole: (userId, role) => {
+        if (get().currentUser?.role !== 'SUPERADMIN' || userId === get().currentUser?.id) throw new Error('Only Super Administrators can change other users roles.');
+        if (!ROLE_LABELS[role] || !get().users.some(u => u.id === userId)) throw new Error('Choose a valid user and role.');
         const user = get().users.find((u) => u.id === userId);
         set((s) => ({
           users: s.users.map((u) => (u.id === userId ? { ...u, role, customRoleId: undefined, designation: ROLE_LABELS[role] } : u)),
@@ -329,7 +335,7 @@ export const useStore = create<StoreState>()(
         }));
       },
 
-      addProject: () => { throw new Error('Create a Ministry proposal and complete all approval stages before creating a project.'); },
+      addProject: () => { throw new Error('Project creation is not available in this app.'); },
       updateProject: (id, patch) => {
         assertProjectAccess(get(), id);
         if (['stage', 'status', 'workOrderValue', 'tenderAmount', 'sanctionedBudget', 'revisedEstimate', 'originalCompletionDate', 'plannedCompletionDate', 'amountSpent', 'amountReleased', 'financialProgress', 'physicalProgress'].some(key => Object.hasOwn(patch, key))) throw new Error('Use verified contract controls for financial, schedule and lifecycle changes.');
@@ -537,7 +543,7 @@ export const useStore = create<StoreState>()(
 
       scheduleInspection: (i) => {
         const actor = assertProjectAccess(get(), i.projectId);
-        if (!canReviewInspection(actor)) throw new Error('Only EE may assign an inspection to JE.');
+        if (!canAssignInspection(actor)) throw new Error('Only a supervising engineer or project manager may assign inspections to a lower role.');
         const request = i.sourceRequestId ? get().inspectionAppointments.find(a => a.id === i.sourceRequestId) : undefined;
         if (i.sourceRequestId && (!request || request.projectId !== i.projectId || request.status !== 'REQUESTED' || request.linkedInspectionId)) throw new Error('This inspection request is no longer awaiting allocation.');
         const assignee = inspectionAssignee(get(), i.projectId, i.assignedToId ?? '');
@@ -551,7 +557,7 @@ export const useStore = create<StoreState>()(
         set((s) => ({ inspections: [insp, ...s.inspections], inspectionAppointments: s.inspectionAppointments.map(a => a.id === request?.id ? { ...a, status: 'SCHEDULED', date: insp.scheduledDate, time: insp.scheduledTime!, assignedInspector: assignee.name, assignedInspectorId: assignee.id, assignedBy: actor.name, assignedById: actor.id, linkedInspectionId: insp.id } : a) }));
         const project = get().projects.find((p) => p.id === i.projectId);
         get().logAction(`Scheduled ${i.category.replace('_', ' ')} inspection`, project?.name);
-        get().pushNotification({ message: `${i.category.replace('_', ' ')} inspection scheduled for ${project?.name}.`, type: 'INFO', projectId: i.projectId, targetRoles: ['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', ...(request ? ['CONTRACTOR' as const] : [])] });
+        get().pushNotification({ message: `${i.category.replace('_', ' ')} inspection scheduled for ${project?.name}.`, type: 'INFO', projectId: i.projectId, targetRoles: [assignee.role, 'EXECUTIVE_ENGINEER', ...(request ? ['CONTRACTOR' as const] : [])] });
         return insp;
       },
       startInspection: (id) => {
@@ -563,7 +569,7 @@ export const useStore = create<StoreState>()(
         const inspection = get().inspections.find(i => i.id === id);
         if (!inspection) throw new Error('Inspection not found.');
         const reviewer = assertProjectAccess(get(), inspection.projectId);
-        if (!canReviewInspection(reviewer)) throw new Error('Only EE may reassign inspections.');
+        if (!canAssignInspection(reviewer)) throw new Error('Only a supervising engineer or project manager may reassign inspections to a lower role.');
         if (!['SCHEDULED', 'REVERIFY'].includes(inspection.status)) throw new Error('Only scheduled or returned inspections may be reassigned.');
         if (!reason.trim()) throw new Error('Enter a reason for reassignment.');
         const actor = get().currentUser!;
@@ -740,9 +746,9 @@ export const useStore = create<StoreState>()(
         const project = get().projects.find((p) => p.id === d?.projectId);
         get().logAction(`Updated defect ${id} status to ${status.replace('_', ' ')}`, project?.name);
       },
-      addCorrectiveAction: (id, notes, photoSeed) => {
+      addCorrectiveAction: (id, notes, photoSeed, attachments = []) => {
         assertProjectAccess(get(), get().defects.find(d => d.id === id)?.projectId ?? '', ['CONTRACTOR']);
-        set((s) => ({ defects: s.defects.map((d) => (d.id === id ? { ...d, status: 'FIXED', correctiveActionNotes: notes, correctiveActionPhotoSeed: photoSeed } : d)) }));
+        set((s) => ({ defects: s.defects.map((d) => (d.id === id ? { ...d, status: 'FIXED', correctiveActionNotes: notes, correctiveActionPhotoSeed: photoSeed, correctiveAttachments: attachments } : d)) }));
         const d = get().defects.find((x) => x.id === id);
         const project = get().projects.find((p) => p.id === d?.projectId);
         get().logAction(`Contractor uploaded corrective-action evidence for defect ${id}`, project?.name);
@@ -1041,7 +1047,16 @@ export const useStore = create<StoreState>()(
         const users = proposalAccounts([...merged.users, ...current.users.filter(user => user.role === 'SITE_SUPERVISOR' && !merged.users.some(existing => existing.id === user.id))]);
         const photos = saved?.referencePhotosRestored ? merged.photos : [...merged.photos, ...seed.photos.filter(photo => !merged.photos.some(existing => existing.id === photo.id))];
         merged.rolePermissions.EXECUTIVE_ENGINEER = [...new Set([...merged.rolePermissions.EXECUTIVE_ENGINEER, 'tenders'])];
-        return { ...merged, users, referencePhotosRestored: true, photos: photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) })), controlRecords, projects: reconcileProjects(merged.projects, controlRecords) };
+        if (!saved?.seniorEngineerAccessVersion) {
+          for (const role of ['CHIEF_ENGINEER', 'SUPERINTENDING_ENGINEER'] as const) {
+            merged.rolePermissions[role] = [...new Set([...merged.rolePermissions[role], ...ROLE_NAV.EXECUTIVE_ENGINEER])];
+          }
+        }
+        merged.seniorEngineerAccessVersion = 1;
+        for (const role of Object.keys(merged.rolePermissions) as Role[]) {
+          merged.rolePermissions[role] = merged.rolePermissions[role].filter(key => key !== 'proposals');
+        }
+        return { ...withSampleDocuments(merged, seed), mobileProposalAccessVersion: 1, users, referencePhotosRestored: true, photos: photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) })), controlRecords, projects: reconcileProjects(merged.projects, controlRecords) };
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;
@@ -1060,7 +1075,7 @@ function assertInspectionOperator(state: StoreState, id: string) {
   const inspection = state.inspections.find(i => i.id === id);
   if (!inspection) throw new Error('Inspection not found.');
   const actor = assertProjectAccess(state, inspection.projectId);
-  if (!canManageInspection(actor, inspection)) throw new Error('Only the assigned Junior Engineer may conduct this inspection.');
+  if (!canManageInspection(actor, inspection)) throw new Error('Only the assigned inspection officer may conduct this inspection.');
   return inspection;
 }
 

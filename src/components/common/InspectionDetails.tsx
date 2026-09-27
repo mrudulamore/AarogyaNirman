@@ -2,7 +2,7 @@ import { ProgressDocumentLinks } from './ProgressDocuments';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useStore } from '../../store/useStore';
-import { canReviewInspection } from '../../lib/inspectionAccess';
+import { canReviewInspection, canManageInspection } from '../../lib/inspectionAccess';
 import type { Inspection } from '../../types';
 import { Dialog, DialogContent, DialogFooter } from '../ui/overlays';
 import { Button, StatusBadge } from '../ui/primitives';
@@ -10,7 +10,7 @@ import { uiText } from '../../i18n/ui';
 import { formatDate } from '../../lib/utils';
 import { ROLE_LABELS } from '../../lib/constants';
 
-export function InspectionDetails({ inspection, onClose }: { inspection?: Inspection; onClose: () => void }) {
+export function InspectionDetails({ inspection, onClose, onStart }: { inspection?: Inspection; onClose: () => void; onStart?: (inspection: Inspection) => void }) {
   const state = useStore();
   const [reason, setReason] = useState('');
   function review(decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY') {
@@ -19,6 +19,7 @@ export function InspectionDetails({ inspection, onClose }: { inspection?: Inspec
   }
   return <Dialog open={!!inspection} onOpenChange={open => !open && onClose()}>{inspection && <DialogContent title={uiText('Inspection details')} description={`${inspection.id} · ${uiText(inspection.category.replace(/_/g, ' '))}`} size="lg">
     <div className="space-y-4 text-sm">
+      {onStart && canManageInspection(state.currentUser, inspection) && ['SCHEDULED', 'IN_PROGRESS', 'REVERIFY'].includes(inspection.status) && <Button onClick={() => onStart(inspection)}>{uiText('Start Inspection')}</Button>}
       <section><h3 className="font-semibold">{uiText('Supporting documents')}</h3><ProgressDocumentLinks attachments={inspection.attachments} /></section>
       {!!inspection.photos?.length && <section><h3 className="font-semibold">{uiText('Site photos')}</h3><div className="grid grid-cols-2 gap-2">{inspection.photos.map(photo => <img key={photo.mediaKey} src={photo.dataUrl} alt={uiText('Inspection site evidence')} className="w-full rounded" />)}</div></section>}
       {!!inspection.reviewHistory?.length && <section><h3 className="font-semibold">{uiText('Review history')}</h3>{inspection.reviewHistory.map((entry, index) => <details key={index} className="rounded border p-3"><summary>{uiText(entry.decision.replace('_', ' '))} ? {entry.reviewer} ? {formatDate(entry.date)}</summary><p className="whitespace-pre-wrap">{entry.comments}</p><p>{entry.findings}</p><ProgressDocumentLinks attachments={entry.attachments} />{entry.items.map(item => <p key={item.id}>{item.requirement}: {item.measurement} ? {item.result} ? {item.remarks}</p>)}<div className="grid grid-cols-2 gap-2">{entry.photos.map(photo => <img key={photo.mediaKey} src={photo.dataUrl} alt={uiText('Previous submission evidence')} />)}</div></details>)}</section>}

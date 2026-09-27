@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { ProjectAssistant } from '../common/ProjectAssistant';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { uiText } from '../../i18n/ui';
@@ -88,7 +89,7 @@ export function AppShell() {
         {!online && <div role="status" className="border-b border-blue-200 bg-blue-50 px-4 py-2 text-center text-xs font-medium text-blue-900">{uiText('Offline — captured photos and drafts remain on this device. Map tiles may be unavailable.')}</div>}
         <main className="app-content min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
           {!mobileField && location.pathname === '/dashboard' && currentUser.role !== 'WORKFORCE' && <Suspense fallback={null}><PendingWork /></Suspense>}
-          {mobileField && location.pathname === '/dashboard' ? <Suspense fallback={<p role="status">{uiText('Loading…')}</p>}><MobileFieldHome /></Suspense> : <Outlet />}
+          {Capacitor.isNativePlatform() && mobileField && location.pathname === '/dashboard' ? <Suspense fallback={<p role="status">{uiText('Loading…')}</p>}><MobileFieldHome /></Suspense> : <Outlet />}
         </main>
         <ProjectAssistant />
         <nav className={mobileField ? 'mobile-dock field-primary-dock' : 'mobile-dock'} aria-label={uiText('Navigation')}>

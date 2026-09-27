@@ -1,3 +1,4 @@
+import { nearestDistrict, reverseGeocode } from './placeName';
 const DB_NAME = 'aarogya-site-evidence';
 const STORE_NAME = 'images';
 
@@ -70,8 +71,9 @@ export async function saveEvidenceMedia(dataUrl: string, metadata: {
   context.shadowBlur = Math.max(3, fontSize / 6);
   context.shadowOffsetY = Math.max(1, fontSize / 18);
   context.font = `600 ${fontSize}px sans-serif`;
+  const place = await reverseGeocode(metadata.lat, metadata.lng, 4000).then(found => found ?? nearestDistrict(metadata.lat, metadata.lng));
   const lines = [
-    metadata.projectName,
+    `${metadata.projectName} | ${place.title}`,
     `Lat ${metadata.lat.toFixed(6)}, Long ${metadata.lng.toFixed(6)} · ±${metadata.accuracyM}m · ${metadata.status}`,
     new Date(metadata.capturedAt).toLocaleString('en-IN'),
   ];

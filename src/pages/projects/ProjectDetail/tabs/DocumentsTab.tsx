@@ -1,3 +1,5 @@
+import { ProgressDocuments, ProgressDocumentLinks } from '../../../../components/common/ProgressDocuments';
+import { saveBillFiles } from '../../../../lib/billAttachments';
 import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -21,6 +23,8 @@ export function DocumentsTab({ project }: { project: Project }) {
   const setDocumentStatus = useStore((s) => s.setDocumentStatus);
 
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [files,setFiles]=useState<File[]>([]);
+  const [saving,setSaving]=useState(false);
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [q, setQ] = useState('');
   const [form, setForm] = useState({ name: '', type: DOC_TYPES[0] as DocumentType });
@@ -78,7 +82,7 @@ export function DocumentsTab({ project }: { project: Project }) {
                   <Td>{uiText((d.sizeKb / 1024).toFixed(1))}{uiText(" MB")}</Td>
                   <Td><StatusBadge status={d.approvalStatus} /></Td>
                   <Td className="space-x-1.5 whitespace-nowrap">
-                    <Button size="sm" variant="ghost" onClick={() => downloadRecord(d)} title={uiText("Download document (PDF)")}><Download size={12} /></Button>
+                    <ProgressDocumentLinks attachments={d.attachments} /><Button size="sm" variant="ghost" onClick={() => downloadRecord(d)} title={uiText("Download record summary")}><Download size={12} /></Button>
                     {!readOnly && d.approvalStatus === 'PENDING' && <Button size="sm" variant="outline" onClick={() => { setDocumentStatus(d.id, 'APPROVED'); toast.success(uiText('Document approved.')); }}><CheckCircle2 size={12} />{uiText(" Approve")}</Button>}
                   </Td>
                 </Tr>
@@ -99,14 +103,19 @@ export function DocumentsTab({ project }: { project: Project }) {
                 <SelectContent>{DOC_TYPES.map((t) => <SelectItem key={t} value={t}>{uiText(t)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">{uiText("Simulated file upload")}</div>
+            <ProgressDocuments files={files} onChange={setFiles} disabled={saving} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUploadOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => {
+            <Button disabled={saving} onClick={async () => {
+              if (saving) return;
               if (!form.name.trim()) { toast.error(uiText('Document name required.')); return; }
-              uploadDocument({ projectId: project.id, name: form.name, type: form.type, uploadedBy: currentUser?.name ?? 'Deputy Engineer', sizeKb: Math.floor(200 + Math.random() * 5000) });
-              toast.success(uiText('Document uploaded.')); setUploadOpen(false);
+              if (!files.length) { toast.error(uiText('No documents attached')); return; }
+              setSaving(true); try {
+              const attachments=await saveBillFiles(files.map(file=>({file,category:'SUPPORTING' as const})));
+              uploadDocument({ attachments, projectId: project.id, name: form.name, type: form.type, uploadedBy: currentUser?.name ?? 'Deputy Engineer', sizeKb: files.reduce((sum,file)=>sum+file.size,0)/1024 });
+              toast.success(uiText('Document uploaded.')); setUploadOpen(false); setFiles([]);
+              } catch(error) { toast.error(uiText((error as Error).message)); } finally { setSaving(false); }
             }}>{uiText("Upload")}</Button>
           </DialogFooter>
         </DialogContent>

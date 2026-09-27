@@ -4,7 +4,7 @@ import { ProgressDocumentLinks } from '../../../../components/common/ProgressDoc
 import { saveBillFiles } from '../../../../lib/billAttachments';
 import { InspectionDetails } from '../../../../components/common/InspectionDetails';
 import { InspectionAllocation } from '../../../../components/common/InspectionAllocation';
-import { canReviewInspection, canManageInspection } from '../../../../lib/inspectionAccess';
+import { canAssignInspection, canReviewInspection, canManageInspection } from '../../../../lib/inspectionAccess';
 import { drawingWarning } from '../../../../lib/pendingWork';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
@@ -173,7 +173,7 @@ export function InspectionsTab({ project }: { project: Project }) {
   const currentUser = useStore((s) => s.currentUser);
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id).sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
   const defects = useStore((s) => s.defects).filter((d) => d.projectId === project.id);
-  const canSchedule = canReviewInspection(currentUser);
+  const canSchedule = canAssignInspection(currentUser);
   const startInspection = useStore(s => s.startInspection);
   const submitInspection = useStore((s) => s.submitInspection);
   const reinspect = useStore((s) => s.reinspect);
@@ -237,10 +237,10 @@ export function InspectionsTab({ project }: { project: Project }) {
                   <Td><StatusBadge status={insp.overallResult} /></Td>
                   <Td>{uiText(insp.status === 'COMPLETED' ? `${insp.score}%` : '—')}</Td>
                   <Td className="space-x-1.5 whitespace-nowrap">
-                    <Button size="sm" variant="ghost" onClick={event => { event.stopPropagation(); setDetailId(insp.id); }}>{uiText(canSchedule && insp.status === 'PENDING_REVIEW' ? 'Review inspection' : 'View details')}</Button>
+                    <Button size="sm" variant="ghost" onClick={event => { event.stopPropagation(); setDetailId(insp.id); }}>{uiText(canReviewInspection(currentUser) && insp.status === 'PENDING_REVIEW' ? 'Review inspection' : 'View details')}</Button>
                     {canSchedule && ['SCHEDULED', 'REVERIFY'].includes(insp.status) && <Button size="sm" variant="outline" onClick={event => { event.stopPropagation(); setAssignId(insp.id); }}>{uiText('Reassign')}</Button>}
                     {canConduct && ['SCHEDULED', 'IN_PROGRESS', 'REVERIFY'].includes(insp.status) && <Button size="sm" variant="outline" onClick={event => { event.stopPropagation(); openChecklist(insp); }}><ClipboardCheck size={12} /> {uiText(insp.isReinspection ? 'Submit Result' : 'Start Inspection')}</Button>}
-                    {canSchedule && canReinspectSource && (
+                    {canReviewInspection(currentUser) && canReinspectSource && (
                       <Button size="sm" onClick={event => { event.stopPropagation(); try { const r = reinspect(canReinspectSource.id); toast.success(uiText('Reinspection assigned to JE.')); setDetailId(r.id); } catch (error) { toast.error(uiText((error as Error).message)); } }}>
                         <RefreshCw size={12} />{uiText(" Re-inspect")}</Button>
                     )}
@@ -258,7 +258,7 @@ export function InspectionsTab({ project }: { project: Project }) {
       {scheduleOpen && <InspectionAllocation project={project} onClose={() => setScheduleOpen(false)} />}
       {assignId && <InspectionAllocation project={project} inspection={inspections.find(i => i.id === assignId)} onClose={() => setAssignId(null)} />}
 
-      <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} />
+      <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} onStart={inspection => { setDetailId(null); openChecklist(inspection); }} />
       <Dialog open={!!checklistId} onOpenChange={(v) => !v && setChecklistId(null)}>
         {active && (
           <DialogContent title={uiMessage("{{0}} Inspection Checklist", [active.category.replace(/_/g, ' ')])} description={uiText(project.name)} size="lg">

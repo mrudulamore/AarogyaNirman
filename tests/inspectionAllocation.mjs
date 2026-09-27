@@ -25,7 +25,7 @@ try {
   const outside = { ...junior, id: 'OUTSIDE-JE', assignedProjectIds: [] };
   useStore.setState({users: [...state().users, other, outside]});
   const input = {projectId: project.id, category: 'PLUMBING', scheduledDate: '2026-10-01', scheduledTime: '10:00', location: 'Ward B', scope: 'Pressure', assignedToId: junior.id, inspector: '', comments: ''};
-  assert.deepEqual(inspectionAssignmentRoles(ee), ['DEPUTY_ENGINEER']);
+  assert.deepEqual(inspectionAssignmentRoles(ee), ['PROJECT_MANAGER', 'DEPUTY_ENGINEER']);
   assert.deepEqual(inspectionAssignmentRoles(junior), []);
   assert.throws(() => state().scheduleInspection({...input, assignedToId: outside.id}), /eligible/);
   const contractor = inspectionAccounts(state().users, state().projects, state().contractors).find(u => u.role === 'CONTRACTOR');
@@ -36,8 +36,8 @@ try {
   state().assignInspection(inspection.id, other.id, 'Site coverage');
   assert.equal(state().inspections.find(i => i.id === inspection.id).assignmentHistory.length, 2);
   useStore.setState({currentUser: junior});
-  assert.throws(() => state().startInspection(inspection.id), /assigned Junior/);
-  assert.throws(() => state().assignInspection(inspection.id, junior.id, 'Take over'), /Only EE/);
+  assert.throws(() => state().startInspection(inspection.id), /assigned inspection officer/);
+  assert.throws(() => state().assignInspection(inspection.id, junior.id, 'Take over'), /supervising engineer/);
   useStore.setState({currentUser: other});
   state().startInspection(inspection.id);
   useStore.setState({currentUser: ee});

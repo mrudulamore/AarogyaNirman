@@ -31,9 +31,11 @@ export const NAV_ITEMS: Record<string, NavItem> = {
   portfolioTimeline: { label: 'Portfolio Timeline', path: '/portfolio-timeline', icon: GanttChart },
 };
 
+const ENGINEER_NAV = ['dashboard', 'projects', 'tenders', 'contractors', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'];
+
 export const ROLE_NAV: Record<Role, string[]> = {
-  CHIEF_ENGINEER: ['dashboard', 'projects', 'notifications'],
-  SUPERINTENDING_ENGINEER: ['dashboard', 'projects', 'notifications'],
+  CHIEF_ENGINEER: [...ENGINEER_NAV],
+  SUPERINTENDING_ENGINEER: [...ENGINEER_NAV],
   SITE_SUPERVISOR: ['dashboard', 'projects', 'field', 'quality', 'defects', 'documents', 'notifications', 'search'],
   WORKFORCE: ['dashboard'],
   // Superadmin — full statewide visibility across every module, plus the exclusive
@@ -46,7 +48,7 @@ export const ROLE_NAV: Record<Role, string[]> = {
   COMMISSIONER: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   REGIONAL_DIRECTOR: ['dashboard', 'projects', 'tenders', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
   CIVIL_SURGEON: ['dashboard', 'projects', 'contractors', 'staff', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
-  EXECUTIVE_ENGINEER: ['dashboard', 'projects', 'tenders', 'contractors', 'finance', 'quality', 'defects', 'approvals', 'documents', 'reports', 'notifications', 'audit', 'search'],
+  EXECUTIVE_ENGINEER: [...ENGINEER_NAV],
   // Project Manager (PMU/PMC) — day-to-day cross-functional coordinator for their assigned
   // portfolio: schedule, budget, contractor/workforce coordination, risk & governance registers,
   // and field visibility, without the statewide/jurisdictional oversight senior roles carry.
