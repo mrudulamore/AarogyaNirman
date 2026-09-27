@@ -25,10 +25,12 @@ export function GovernanceTab({ project }: { project: Project }) {
   const raiseSiteIssue = useStore((s) => s.raiseSiteIssue);
   const resolveSiteIssue = useStore((s) => s.resolveSiteIssue);
 
-  const canApprove = currentUser?.role === 'COMMISSIONER' || currentUser?.role === 'EXECUTIVE_ENGINEER' || currentUser?.role === 'CIVIL_SURGEON';
+  const canApprove = currentUser?.role === 'COMMISSIONER';
   const canRaiseIssue = currentUser?.role === 'DEPUTY_ENGINEER' || currentUser?.role === 'EXECUTIVE_ENGINEER' || currentUser?.role === 'CONTRACTOR';
 
   const [issueOpen, setIssueOpen] = useState(false);
+  const [changeId, setChangeId] = useState<string | null>(null);
+  const selectedChange = changeOrders.find(c => c.id === changeId);
   const [form, setForm] = useState({ category: 'LAND' as SiteIssue['category'], description: '', impact: 'SCHEDULE' as SiteIssue['impact'] });
 
   const ee = users.find((u) => u.id === project.executiveEngineerId);
@@ -64,17 +66,19 @@ export function GovernanceTab({ project }: { project: Project }) {
         <CardHeader><CardTitle className="flex items-center gap-2"><GitBranch size={15} />{uiText(" Change / Variation Orders")}</CardTitle></CardHeader>
         {changeOrders.length === 0 ? <EmptyState title={uiText("No change orders raised for this project")} /> : (
           <Table>
-            <THead><Tr><Th>{uiText("Title")}</Th><Th>{uiText("Cost Impact")}</Th><Th>{uiText("Schedule Impact")}</Th><Th>{uiText("Requested By")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
+            <THead><Tr><Th>{uiText("Title")}</Th><Th>{uiText("Cost Impact")}</Th><Th>{uiText("Schedule Impact")}</Th><Th>{uiText("Requested By")}</Th><Th>{uiText("Reviewer")}</Th><Th>{uiText("Date")}</Th><Th>{uiText("Status")}</Th><Th /></Tr></THead>
             <TBody>
               {changeOrders.map((c) => (
                 <Tr key={c.id}>
-                  <Td className="max-w-[220px] truncate font-medium text-slate-800">{uiText(c.title)}</Td>
+                  <Td className="min-w-[200px] max-w-[280px] whitespace-normal font-medium text-slate-800"><button className="text-left text-blue-700 hover:underline" onClick={() => setChangeId(c.id)}>{uiText(c.title)}</button></Td>
                   <Td className={c.costImpact >= 0 ? 'text-amber-600' : 'text-emerald-600'}>{uiText(c.costImpact >= 0 ? '+' : '')}{uiText(formatCurrency(c.costImpact))}</Td>
                   <Td>{uiText(c.scheduleImpactDays > 0 ? `+${c.scheduleImpactDays} days` : 'None')}</Td>
                   <Td>{uiText(c.requestedBy)}</Td>
+                  <Td className="min-w-[180px] whitespace-normal"><p>{uiText(c.approvedBy ?? ROLE_LABELS.COMMISSIONER)}</p><p className="mt-1 text-xs text-slate-500">{uiText(c.approvedBy ? 'Decision recorded' : 'Role-based review; no named assignee')}</p></Td>
                   <Td>{uiText(formatDate(c.requestedDate))}</Td>
                   <Td><StatusBadge status={c.status} label={uiText(c.status.replace(/_/g, ' '))} /></Td>
                   <Td className="whitespace-nowrap">
+                    <Button size="sm" variant="outline" onClick={() => setChangeId(c.id)}>{uiText('View details')}</Button>
                     {c.status === 'PENDING_APPROVAL' && canApprove && (
                       <div className="flex gap-1.5">
                         <Button size="sm" variant="success" onClick={() => { try {  decideChangeOrder(c.id, 'APPROVED'); toast.success(uiText('Change order approved.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Approve")}</Button>
@@ -145,6 +149,35 @@ export function GovernanceTab({ project }: { project: Project }) {
           </Table>
         )}
       </Card>
+
+      <Dialog open={!!selectedChange} onOpenChange={open => { if (!open) setChangeId(null); }}>
+        <DialogContent title={uiText('Change order details')} description={project.name}>
+          {selectedChange && <div className="max-h-[65vh] space-y-4 overflow-y-auto text-sm">
+            <h3 className="font-semibold text-slate-800">{uiText(selectedChange.title)}</h3>
+            <StatusBadge status={selectedChange.status} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <GField label="Requested by" value={selectedChange.requestedBy} />
+              <GField label="Request date" value={formatDate(selectedChange.requestedDate)} />
+              <GField label="Review authority" value={ROLE_LABELS.COMMISSIONER} />
+              <GField label="Assigned reviewer" value="No individual assigned; Commissioner review queue" />
+              <GField label="Assigned by" value="Not recorded" />
+              <GField label="Project Executive Engineer" value={ee?.name ?? 'Not assigned'} />
+              <GField label="Cost impact" value={`${selectedChange.costImpact >= 0 ? '+' : ''}${formatCurrency(selectedChange.costImpact)}`} />
+              <GField label="Schedule impact" value={`${selectedChange.scheduleImpactDays > 0 ? '+' : ''}${selectedChange.scheduleImpactDays} ${uiText('days')}`} />
+              <GField label="Record reference" value={selectedChange.id} />
+              <GField label="Supporting document reference" value={selectedChange.supportingDocument || 'Not provided'} />
+              {selectedChange.approvedBy && <GField label="Decision by" value={selectedChange.approvedBy} />}
+              {selectedChange.approvedDate && <GField label="Decision date" value={formatDate(selectedChange.approvedDate)} />}
+            </div>
+            <GField label="Reason for change" value={selectedChange.reason || 'Not provided'} />
+            {selectedChange.status === 'PENDING_APPROVAL' && <div className="rounded-xl bg-blue-50 p-3 text-blue-900">
+              <p className="font-medium">{uiText('Next step')}</p>
+              <p className="mt-1">{uiText('The Commissioner reviews the reason, cost and schedule impact. Before approval, verify the signed variation in Contract controls using the record reference above.')}</p>
+            </div>}
+          </div>}
+          <DialogFooter><Button variant="outline" onClick={() => setChangeId(null)}>{uiText('Close')}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={issueOpen} onOpenChange={setIssueOpen}>
         <DialogContent title={uiText("Raise Site Issue / Hindrance")} description={uiText(project.name)}>

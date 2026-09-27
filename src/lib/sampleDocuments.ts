@@ -21,7 +21,25 @@ export function withSampleDocuments<T extends Records>(records: T, reference: Re
       ['GST (INR)', bill.gst.toFixed(2)], ['Retention (INR)', bill.retention.toFixed(2)],
       ['Penalty (INR)', bill.penalty.toFixed(2)], ['Net payable (INR)', bill.netPayable.toFixed(2)],
       ['Record status', bill.status], ['Submitted date', bill.submittedDate],
-    ] })),
+    ] })).map(bill => {
+      // Supplement reference bill PDFs; never attach examples to user-created bills or uploads.
+      if (!bill.attachments?.some(file => file.id === `sample:${bill.id}` && file.sample)
+        || bill.attachments.some(file => file.id === `sample-review:${bill.id}`)) return bill;
+      return { ...bill, attachments: [...bill.attachments, {
+        id: `sample-review:${bill.id}`, category: 'SUPPORTING' as const,
+        name: `Bill-Review-${bill.billNumber.replace(/[^a-zA-Z0-9-]/g, '-')}.pdf`,
+        mimeType: 'application/pdf', size: 0,
+        sample: { title: 'Bill Review Sheet', fields: [
+          ['Bill number', bill.billNumber], ['Project', projectName(bill.projectId)],
+          ['Billing period', `${bill.periodFrom} to ${bill.periodTo}`],
+          ['Gross amount (INR)', bill.grossAmount.toFixed(2)], ['Net payable (INR)', bill.netPayable.toFixed(2)],
+          ['Measurement review', 'Check claimed quantities against the measurement book and approved BOQ.'],
+          ['Quality review', 'Check inspection results and outstanding defects for the billed work.'],
+          ['Financial review', 'Check deductions, GST, retention and previous payments.'],
+          ['Reviewer outcome', 'To be recorded by the authorized reviewing officer.'],
+        ] as [string, string][] },
+      }] };
+    }),
     documents: attach(records.documents, reference.documents, doc => ({ title: `Sample ${doc.type}`, fields: [
       ['Document', doc.name], ['Project', projectName(doc.projectId)], ['Document ID', doc.id],
       ['Type', doc.type], ['Version', String(doc.version)], ['Record date', doc.uploadDate], ['Record status', doc.approvalStatus],
@@ -38,7 +56,7 @@ export async function sampleDocumentBlob(sample: NonNullable<BillAttachment['sam
   const pdf = new jsPDF();
   function header() {
     pdf.setTextColor(170, 75, 20); pdf.setFontSize(13);
-    pdf.text('SAMPLE DOCUMENT - DEMONSTRATION ONLY', 15, 18);
+    pdf.text('SAMPLE DOCUMENT - FOR REVIEW', 15, 18);
     pdf.setTextColor(30, 45, 65); pdf.setFontSize(16);
     pdf.text(pdf.splitTextToSize(sample.title, 178), 15, 32);
     pdf.setFontSize(10);
@@ -51,6 +69,6 @@ export async function sampleDocumentBlob(sample: NonNullable<BillAttachment['sam
   }
   if (y > 245) { pdf.addPage(); header(); y = 55; }
   pdf.setTextColor(130, 65, 25);
-  pdf.text(['Illustrative document generated from an existing demo record.', 'Not an original invoice, signed certificate, or verified supporting evidence.'], 15, y + 8);
+  pdf.text(['Illustrative document generated from the project record.', 'Not an original invoice, signed certificate, or verified supporting evidence.'], 15, y + 8);
   return pdf.output('blob');
 }

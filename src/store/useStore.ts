@@ -6,6 +6,7 @@ import { isRealSitePhoto } from '../lib/sitePhotoEvidence';
 import { canAssignInspection, canReviewInspection, canManageInspection, inspectionAccounts, inspectionAssignmentRoles } from '../lib/inspectionAccess';
 import { validateMilestonePhoto } from '../lib/milestonePhoto';
 import { withDemoFinance } from '../mock/demoFinance';
+import { withPendingWorkDemo } from '../mock/pendingWorkDemo';
 import { extendDemoPortfolio, mergeDemoSamples } from '../mock/demoPortfolio';
 import { workforceAccount } from '../lib/workforceAccount';
 import { DEFAULT_ESCALATION, pendingWork, daysLate, drawingWarning, type EscalationPolicy } from '../lib/pendingWork';
@@ -35,6 +36,8 @@ import type {
 const baseSeed = withPuneDemo(extendDemoPortfolio(generateMockData()));
 const seed = withSampleDocuments(baseSeed, baseSeed);
 seed.users = proposalAccounts(seed.users);
+const pendingDemo = withPendingWorkDemo({ ...seed, controlRecords: [] });
+seed.approvals = pendingDemo.approvals;
 seed.photos = seed.photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) }));
 let auditSeq = 0;
 const nid = (p: string) => `${p}-${Date.now().toString(36)}${(auditSeq++).toString(36)}`;
@@ -251,7 +254,7 @@ export const useStore = create<StoreState>()(
           get().pushNotification({ projectId: task.projectId, type: level ? 'WARNING' : 'INFO', targetRoles: [...new Set([task.ownerRole, role])], message: task.title + ' is ' + days + ' days overdue. Escalation level ' + level + '.' });
         }
       },
-      controlRecords: withDemoFinance(seed.projects, seed.projects, []),
+      controlRecords: withDemoFinance(seed.projects, seed.projects, pendingDemo.controlRecords),
       ...createControlActions(set, get),
       ...seed,
       projects: reconcileProjects(seed.projects, withDemoFinance(seed.projects, seed.projects, [])),
@@ -1056,7 +1059,7 @@ export const useStore = create<StoreState>()(
         for (const role of Object.keys(merged.rolePermissions) as Role[]) {
           merged.rolePermissions[role] = merged.rolePermissions[role].filter(key => key !== 'proposals');
         }
-        return { ...withSampleDocuments(merged, seed), mobileProposalAccessVersion: 1, users, referencePhotosRestored: true, photos: photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) })), controlRecords, projects: reconcileProjects(merged.projects, controlRecords) };
+        return withPendingWorkDemo({ ...withSampleDocuments(merged, seed), mobileProposalAccessVersion: 1, users, referencePhotosRestored: true, photos: photos.map(photo => ({ ...photo, isReference: !isRealSitePhoto(photo) })), controlRecords, projects: reconcileProjects(merged.projects, controlRecords) });
       },
       partialize: (state) => {
         const { logAction, login, logout, addProject, updateProject, setRoleNavAccess, updateUserRole, ...persisted } = state as any;
