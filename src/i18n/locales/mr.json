@@ -115,8 +115,8 @@
     "VIGILANCE_AUDIT": "दक्षता व लेखापरीक्षा अधिकारी",
     "IT_ADMIN": "आयटी / सिस्टम प्रशासक",
     "WORKFORCE": "कामगार",
-    "CHIEF_ENGINEER": "????? ???????",
-    "SUPERINTENDING_ENGINEER": "??????? ???????"
+    "CHIEF_ENGINEER": "मुख्य अभियंता",
+    "SUPERINTENDING_ENGINEER": "अधीक्षक अभियंता"
   },
   "status": {
     "ON_TRACK": "योजनेनुसार",
