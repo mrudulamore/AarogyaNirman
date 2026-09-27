@@ -1,8 +1,8 @@
-﻿import type { Project } from '../types';
+import type { Project } from '../types';
 import type { ControlRecord } from '../lib/projectControls';
 
 /** Stable demo history; totals match seeded projects and user ledger records are preserved. */
-export function withDemoFinance(projects: Project[], samples: Project[], records: ControlRecord[]): ControlRecord[] {
+function seedDemoFinance(projects: Project[], samples: Project[], records: ControlRecord[]): ControlRecord[] {
   let result = [...records];
   for (const [index, sample] of samples.entries()) {
     if (!projects.some(p => p.id === sample.id)) continue;
@@ -34,4 +34,30 @@ export function withDemoFinance(projects: Project[], samples: Project[], records
     }
   }
   return result;
+}
+
+/** Repair only byte-for-byte-equivalent generated demo ledgers. User edits, additional
+ * transactions and changed sanctions require review, never an automatic write-down. */
+export function withDemoFinance(projects: Project[], samples: Project[], records: ControlRecord[]): ControlRecord[] {
+  const previousSamples = samples.map(p => ({ ...p, amountReleased: Math.round(p.sanctionedBudget * (p.financialProgress / 100) * 1.05) }));
+  const previous = seedDemoFinance(projects, previousSamples, []);
+  const corrected = seedDemoFinance(projects, samples, []);
+  const canonical = (value: unknown): string => {
+    if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
+    if (value && typeof value === 'object') return '{' + Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>JSON.stringify(k)+':'+canonical(v)).join(',') + '}';
+    return JSON.stringify(value) ?? 'undefined';
+  };
+  let result = [...records];
+  for (const sample of samples) {
+    const old = previousSamples.find(p=>p.id===sample.id)!;
+    if (old.amountReleased <= sample.sanctionedBudget || projects.find(p=>p.id===sample.id)?.sanctionedBudget !== sample.sanctionedBudget) continue;
+    const finance = records.filter(r=>r.projectId===sample.id && ['RECEIPT','PAYMENT','REVERSAL'].includes(r.kind));
+    const expected = previous.filter(r=>r.projectId===sample.id);
+    const matches = finance.length === expected.length && finance.every(r=>expected.some(e=>e.id===r.id && canonical(e)===canonical(r)));
+    if (matches && finance.length) {
+      const oldIds = new Set(finance.map(r=>r.id));
+      result = result.filter(r=>!oldIds.has(r.id)).concat(corrected.filter(r=>r.projectId===sample.id));
+    }
+  }
+  return seedDemoFinance(projects, samples, result);
 }

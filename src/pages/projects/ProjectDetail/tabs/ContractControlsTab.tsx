@@ -40,7 +40,7 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
   const [error, setError] = useState('');
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [fileKey, setFileKey] = useState(0);
-  const records = s.controlRecords.filter(r => r.projectId === project.id && (!requestedRecord || r.id === requestedRecord) && (monthly ? r.kind === 'MONTHLY' : r.kind !== 'MONTHLY'));
+  const records = s.controlRecords.filter(r => r.projectId === project.id && (!requestedRecord || r.id === requestedRecord) && (monthly ? r.kind === 'MONTHLY' : !['MONTHLY','MEASUREMENT','MATERIAL_TEST'].includes(r.kind)));
   const current = activeControls(s, project.id);
   const tx = actualTransactions(s, project.id);
   const gaps = workOrderGaps(s, project.id);
@@ -93,7 +93,7 @@ export function ContractControlsTab({ project, monthly = false }: { project: Pro
     {error && <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{uiText(error)}</p>}
     {editable && !requestedRecord && <Card><CardContent className="p-4"><form onSubmit={submit} className="space-y-3"><fieldset disabled={busy} className="space-y-3">
       <h3 className="font-semibold">{uiText(monthly ? 'Add Monthly Report' : 'Submit supporting record')}</h3>
-      {!monthly && <label className="block text-xs">{uiText('Record type')}<NativeSelect value={kind} onChange={e => { const next = e.target.value as ControlKind; setKind(next); setCategory(next === 'PROCUREMENT' ? PROCUREMENT[0] : CERTIFICATES[0]); setSupersedesId(''); }}>{(Object.keys(KIND_LABELS) as ControlKind[]).filter(k => k !== 'MONTHLY' && (finance || !['PAYMENT', 'RECEIPT', 'REVERSAL', 'RELEASE'].includes(k))).map(k => <option key={k} value={k}>{uiText(KIND_LABELS[k])}</option>)}</NativeSelect></label>}
+      {!monthly && <label className="block text-xs">{uiText('Record type')}<NativeSelect value={kind} onChange={e => { const next = e.target.value as ControlKind; setKind(next); setCategory(next === 'PROCUREMENT' ? PROCUREMENT[0] : CERTIFICATES[0]); setSupersedesId(''); }}>{(Object.keys(KIND_LABELS) as ControlKind[]).filter(k => !['MONTHLY','MEASUREMENT','MATERIAL_TEST'].includes(k) && (finance || !['PAYMENT', 'RECEIPT', 'REVERSAL', 'RELEASE'].includes(k))).map(k => <option key={k} value={k}>{uiText(KIND_LABELS[k])}</option>)}</NativeSelect></label>}
       {['CERTIFICATE', 'PROCUREMENT'].includes(kind) && <label className="block text-xs">{uiText('Category')}<NativeSelect value={category} onChange={e => setCategory(e.target.value)}>{(kind === 'CERTIFICATE' ? CERTIFICATES : PROCUREMENT).map(c => <option key={c} value={c}>{uiText(c)}</option>)}</NativeSelect></label>}
       <label className="block text-xs">{uiText('Document / transaction reference')} *<Input required value={reference} onChange={e => setReference(e.target.value)} /></label>
       <div className="grid gap-3 sm:grid-cols-2">{CONTROL_FIELDS[kind].map(key => { const choices = options(key); return <label key={key} className="block text-xs">{uiText(LABELS[key])}{choices ? <NativeSelect value={fields[key] ?? ''} onChange={e => field(key, e.target.value)}><option value="">{uiText('Select')}</option>{choices.map(o => <option key={o.id} value={o.id}>{uiText(o.label)}</option>)}</NativeSelect> : <Input type={key.endsWith('Date') ? 'date' : key === 'month' ? 'month' : ['amount', 'progress', 'quantityDelta', 'rate', 'scheduleDays', 'liabilityMonths'].includes(key) ? 'number' : 'text'} step="any" value={fields[key] ?? ''} onChange={e => field(key, e.target.value)} />}</label>; })}</div>
