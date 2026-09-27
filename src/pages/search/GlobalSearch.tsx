@@ -15,11 +15,8 @@ export function GlobalSearch() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get('q') ?? '');
-  const currentUser = useStore((s) => s.currentUser);
-  const canSeeWorkers = currentUser?.role === 'DEPUTY_ENGINEER';
   const { projects, projectIds } = useProjectScope();
   const contractors = useStore((s) => s.contractors).filter(c => projects.some(p => p.contractorId === c.id));
-  const workers = useStore((s) => s.workers).filter(r => projectIds.has(r.projectId));
   const users = useStore((s) => s.users).filter(u => projects.some(p => [p.siteEngineerId, p.executiveEngineerId, p.projectManagerId, p.ownerDirectorId].includes(u.id)));
   const bills = useStore((s) => s.bills).filter(r => projectIds.has(r.projectId));
   const inspections = useStore((s) => s.inspections).filter(r => projectIds.has(r.projectId));
@@ -33,14 +30,13 @@ export function GlobalSearch() {
     return {
       projects: projects.filter((p) => p.name.toLowerCase().includes(query) || p.district.toLowerCase().includes(query)).slice(0, 8),
       contractors: contractors.filter((c) => c.company.toLowerCase().includes(query)).slice(0, 8),
-      workers: workers.filter((w) => w.name.toLowerCase().includes(query)).slice(0, 8),
       engineers: users.filter((u) => u.name.toLowerCase().includes(query)).slice(0, 8),
       bills: bills.filter((b) => b.billNumber.toLowerCase().includes(query)).slice(0, 8),
       inspections: inspections.filter((i) => i.category.toLowerCase().includes(query.replace(/ /g, '_'))).slice(0, 8),
       defects: defects.filter((d) => d.id.toLowerCase().includes(query) || d.description.toLowerCase().includes(query)).slice(0, 8),
       documents: documents.filter((d) => d.name.toLowerCase().includes(query)).slice(0, 8),
     };
-  }, [query, projects, contractors, workers, users, bills, inspections, defects, documents]);
+  }, [query, projects, contractors, users, bills, inspections, defects, documents]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,13 +66,6 @@ export function GlobalSearch() {
               <ResultRow key={c.id} onClick={() => navigate('/contractors')} primary={c.company} secondary={c.regId} />
             ))}
           </ResultCard>
-          {canSeeWorkers && (
-            <ResultCard title={uiText("Workers")} empty="No matching workers">
-              {results.workers.map((w) => (
-                <ResultRow key={w.id} onClick={() => navigate('/workers')} primary={w.name} secondary={w.role} />
-              ))}
-            </ResultCard>
-          )}
           <ResultCard title={uiText("Officers & Engineers")} empty="No matching officers">
             {results.engineers.map((u) => (
               <ResultRow key={u.id} onClick={() => navigate('/staff')} primary={u.name} secondary={u.designation} />

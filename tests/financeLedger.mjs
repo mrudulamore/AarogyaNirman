@@ -33,6 +33,11 @@ try {
   assert.equal(reports.government.total,projects[0].amountReleased);
   assert.equal(reports.contractor.pending[0].netPayable,800);
   assert.ok(pendingWork(testState,'2026-09-22').some(t=>t.billId==='B' && t.tab==='finance'));
+  const orphan = {...records[2], id:'UNLINKED', fields:{...records[2].fields, billId:'MISSING', amount:'75'}};
+  const unlinked = verifiedFundReports({...testState,controlRecords:[...records,orphan]},projects,'2026-09-22');
+  assert.equal(unlinked.contractor.total,275, 'Verified unlinked payments must not disappear from expenditure');
+  assert.ok(unlinked.contractor.details.rows.some(row => String(row[2]).includes('No linked bill')));
+  assert.equal(testState.bills.length,1, 'Reporting must not fabricate bills');
   assert.equal(deadlineState({...project,status:'ON_TRACK',plannedCompletionDate:'2026-09-25'},'2026-09-22').days,3);
   assert.equal(deadlineState({...project,status:'ON_TRACK',plannedCompletionDate:'2026-09-20'},'2026-09-22').label,'{{0}} days overdue');
   assert.equal(deadlineState({...project,status:'COMPLETED'},'2026-09-22').label,'Completed');

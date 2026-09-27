@@ -1,11 +1,21 @@
 import hospitalReferences from './hospitalReferences.json';
 
+const PUNE_DEMO_HOSPITALS = [
+  'Rural Hospital — Baramati', 'Sub-District Hospital — Indapur',
+  'Women & Child Hospital — Shirur', 'Rural Hospital — Junnar',
+  'Community Health Centre — Bhor', 'Rural Hospital — Wai',
+  'Sub-District Hospital — Karad', 'Women & Child Hospital — Miraj',
+  'Rural Hospital — Pandharpur', 'Community Health Centre — Ichalkaranji',
+  'Rural Hospital — Daund', 'Sub-District Hospital — Phaltan',
+];
+
 /** Real facility names with explicitly illustrative project records. IDs stay stable. */
 export function extendDemoPortfolio<T extends { projects: any[]; users: any[]; contractors: any[] }>(data: T): T {
   const result: any = { ...data };
   for (const [key, value] of Object.entries(data)) if (Array.isArray(value)) result[key] = [...value];
-  for (let i = 0; i < 4; i++) {
-    const template = data.projects[i + 1];
+  const puneTemplates = data.projects.filter(project => project.division === 'Pune Division');
+  for (let i = 0; i < 4 + (puneTemplates.length ? PUNE_DEMO_HOSPITALS.length : 0); i++) {
+    const template = i < 4 ? data.projects[i + 1] : puneTemplates[(i - 4) % puneTemplates.length];
     const projectId = `DEMO24-PRJ-${21 + i}`;
     if (result.projects.some((p: any) => p.id === projectId)) continue;
     const groups: Record<string, any[]> = {};
@@ -16,11 +26,13 @@ export function extendDemoPortfolio<T extends { projects: any[]; users: any[]; c
     const ids = new Map<string,string>([[template.id,projectId]]);
     function collect(v: any) { if (!v || typeof v !== 'object') return; if (v.id && !ids.has(v.id)) ids.set(v.id,`DEMO24-${21+i}-${v.id}`); Object.values(v).forEach(collect); }
     Object.values(groups).forEach(collect);
-    const name = hospitalReferences[i].name;
+    const name = i < 4 ? hospitalReferences[i].name : PUNE_DEMO_HOSPITALS[i - 4];
     function clone(v: any): any { if (typeof v === 'string') return ids.get(v) ?? (v === template.name ? name : v); if (Array.isArray(v)) return v.map(clone); if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k,x]) => [k,clone(x)])); return v; }
     for (const [key, rows] of Object.entries(groups)) result[key].push(...clone(rows));
     const p = result.projects[result.projects.length - 1];
-    p.description = `Government hospital reference: ${hospitalReferences[i].source}. Construction activity, dates, finances, coordinates and photos are illustrative sample records, not verified information about this facility.`;
+    p.description = i < 4
+      ? `Government hospital reference: ${hospitalReferences[i].source}. Construction activity, dates, finances, coordinates and photos are illustrative sample records, not verified information about this facility.`
+      : 'Fictional hospital project for demonstration. Construction activity, dates, finances, coordinates and photos are illustrative sample records, not verified information about a real facility.';
     for (const key of ['users','contractors']) result[key] = result[key].map((u: any) => u.assignedProjectIds?.includes(template.id) ? { ...u, assignedProjectIds: [...u.assignedProjectIds, projectId] } : u);
   }
   return result;
@@ -32,7 +44,10 @@ export function mergeDemoSamples<T extends { projects: any[] }>(saved: T, seed: 
   const renamed = new Map<string, string>();
   result.projects = saved.projects.map((project: any) => {
     const reference = seed.projects.find((p: any) => p.id === project.id);
-    if (!reference || !/^Demo Hospital (21|22|23|24) /.test(project.name) || !project.id.startsWith('DEMO24-PRJ-')) return project;
+    if (!reference || !project.id.startsWith('DEMO24-PRJ-')) return project;
+    const legacyName = /^Demo Hospital (21|22|23|24) /.test(project.name);
+    const prefixedName = project.name === `Demo ${reference.name}`;
+    if (!legacyName && !prefixedName) return project;
     renamed.set(project.name, reference.name);
     return { ...project, name: reference.name, description: reference.description };
   });

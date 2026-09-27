@@ -40,7 +40,8 @@
     "search": "Global Search",
     "field": "Field App",
     "access": "Manage Access",
-    "portfolioTimeline": "Portfolio Timeline"
+    "portfolioTimeline": "Portfolio Timeline",
+    "proposals": "Project Proposals"
   },
   "sidebar": {
     "govName": "Govt. of Maharashtra",
@@ -56,10 +57,10 @@
     "viewAllNotifications": "View all notifications",
     "noNotifications": "No notifications",
     "switchRole": "Switch role",
-    "signOut": "Sign out"
+    "signOut": "Logout"
   },
   "auth": {
-    "unknownLoginId": "Login ID not recognised. Enter one of the demo account IDs shown below.",
+    "unknownLoginId": "Login ID not recognised. Enter a valid login ID or select your role below.",
     "heroTitle": "Hospital Construction Monitoring & Project Management System",
     "heroSubtitle": "End-to-end visibility of public hospital infrastructure — from administrative sanction to operational handover — with transparent progress, evidence-backed quality verification and accountable financial approvals.",
     "heroFooterNote": "Secure government access · Role-based authorization · Full audit trail",
@@ -89,9 +90,18 @@
     "resetSentPrefix": "A password reset link has been sent to",
     "resetSentSuffix": "Please check your inbox.",
     "selectRoleTitle": "Select your role",
-    "selectRoleSubtitle": "Your government account is provisioned with the following access levels. Choose how you'd like to continue this session."
+    "selectRoleSubtitle": "Your government account is provisioned with the following access levels. Choose how you'd like to continue this session.",
+    "roleGroups": {
+      "leadership": "Ministry & Leadership",
+      "engineering": "Engineering & Project Management",
+      "health": "Health Administration",
+      "execution": "Site Execution",
+      "administration": "Oversight & System Administration"
+    },
+    "selectDemoRole": "Select demo role"
   },
   "roles": {
+    "SITE_SUPERVISOR": "Site Supervisor",
     "SUPERADMIN": "Super Administrator",
     "MINISTER": "Minister / Secretary (Public Health)",
     "COMMISSIONER": "Commissioner / Director (Health Services)",
@@ -104,7 +114,9 @@
     "MEDICAL_OFFICER": "Medical Officer / Facility In-Charge",
     "VIGILANCE_AUDIT": "Vigilance & Audit Officer",
     "IT_ADMIN": "IT / System Administrator",
-    "WORKFORCE": "Workforce"
+    "WORKFORCE": "Workforce",
+    "CHIEF_ENGINEER": "Chief Engineer",
+    "SUPERINTENDING_ENGINEER": "Superintending Engineer"
   },
   "status": {
     "ON_TRACK": "On Track",

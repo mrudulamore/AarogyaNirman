@@ -1,23 +1,18 @@
 import { DeadlineBadge } from '../../components/common/DeadlineBadge';
-import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
+import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, LayoutGrid, List as ListIcon, ArrowRight, ChevronRight, Landmark, Building2, Map, MapPinned, Hospital, RotateCcw } from 'lucide-react';
+import { LayoutGrid, List as ListIcon, ArrowRight, ChevronRight, Landmark, Building2, Map, MapPinned, Hospital, RotateCcw } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { PageHeader } from '../../components/layout/Breadcrumbs';
-import { Button, Card, CardContent, Input, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
+import { Card, CardContent, ProgressBar, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Dialog, DialogContent, DialogFooter } from '../../components/ui/overlays';
-import { ALL_DISTRICTS, MAHARASHTRA_HIERARCHY } from '../../lib/constants';
 import { optionsWithCounts, type FilterOption } from '../../lib/cascadingFilters';
 import { formatCurrency, formatDate, cn } from '../../lib/utils';
-import { toast } from 'sonner';
-import type { Project, ProjectType } from '../../types';
+import type { Project } from '../../types';
 
-const PROJECT_TYPES: ProjectType[] = ['District Hospital', 'Rural Hospital', 'Sub-District Hospital', 'Women & Child Hospital', 'Tribal Area Hospital', 'Community Health Centre'];
-const CAN_SANCTION_PROJECTS = ['COMMISSIONER', 'REGIONAL_DIRECTOR', 'CIVIL_SURGEON'];
 
 type QuickFilter = 'AT_RISK' | 'DELAYED' | 'NO_RECENT_EVIDENCE' | 'QUALITY_ISSUE' | 'APPROVAL_PENDING' | 'FINANCE_ISSUE' | 'HANDOVER_DUE';
 
@@ -30,15 +25,12 @@ export function ProjectsList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
-  const currentUser = useStore((s) => s.currentUser);
   const { projects: scopedProjects, scopeLabel, isStatewide } = useProjectScope();
   const contractors = useStore((s) => s.contractors);
   const photos = useStore((s) => s.photos);
   const inspections = useStore((s) => s.inspections);
   const approvals = useStore((s) => s.approvals);
   const bills = useStore((s) => s.bills);
-  const addProject = useStore((s) => s.addProject);
-  const canCreateProject = !!currentUser && CAN_SANCTION_PROJECTS.includes(currentUser.role);
 
   // Cascading hierarchy: Scheme -> Facility Type -> Region -> District -> Project/Hospital.
   const [scheme, setScheme] = useState('ALL');
@@ -49,8 +41,6 @@ export function ProjectsList() {
   const [projectId, setProjectId] = useState('ALL');
   const [quickFilters, setQuickFilters] = useState<Set<QuickFilter>>(new Set());
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', type: 'District Hospital' as ProjectType, district: ALL_DISTRICTS[0], taluka: '', bedCount: 100, sanctionedBudget: 1000 });
 
   // Each level's options are computed from the set already narrowed by every level above it —
   // this is what makes the dropdowns interdependent instead of independent.
@@ -103,18 +93,6 @@ export function ProjectsList() {
     setQuickFilters((prev) => { const next = new Set(prev); if (next.has(qf)) next.delete(qf); else next.add(qf); return next; });
   }
 
-  function submitCreate() {
-    if (!form.name.trim()) { toast.error(uiText('Project name is required.')); return; }
-    const p = addProject({
-      name: form.name, type: form.type, district: form.district, taluka: form.taluka || 'HQ Taluka',
-      division: MAHARASHTRA_HIERARCHY.find((d) => d.districts.some((x) => x.district === form.district))?.division ?? 'Pune Division',
-      bedCount: form.bedCount, sanctionedBudget: form.sanctionedBudget * 100000,
-      lat: 20 + Math.random() * 60, lng: 20 + Math.random() * 60,
-    });
-    toast.success(uiMessage("Project \"{{0}}\" created.", [p.name]));
-    setCreateOpen(false);
-    navigate(`/projects/${p.id}`);
-  }
 
   const QUICK_FILTERS: { key: QuickFilter; label: string }[] = [
     { key: 'AT_RISK', label: 'At Risk' },
@@ -137,7 +115,6 @@ export function ProjectsList() {
             <button onClick={() => setView('grid')} className={`p-1.5 ${view === 'grid' ? 'bg-navy-700 text-white' : 'bg-white text-slate-500'}`}><LayoutGrid size={15} /></button>
             <button onClick={() => setView('list')} className={`p-1.5 ${view === 'list' ? 'bg-navy-700 text-white' : 'bg-white text-slate-500'}`}><ListIcon size={15} /></button>
           </div>
-          {canCreateProject && <Button onClick={() => setCreateOpen(true)}><Plus size={15} />{uiText(" Add Project")}</Button>}
         </>}
       />
 
@@ -188,13 +165,13 @@ export function ProjectsList() {
       </Card>
 
       {view === 'grid' ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p) => {
             const risk = riskStatus(p);
             return (
               <Link key={p.id} to={`/projects/${p.id}`} className="hospital-project-card group" aria-label={`${uiText('View project')}: ${p.name}`}>
                 <div className="hospital-card-banner">
-                  <div className="hospital-card-symbol"><Hospital size={28} strokeWidth={1.5} /></div>
+                  <div className="hospital-card-symbol"><Hospital size={22} strokeWidth={1.5} /></div>
                   <div className="min-w-0 flex-1"><p className="text-[11px] font-semibold uppercase tracking-widest text-blue-100">{uiText(p.district)}</p><p className="mt-1 text-xs text-blue-200">{p.id}</p></div>
                   <StatusBadge status={p.status} />
                   <div className="hospital-card-lines" aria-hidden="true" />
@@ -204,8 +181,8 @@ export function ProjectsList() {
                   <h2 className="mt-4 text-lg font-semibold leading-snug tracking-tight text-slate-900 group-hover:text-blue-800">{p.name}</h2>
                   <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500"><MapPinned size={15} className="mt-0.5 shrink-0"/>{uiText(p.taluka)} · {uiText(p.facilityType)} · {p.bedCount} {uiText('beds')}</p>
                   <div className="hospital-card-metrics">
-                    <div><p className="text-xs font-medium text-slate-500">{uiText('Sanctioned Budget')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-950">{formatCurrency(p.sanctionedBudget)}</p></div>
-                    <div className="text-right"><p className="text-xs font-medium text-slate-500">{uiText('Physical Progress')}</p><p className="mt-1.5 text-2xl font-semibold tracking-tight text-blue-700">{p.physicalProgress}<span className="ml-0.5 text-sm text-slate-500">%</span></p></div>
+                    <div><p className="text-xs font-medium text-slate-500">{uiText('Sanctioned Budget')}</p><p className="mt-1 text-xl font-semibold tracking-tight text-blue-950">{formatCurrency(p.sanctionedBudget)}</p></div>
+                    <div className="text-right"><p className="text-xs font-medium text-slate-500">{uiText('Physical Progress')}</p><p className="mt-1 text-xl font-semibold tracking-tight text-blue-700">{p.physicalProgress}<span className="ml-0.5 text-sm text-slate-500">%</span></p></div>
                     <div className="col-span-2"><ProgressBar value={p.physicalProgress} className="h-1.5" /></div>
                   </div>
                   <div className="flex items-center justify-between gap-4 text-xs"><span className="text-slate-500">{uiText('Planned Completion')}</span><span className="font-semibold text-slate-700">{formatDate(p.plannedCompletionDate)}</span></div><DeadlineBadge project={p} />
@@ -243,36 +220,6 @@ export function ProjectsList() {
         </Card>
       )}
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent title={uiText("Add New Hospital Project")} description={uiText("Register a new project under administrative sanction.")}>
-          <div className="space-y-3">
-            <LField label={uiText("Project Name")}><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={uiText("e.g. Sub-District Hospital — Osmanabad")} /></LField>
-            <div className="grid grid-cols-2 gap-3">
-              <LField label={uiText("Project Type")}>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as ProjectType })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{PROJECT_TYPES.map((t) => <SelectItem key={t} value={t}>{uiText(t)}</SelectItem>)}</SelectContent>
-                </Select>
-              </LField>
-              <LField label={uiText("District")}>
-                <Select value={form.district} onValueChange={(v) => setForm({ ...form, district: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{ALL_DISTRICTS.map((d) => <SelectItem key={d} value={d}>{uiText(d)}</SelectItem>)}</SelectContent>
-                </Select>
-              </LField>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <LField label={uiText("Taluka")}><Input value={form.taluka} onChange={(e) => setForm({ ...form, taluka: e.target.value })} placeholder={uiText("Taluka")} /></LField>
-              <LField label={uiText("Bed Count")}><Input type="number" value={form.bedCount} onChange={(e) => setForm({ ...form, bedCount: +e.target.value })} /></LField>
-            </div>
-            <LField label={uiText("Sanctioned Budget (₹ Lakh)")}><Input type="number" value={form.sanctionedBudget} onChange={(e) => setForm({ ...form, sanctionedBudget: +e.target.value })} /></LField>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={submitCreate}>{uiText("Create Project")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -291,9 +238,4 @@ function CascadeSelect({ label, value, onChange, options, icon: Icon }: { label:
       </Select>
     </div>
   );
-}
-
-function LField({ label, children }: { label: string; children: React.ReactNode }) {
-  useUiLanguage();
-  return <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText(label)}</p>{children}</div>;
 }

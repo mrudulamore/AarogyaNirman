@@ -17,7 +17,6 @@ const ProjectDetail = lazy(() => import('./pages/projects/ProjectDetail').then(m
 const ContractorsList = lazy(() => import('./pages/contractors/ContractorsList').then(m => ({ default: m.ContractorsList })));
 const ContractorProfile = lazy(() => import('./pages/contractors/ContractorProfile').then(m => ({ default: m.ContractorProfile })));
 const TendersList = lazy(() => import('./pages/tenders/TendersList').then(m => ({ default: m.TendersList })));
-const WorkersList = lazy(() => import('./pages/workers/WorkersList').then(m => ({ default: m.WorkersList })));
 const StaffList = lazy(() => import('./pages/staff/StaffList').then(m => ({ default: m.StaffList })));
 const FinanceDashboard = lazy(() => import('./pages/finance/FinanceDashboard').then(m => ({ default: m.FinanceDashboard })));
 const QualityList = lazy(() => import('./pages/quality/QualityList').then(m => ({ default: m.QualityList })));
@@ -77,12 +76,13 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/pending-work" element={<PendingWorkPage />} />
+          <Route path="/project-proposals" element={<Navigate to="/projects" replace />} />
           <Route path="/projects" element={<ProjectsList />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/contractors" element={<ContractorsList />} />
           <Route path="/contractors/:id" element={<ContractorProfile />} />
           <Route path="/tenders" element={<TendersList />} />
-          <Route path="/workers" element={<WorkersList />} />
+          <Route path="/workers" element={<Navigate to="/dashboard" replace />} />
           <Route path="/staff" element={<StaffList />} />
           <Route path="/finance" element={<FinanceDashboard />} />
           <Route path="/quality" element={<QualityList />} />

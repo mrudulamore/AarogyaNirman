@@ -103,16 +103,16 @@ body {
   background: radial-gradient(ellipse at 0% 0%, #234f92, transparent 65%), #142b50;
   border-color: #345382;
 }
-.app-sidebar .sidebar-brand { padding-block: 1.5rem; border-color: #ffffff15; }
+.app-sidebar .sidebar-brand { padding-block: 1rem; border-color: #ffffff15; }
 .sidebar-brand > div:first-child { background: #c4e4ff; color: #183c72; border-radius: 14px; }
 .sidebar-brand > div:first-child svg { color: #183c72; }
-.app-sidebar nav { padding-top: 1.25rem; }
-.app-sidebar nav a { color: #c6d8f1; padding-block: .8rem; border-radius: 12px; }
+.app-sidebar nav { padding-block: .75rem; scrollbar-gutter: stable; }
+.app-sidebar nav a { color: #c6d8f1; padding-block: .625rem; border-radius: 12px; }
 .app-sidebar nav a:hover { background: #ffffff0d; color: white; }
 .app-sidebar nav a[aria-current="page"] { background: #c4e4ff; color: #183c72; box-shadow: 0 5px 18px #00000015; }
 .app-sidebar nav a[aria-current="page"] > svg { stroke-width: 2.2; }
 .app-sidebar .text-navy-300, .app-sidebar .text-navy-200 { color: #c6d8f1; }
-.app-sidebar > div:last-child { border-color: #ffffff15; padding-block: 1.25rem; }
+.app-sidebar .sidebar-account { border-color: #ffffff15; padding-block: .75rem; }
 .page-heading {
   position: relative; isolation: isolate; overflow: hidden;
   padding: 2rem; border: 1px solid #ffffff20; border-radius: 24px;
@@ -178,7 +178,7 @@ body {
 .auth-form-area > div { background: rgba(255, 255, 255, .92); border-radius: 28px; padding-block: 2.5rem; border-color: #dce7f5; box-shadow: 0 24px 70px -35px #234e8645; }
 .auth-form-area h2 { color: #193f79; font-size: 2rem; letter-spacing: -.04em; }
 @media (min-width: 1024px) {
-  .app-sidebar { margin: .75rem 0 .75rem .75rem; border-radius: 22px; border: 0; width: 248px; box-shadow: 0 10px 30px -15px #20478166; }
+  .app-sidebar { width: 260px; }
   .app-header { margin: .75rem .75rem 0; border-radius: 18px; border: 1px solid var(--workspace-line); }
 }
 @media (max-width: 639px) {
@@ -304,17 +304,17 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 
 /* Hospital portfolio: architectural header, readable metrics and a clear entry point. */
 .hospital-project-card { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid #dbe6f5; border-radius: 24px; background: white; box-shadow: 0 5px 18px -12px #16366b35; transition: border-color 180ms, box-shadow 180ms, transform 180ms; }
-.hospital-card-banner { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; padding: 20px; overflow: hidden; background: linear-gradient(115deg,#173e79,#2865ab); }
+.hospital-card-banner { position: relative; isolation: isolate; display: flex; align-items: center; gap: 10px; padding: 10px 16px; overflow: hidden; background: linear-gradient(115deg,#173e79,#2865ab); }
 .hospital-card-banner > :not(.hospital-card-lines) { position: relative; z-index: 1; }
-.hospital-card-symbol { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; flex-shrink: 0; border-radius: 16px; color: #e4f2ff; border: 1px solid #ffffff30; background: #ffffff12; }
+.hospital-card-symbol { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; color: #e4f2ff; border: 1px solid #ffffff30; background: #ffffff12; }
 .hospital-card-lines { position: absolute; right: -30px; top: -50px; width: 190px; height: 190px; border: 1px solid #ffffff18; transform: rotate(30deg); box-shadow: 0 0 0 24px #ffffff06, 0 0 0 48px #ffffff05; border-radius: 30px; }
-.hospital-card-body { flex: 1; padding: 22px; }
-.hospital-card-body h2 { min-height: 3rem; }
-.hospital-card-metrics { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 16px; padding: 18px 0; margin: 16px 0; border-top: 1px solid #edf2f9; border-bottom: 1px solid #edf2f9; }
-.hospital-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 22px; background: #f6f9fe; border-top: 1px solid #e9eff8; }
-.hospital-card-open { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #e3eeff; color: #245cab; transition: background-color 180ms, color 180ms; }
+.hospital-card-body { flex: 1; padding: 12px 16px; }
+.hospital-card-body h2 { min-height: 0; margin-top: 8px; font-size: 1rem; line-height: 1.35; }
+.hospital-card-metrics { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 8px; padding: 8px 0; margin: 8px 0; border-top: 1px solid #edf2f9; border-bottom: 1px solid #edf2f9; }
+.hospital-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 16px; background: #f6f9fe; border-top: 1px solid #e9eff8; }
+.hospital-card-open { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #e3eeff; color: #245cab; transition: background-color 180ms, color 180ms; }
 @media (hover: hover) { .hospital-project-card:hover { transform: translateY(-3px); border-color: #9cbae6; box-shadow: 0 18px 32px -20px #143a7860; } .hospital-project-card:hover .hospital-card-open { background: #245cab; color: white; } }
-@media (max-width: 639px) { .hospital-card-banner { padding: 16px; gap: 10px; } .hospital-card-body { padding: 20px; } .hospital-card-symbol { width: 44px; height: 44px; } }
+@media (max-width: 639px) { .hospital-card-banner { padding: 10px 14px; gap: 10px; } .hospital-card-body { padding: 12px 14px; } .hospital-card-footer { padding: 8px 14px; } .hospital-card-symbol { width: 36px; height: 36px; } }
 @media (prefers-reduced-motion: reduce) { .hospital-project-card:hover { transform: none; } }
 
 .hospital-project-card:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
@@ -494,6 +494,18 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .dashboard-insights .ui-card-header { min-height: 72px; background: linear-gradient(120deg, #f2f7ff, #fff); padding: 20px; }
 .dashboard-insights .ui-card-header h3 { font-size: 15px; line-height: 1.5; }
 .dashboard-insights .ui-button { min-height: 40px; }
+@media (max-width: 639px) {
+  .app-content { padding: 18px 14px 28px; }
+  .app-content .ui-card-header { padding: 18px 16px; }
+  .app-content .ui-card-header h3 { font-size: 15px; line-height: 1.5; }
+  .app-content .ui-button { min-height: 44px; white-space: normal; line-height: 1.4; }
+  .app-content .ui-input, [role="dialog"] .ui-input { min-height: 46px; font-size: 16px; }
+  .app-content textarea, [role="dialog"] textarea { font-size: 16px; line-height: 1.6; padding: 12px; }
+  .dashboard-insights .text-xs { font-size: 13px; line-height: 1.5; }
+  .dashboard-insights > .ui-card > div:last-child { padding: 16px; }
+  [role="dialog"] { scroll-padding-bottom: 80px; }
+  [role="dialog"] .ui-button { min-height: 44px; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .dashboard-insights .ui-button { transition: background-color 160ms ease, box-shadow 160ms ease; }
 }
@@ -505,3 +517,30 @@ body { font-family: Manrope, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .contractor-progress-card:disabled { cursor: default; }
 .contractor-progress-card:disabled svg { display: none; }
 @media (prefers-reduced-motion: no-preference) { .contractor-progress-card { transition: background-color 180ms, border-color 180ms; } }
+
+.field-primary-dock { display: flex; flex-shrink: 0; justify-content: space-around; gap: 4px; border-top: 1px solid #d4e3f8; background: white; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+.field-primary-dock .dock-link { display: flex; min-height: 48px; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; font-size: 11px; color: #536781; }
+.field-primary-dock .dock-link.is-active { background: #edf5ff; color: #135cc2; }
+.mobile-task-home a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+
+/* Match the native status-bar surface on every shared application header. */
+:root { --app-primary: #183c72; }
+.app-header {
+  background: var(--app-primary);
+  color: white;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.app-header > a,
+.app-header > button,
+.app-header > div > button,
+.app-header .account-summary p,
+.app-header > div > button > svg { color: white; }
+.app-header > button:hover,
+.app-header > div > button:hover { background: #ffffff20; }
+.app-header > div > button { border-color: #ffffff40; }
+.app-header form { color: #183c72; }
+.field-app-header { flex-wrap: wrap; padding-block: 10px; }

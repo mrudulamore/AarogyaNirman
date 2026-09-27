@@ -17,14 +17,20 @@ export function pendingWork(s: StoreState, today: string, policy = DEFAULT_ESCAL
     result.push({ id: a.id, projectId: a.projectId, title: a.type.replaceAll('_', ' '), due: date.toISOString().slice(0, 10), tab: 'approvals', ownerRole: a.chain[a.currentStepIndex] });
   }
   for (const m of s.milestones) if (scope.has(m.projectId) && !['CERTIFIED', 'BILL_ELIGIBLE', 'PAID'].includes(m.status)) result.push({ id: m.id, projectId: m.projectId, title: m.name, due: m.plannedDate, tab: 'milestones', ownerRole: ['NOT_STARTED', 'IN_PROGRESS', 'CORRECTION_REQUIRED'].includes(m.status) ? 'CONTRACTOR' : 'EXECUTIVE_ENGINEER' });
-  for (const i of s.inspections) if (scope.has(i.projectId) && i.status !== 'COMPLETED' && (i.inspector === s.currentUser?.name || ['SUPERADMIN', 'COMMISSIONER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER'].includes(s.currentUser?.role ?? ''))) result.push({ id: i.id, projectId: i.projectId, title: `Inspection: ${i.category}`, due: i.scheduledDate, tab: 'inspections', ownerRole: s.currentUser!.role });
+  for (const i of s.inspections) {
+    if (!scope.has(i.projectId) || i.status === 'COMPLETED') continue;
+    const review = i.status === 'PENDING_REVIEW';
+    if (!review && mine && s.currentUser?.role === 'DEPUTY_ENGINEER' && i.assignedToId !== s.currentUser.id) continue;
+    result.push({ id: i.id, projectId: i.projectId, title: `${review ? 'Review / approve inspection' : i.status === 'REVERIFY' ? 'Reverify inspection' : 'Conduct inspection'}: ${i.category}`, due: i.scheduledDate, tab: 'inspections', ownerRole: review || !i.assignedToId ? 'EXECUTIVE_ENGINEER' : 'DEPUTY_ENGINEER' });
+  }
+  for (const request of s.inspectionAppointments) if (scope.has(request.projectId) && request.status === 'REQUESTED' && !request.linkedInspectionId) result.push({ id: request.id, projectId: request.projectId, title: 'Inspection request: ' + request.inspectionType, due: request.date, tab: 'inspections', ownerRole: 'EXECUTIVE_ENGINEER' });
   for (const d of s.defects) if (scope.has(d.projectId) && d.status !== 'CLOSED') result.push({ id: d.id, projectId: d.projectId, title: d.description, due: d.dueDate, tab: 'defects', ownerRole: 'CONTRACTOR' });
   const billOwners: Record<string, Role> = { DRAFT: 'CONTRACTOR', SUBMITTED: 'DEPUTY_ENGINEER', SITE_VERIFIED: 'EXECUTIVE_ENGINEER', QUALITY_VERIFIED: 'EXECUTIVE_ENGINEER', APPROVED: 'COMMISSIONER' };
   for (const b of outstandingBills(s.bills, s.controlRecords, today, true)) if (scope.has(b.projectId) && billOwners[b.status]) {
     const due = new Date(Date.parse(b.submittedDate) + policy.approvalDays * 86400000).toISOString().slice(0,10);
     result.push({ id: `bill-${b.id}`, billId: b.id, projectId: b.projectId, title: `Bill: ${b.billNumber}`, due, tab: 'finance', ownerRole: billOwners[b.status] });
   }
-  for (const r of s.controlRecords) if (scope.has(r.projectId) && r.status === 'PENDING') result.push({ id: `control-${r.id}`, projectId: r.projectId, title: `${r.category}: ${r.reference}`, due: new Date(Date.parse(r.submittedAt) + policy.approvalDays * 86400000).toISOString().slice(0,10), tab: r.kind === 'MONTHLY' ? 'monthly' : 'controls', ownerRole: ['PAYMENT','RECEIPT','REVERSAL'].includes(r.kind) ? 'COMMISSIONER' : 'EXECUTIVE_ENGINEER' });
+  for (const r of s.controlRecords) if (scope.has(r.projectId) && r.status === 'PENDING') result.push({ id: `control-${r.id}`, projectId: r.projectId, title: `${r.category}: ${r.reference}`, due: new Date(Date.parse(r.submittedAt) + policy.approvalDays * 86400000).toISOString().slice(0,10), tab: ['MEASUREMENT','MATERIAL_TEST'].includes(r.kind) ? 'quality' : r.kind === 'MONTHLY' ? 'monthly' : 'controls', ownerRole: ['PAYMENT','RECEIPT','REVERSAL'].includes(r.kind) ? 'COMMISSIONER' : 'EXECUTIVE_ENGINEER' });
   for (const p of s.projects.filter(p => scope.has(p.id))) {
     const records = activeControls(s, p.id);
     for (const r of records) if (r.fields.expiryDate && r.fields.expiryDate <= new Date(Date.parse(today) + 30 * 86400000).toISOString().slice(0, 10)) result.push({ id: r.id, projectId: p.id, title: `Renewal: ${r.category} / ${r.reference}`, due: r.fields.expiryDate, tab: 'controls', ownerRole: (r.fields.responsibleRole as Role) || 'EXECUTIVE_ENGINEER' });

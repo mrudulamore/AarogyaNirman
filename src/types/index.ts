@@ -3,6 +3,9 @@
 // Jurisdiction hierarchy: State -> Division -> District -> Circle -> Hospital/Project -> Site.
 // Each role's data scope maps onto one level of this hierarchy (see lib/scope.ts).
 export type Role =
+  | 'CHIEF_ENGINEER'
+  | 'SUPERINTENDING_ENGINEER'
+  | 'SITE_SUPERVISOR'
   | 'WORKFORCE'
   | 'SUPERADMIN'          // Super Administrator — State, full statewide access + manages role/access permissions
   | 'MINISTER'            // Minister / Secretary (Public Health) — State, read-oriented oversight
@@ -69,6 +72,7 @@ export type ProjectType =
   | 'Community Health Centre';
 
 export interface Project {
+  proposalId?: string;
   id: string;
   name: string;
   type: ProjectType;
@@ -188,6 +192,7 @@ export type GeoFenceStatus = 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN';
 
 export interface SitePhoto {
   isReference?: boolean;
+  milestoneId?: string;
   uploadedById?: string;
   review?: { status: 'APPROVED' | 'REJECTED'; reviewerId: string; reviewerName: string; reviewerRole: Role; reviewedAt: string; note: string };
   reviewHistory?: NonNullable<SitePhoto['review']>[];
@@ -230,7 +235,7 @@ export type InspectionCategory =
   | 'FINISHING' | 'SITE_SAFETY';
 
 export type InspectionResult = 'PASS' | 'FAIL' | 'CONDITIONAL' | 'NOT_INSPECTED';
-export type InspectionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
+export type InspectionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'PENDING_REVIEW' | 'REVERIFY' | 'COMPLETED';
 
 export interface ChecklistItem {
   id: string;
@@ -243,6 +248,20 @@ export interface ChecklistItem {
 }
 
 export interface Inspection {
+  sourceRequestId?: string;
+  sourceDefectId?: string;
+  attachments?: BillAttachment[];
+  photos?: { dataUrl: string; mediaKey: string; capturedAt: string; lat: number; lng: number }[];
+  reviewHistory?: { decision: 'APPROVE' | 'RAISE_DEFECT' | 'REVERIFY'; reviewer: string; date: string; comments: string; items: ChecklistItem[]; photos: NonNullable<Inspection['photos']>; findings: string; attachments?: BillAttachment[] }[];
+  assignedToId?: string;
+  assignedRole?: Role;
+  createdById?: string;
+  scheduledTime?: string;
+  location?: string;
+  scope?: string;
+  requiredDocuments?: string;
+  instructions?: string;
+  assignmentHistory?: { assignedToId: string; assignedToName: string; role: Role; assignedBy: string; date: string; reason: string }[];
   drawingId?: string;
   id: string;
   projectId: string;
@@ -266,6 +285,8 @@ export type DefectSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export type DefectStatus = 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIXED' | 'REINSPECTION' | 'CLOSED';
 
 export interface Defect {
+  attachments?: BillAttachment[];
+  correctiveAttachments?: BillAttachment[];
   id: string;
   projectId: string;
   location: string;
@@ -373,6 +394,7 @@ export interface AttendanceRecord {
 export type BillStatus = 'DRAFT' | 'SUBMITTED' | 'SITE_VERIFIED' | 'QUALITY_VERIFIED' | 'APPROVED' | 'REJECTED' | 'PAID';
 
 export interface BillAttachment {
+  sample?: { title: string; fields: [string, string][] };
   id: string;
   category: 'SIGNED_BILL' | 'MEASUREMENT' | 'SUPPORTING';
   name: string;
@@ -512,6 +534,7 @@ export type DocumentType =
   | 'Bills' | 'Approvals' | 'Completion Certificate' | 'Handover Documents';
 
 export interface ProjectDocument {
+  attachments?: BillAttachment[];
   id: string;
   projectId: string;
   name: string;
@@ -573,6 +596,7 @@ export interface AuditEntry {
 }
 
 export interface Observation {
+  attachments?: BillAttachment[];
   id: string;
   projectId: string;
   observer: string;
@@ -761,6 +785,11 @@ export interface QualityReport {
 export type AppointmentStatus = 'REQUESTED' | 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface InspectionAppointment {
+  reviewReason?: string;
+  requestedById?: string;
+  assignedById?: string;
+  assignedBy?: string;
+  assignedInspectorId?: string;
   id: string;
   projectId: string;
   milestoneId?: string;

@@ -72,6 +72,8 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
       // Independent oversight function — spans every division/district by mandate.
       return statewide('Statewide vigilance & audit oversight');
 
+    case 'CHIEF_ENGINEER':
+    case 'SUPERINTENDING_ENGINEER':
     case 'REGIONAL_DIRECTOR': {
       const inDivision = allProjects.filter((p) => p.division === user.division);
       return scoped(inDivision, user.division ? `${user.division}` : 'No division assigned');
@@ -90,6 +92,10 @@ export function computeProjectScope(user: User | null, allProjects: Project[], c
     case 'PROJECT_MANAGER': {
       const assigned = allProjects.filter((p) => p.projectManagerId === user.id || user.assignedProjectIds.includes(p.id));
       return scoped(assigned, `${assigned.length} managed project${assigned.length === 1 ? '' : 's'} (Portfolio)`);
+    }
+    case 'SITE_SUPERVISOR': {
+      const assigned = allProjects.filter(p => user.assignedProjectIds.includes(p.id));
+      return scoped(assigned, `${assigned.length} assigned site${assigned.length === 1 ? '' : 's'}`);
     }
 
     case 'DEPUTY_ENGINEER': {

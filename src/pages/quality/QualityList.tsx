@@ -25,8 +25,8 @@ export function QualityList() {
   const filtered = inspections.filter((i) => (categoryFilter === 'ALL' || i.category === categoryFilter) && (resultFilter === 'ALL' || i.overallResult === resultFilter))
     .sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
 
-  const passCount = inspections.filter((i) => i.overallResult === 'PASS').length;
-  const failCount = inspections.filter((i) => i.overallResult === 'FAIL').length;
+  const passCount = inspections.filter((i) => i.status === 'COMPLETED' && i.overallResult === 'PASS').length;
+  const failCount = inspections.filter((i) => i.status === 'COMPLETED' && i.overallResult === 'FAIL').length;
   const scheduledCount = inspections.filter((i) => i.status === 'SCHEDULED').length;
   const avgScore = Math.round(inspections.filter((i) => i.status === 'COMPLETED').reduce((s, i) => s + i.score, 0) / (inspections.filter((i) => i.status === 'COMPLETED').length || 1));
 

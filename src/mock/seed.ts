@@ -260,7 +260,7 @@ export function generateMockData(): SeedResult {
       tenderAmount: Math.round(sanctioned * 0.97),
       workOrderValue: Math.round(sanctioned * 0.97),
       revisedEstimate: Math.round(sanctioned * (rng() > 0.7 ? 1.06 : 1.0)),
-      amountReleased: Math.round(sanctioned * (financialProgress / 100) * 1.05),
+      amountReleased: Math.min(sanctioned, Math.round(sanctioned * (financialProgress / 100) * 1.05)),
       amountSpent: Math.round(sanctioned * (financialProgress / 100)),
       contractorId: contractor.id,
       pmcName: pick(PMC_FIRMS),
@@ -1102,6 +1102,13 @@ export function generateMockData(): SeedResult {
     });
   }
 
+  // Stable demo supervisor accounts; existing staff can also be assigned this role.
+  projects.forEach(project => users.push({
+    id: `SUPERVISOR-${project.id}`, name: `Site Supervisor — ${project.name}`,
+    role: 'SITE_SUPERVISOR', designation: 'Site Supervisor', department: 'Site supervision',
+    email: `supervisor.${project.id.toLowerCase()}@example.test`, phone: '',
+    assignedProjectIds: [project.id], avatarInitials: 'SS',
+  }));
   return {
     users, projects, tenders, milestones, progressReports, photos: photos.map(photo => ({ ...photo, isReference: !photo.dataUrl && !photo.mediaKey })), inspections, defects, approvals,
     contractors, workers, attendance, bills, measurements, boqItems, materials, materialTests,

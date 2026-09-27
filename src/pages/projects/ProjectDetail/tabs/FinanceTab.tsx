@@ -1,3 +1,6 @@
+import { SiteReportLinks } from './SiteReportLinks';
+import { ProgressComparison } from '../../../../components/common/ProgressComparison';
+import { billReviewReturnPath } from '../../../../lib/billReviewNavigation';
 import { ExpenditureCharts } from '../../../../components/common/ExpenditureCharts';
 import { actualTransactions } from '../../../../lib/projectControls';
 import { verifiedFundReports } from '../../../../lib/verifiedFundReports';
@@ -7,10 +10,10 @@ import { RABillSubmission } from './RABillSubmission';
 import { BillEvidence } from './BillEvidence';
 import { FundDisbursalReports } from '../../../finance/FundDisbursalReports';
 import { useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, FileCheck2, AlertTriangle } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
+import { FinanceBars } from '../../../../components/common/FinanceVisuals';
 import type { Project, BillStatus } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, Table, THead, TBody, Tr, Th, Td } from '../../../../components/ui/primitives';
@@ -34,6 +37,10 @@ function ageingDays(dateIso: string): number {
 export function FinanceTab({ project }: { project: Project }) {
   useUiLanguage();
   const state = useStore();
+  const canOpenFinance = !!state.currentUser && state.rolePermissions[state.currentUser.role]?.includes('finance');
+  const financeLink = (view: string) => canOpenFinance
+    ? `/finance?project=${encodeURIComponent(project.id)}&view=${view}`
+    : `/projects/${encodeURIComponent(project.id)}?tab=${view === 'projects' ? 'overview' : view === 'bills' ? 'finance' : 'controls'}`;
   const transactions = actualTransactions(state, project.id);
   const paymentRecords = transactions.filter(r => r.kind === 'PAYMENT');
   const paidForBill = (id: string) => paymentRecords.filter(r => r.fields.billId === id).reduce((sum,r) => sum + Number(r.fields.amount), 0);
@@ -49,11 +56,20 @@ export function FinanceTab({ project }: { project: Project }) {
   
   const verifyMeasurement = useStore((s) => s.verifyMeasurement);
 
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [submitOpen, setSubmitOpen] = useState(params.get('action') === 'submit-bill' && currentUser?.role === 'CONTRACTOR');
   const [detailId, setDetailId] = useState<string | null>(params.get('bill'));
 
+  function closeBillReview() {
+    setDetailId(null);
+    const returnTo = billReviewReturnPath(params.get('returnTo'));
+    if (returnTo && params.get('bill')) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
+    setParams(previous => { const next = new URLSearchParams(previous); next.delete('bill'); next.delete('returnTo'); return next; }, { replace: true });
+  }
   const active = bills.find((b) => b.id === detailId);
   const activeMeasurements = measurements.filter((m) => m.billId === detailId);
 
@@ -92,7 +108,7 @@ export function FinanceTab({ project }: { project: Project }) {
     const months = Array.from(byMonth.keys()).sort().slice(-8);
     return months.map((m) => {
       const monthMid = new Date(`${m}-15`).getTime();
-      const plannedPct = Math.round(Math.min(100, Math.max(0, ((monthMid - start) / (planned - start)) * 100)));
+      const plannedPct = planned > start ? Math.round(Math.min(100, Math.max(0, ((monthMid - start) / (planned - start)) * 100))) : NaN;
       return { month: m, planned: plannedPct, verified: byMonth.get(m)!.verified, financial: project.sanctionedBudget ? actualTransactions(state, project.id, new Date(Date.UTC(Number(m.slice(0,4)), Number(m.slice(5,7)), 0)).toISOString().slice(0,10)).filter(r => r.kind === 'PAYMENT').reduce((sum,r) => sum + Number(r.fields.amount), 0) / project.sanctionedBudget * 100 : 0 };
     });
   }, [progressReports, project.id, project.startDate, project.plannedCompletionDate, project.sanctionedBudget, state]);
@@ -123,25 +139,41 @@ export function FinanceTab({ project }: { project: Project }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-gradient-to-r from-blue-950 to-blue-700 p-5 text-white sm:p-7"><p className="text-xs uppercase tracking-widest text-blue-200">{uiText('Project financial position')}</p><h2 className="mt-2 text-2xl font-semibold">{formatCurrency(amountPaid)} <span className="text-sm font-normal text-blue-100">{uiText('verified expenditure')}</span></h2><p className="mt-2 max-w-2xl text-sm text-blue-100">{uiText('Receipts fund the project. Payments record contractor expenditure. Pending bills are liabilities, not money spent.')}</p><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><p>{uiText('Government funds received')}<strong className="block text-lg">{formatCurrency(report.government.total)}</strong></p><p>{uiText('Receipt balance after payments')}<strong className="block text-lg">{formatCurrency(report.government.total - amountPaid)}</strong></p></div></div>
+      <SiteReportLinks projectId={project.id} />
+      {(report.government.total > project.sanctionedBudget || amountPaid > report.government.total || amountPaid > project.sanctionedBudget) && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-950">{uiText('Financial review needed: receipts exceed sanction or payments exceed available funds. Verify the sanction and transaction records; saved entries have not been reduced automatically.')}</div>}
+      <div className="rounded-3xl bg-gradient-to-br from-blue-950 to-blue-700 p-5 text-white sm:p-7">
+        <p className="text-xs uppercase tracking-widest text-blue-200">{uiText('Project financial position')}</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {[
+            {label:'Sanctioned money', amount:project.sanctionedBudget, view:'projects', action:'View project budgets'},
+            {label:'Disbursed money', amount:report.government.total, view:'receipts', action:'View actual receipts'},
+            {label:'Expenditure', amount:amountPaid, view:'payments', action:'View payments & linked bills'},
+          ].map(item => <Link key={item.view} to={financeLink(item.view)} className="min-w-0 rounded-2xl border border-white/20 bg-white/5 p-4 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            <p className="text-sm text-blue-100">{uiText(item.label)}</p><p className="mt-2 break-words text-2xl font-semibold">{formatCurrency(item.amount)}</p><p className="mt-4 text-xs text-blue-100">{uiText(item.action)} →</p>
+          </Link>)}
+        </div>
+        <div className="mt-5 flex flex-wrap justify-between gap-3 border-t border-white/20 pt-4 text-sm"><p>{uiText('Available funds')}: <strong>{formatCurrency(report.government.total-amountPaid)}</strong></p><Link className="underline underline-offset-4" to={canOpenFinance ? financeLink("bills") : "#project-bills"}>{uiText('Outstanding bills')}: {formatCurrency(pendingBillsValue)} →</Link></div>
+      </div>
+      <details className="rounded-2xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer py-2 font-semibold text-slate-700">{uiText('Contract & billing breakdown')}</summary><div className="mt-3 space-y-3">
       {/* A. Financial Summary — primary KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label={uiText("Sanctioned Cost")} value={formatCurrency(project.sanctionedBudget)} />
-        <KpiCard label={uiText("Contract Value")} value={formatCurrency(contractValue)} />
-        <KpiCard label={uiText("Work Certified")} value={formatCurrency(workCertified)} tone="blue" />
-        <KpiCard label={uiText("Amount Paid")} value={formatCurrency(amountPaid)} tone="emerald" />
-        <KpiCard label={uiText("Pending Bills")} value={formatCurrency(pendingBillsValue)} tone="amber" />
-        <KpiCard label={uiText("Balance Contract Value")} value={formatCurrency(balanceContractValue)} />
+        <KpiCard label={uiText("Contract Value")} sub={uiText("Work-order value, or sanctioned budget when no work order is recorded.")} value={formatCurrency(contractValue)} />
+        <KpiCard label={uiText("Work Certified")} sub={uiText("Net value of bills that reached quality verification or later.")} value={formatCurrency(workCertified)} tone="blue" />
+        <KpiCard label={uiText("Amount Paid")} sub={uiText("Verified contractor payments, net of reversals.")} value={formatCurrency(amountPaid)} tone="emerald" />
+        <KpiCard label={uiText("Pending Bills")} sub={uiText("Unpaid balance of submitted bills; excludes drafts and rejected bills.")} value={formatCurrency(pendingBillsValue)} tone="amber" />
+        <KpiCard label={uiText("Balance Contract Value")} sub={uiText("Contract value minus verified payments; not the available cash balance.")} value={formatCurrency(balanceContractValue)} />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label={uiText("Financial Progress")} value={`${project.financialProgress}%`} />
-        <KpiCard label={uiText("Retention Held")} value={formatCurrency(retentionHeld)} />
-        <KpiCard label={uiText("Approved Variations")} value={formatCurrency(approvedVariations)} />
-        <KpiCard label={uiText("Total Deductions")} value={formatCurrency(totalDeductions)} />
-        <KpiCard label={uiText("Bills Under Review")} value={billsUnderReview} />
-        <KpiCard label={uiText("Avg. Bill Processing")} value={`${avgProcessingDays}d`} />
+        <KpiCard label={uiText("Financial Progress")} sub={uiText("Verified expenditure as a percentage of sanctioned budget.")} value={`${project.financialProgress}%`} />
+        <KpiCard label={uiText("Retention Held")} sub={uiText("Retention amounts recorded across bills.")} value={formatCurrency(retentionHeld)} />
+        <KpiCard label={uiText("Approved Variations")} sub={uiText("Cost impact of approved change orders.")} value={formatCurrency(approvedVariations)} />
+        <KpiCard label={uiText("Total Deductions")} sub={uiText("Deductions recorded across bills.")} value={formatCurrency(totalDeductions)} />
+        <KpiCard label={uiText("Bills Under Review")} sub={uiText("Submitted or verified bills that have not reached approval.")} value={billsUnderReview} />
+        <KpiCard label={uiText("Avg. Bill Processing")} sub={uiText("Average submission-to-payment days for bills with a recorded payment date.")} value={paidBillsWithDates.length ? `${avgProcessingDays}d` : '—'} />
       </div>
 
+      </div></details>
       {gap >= 12 && (
         <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           <AlertTriangle size={14} className="shrink-0" />
@@ -153,51 +185,26 @@ export function FinanceTab({ project }: { project: Project }) {
 
       {/* Decision-oriented finance charts (max 4, each supports a management decision) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader><CardTitle>{uiText("Physical vs. Financial Progress")}</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={progressTrend} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
-                <RTooltip formatter={(v: any) => `${v}%`} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="planned" name={uiText("Planned Physical")} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={2} dot={false} />
-                <Line label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="verified" name={uiText("Reported Physical")} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                <Line label={{ position: 'bottom', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? `${value}%` : String(value ?? '') }} type="monotone" dataKey="financial" name={uiText("Financial")} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
+          <CardContent><ProgressComparison rows={progressTrend} /></CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle>{uiText("Sanction to Payment")}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={waterfallData} layout="vertical" margin={{ left: 10, right: 55, top: 24, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
-                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} />
-                <RTooltip formatter={(v: any) => formatCurrencyFull(v)} />
-                <Bar label={{ position: 'right', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? formatCurrency(value) : String(value ?? '') }} dataKey="value" fill="#265aa0" radius={[0, 3, 3, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <p className="mb-4 text-xs leading-relaxed text-slate-600">{uiText('Separate financial measures, not amounts to add together. Balance is contract value minus payments, not cash available.')}</p>
+            <FinanceBars label="Sanction to Payment" rows={waterfallData.map(row=>({label:row.name,value:row.value,display:formatCurrency(row.value)}))}/>
+
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle>{uiText("Bill Ageing")}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={ageingBuckets} margin={{ top: 26, right: 25, bottom: 14, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f8" vertical={false} />
-                <XAxis dataKey="bucket" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <RTooltip />
-                <Bar label={{ position: 'top', fill: '#334155', fontSize: 10, formatter: (value: unknown) => typeof value === 'number' ? Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value) : String(value ?? '') }} dataKey="count" name={uiText("Bills")} radius={[3, 3, 0, 0]}>
-                  {ageingBuckets.map((b, i) => <Cell key={i} fill={b.bucket === '60+ Days' || b.bucket === '31-60 Days' ? '#ef4444' : b.bucket === '16-30 Days' ? '#f59e0b' : '#3b82f6'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{pendingBills.length} {uiText('bills with an unpaid balance')} · {pendingBills.filter(b=>ageingDays(b.submittedDate)>30).length} {uiText('submitted over 30 days ago')}</p><p className="mb-4 text-xs text-slate-500">{uiText('Age is counted from submission, not from a contractual payment due date. Bar length shows the number of bills.')}</p>
+            <FinanceBars label="Bill Ageing" rows={ageingBuckets.map((row,i)=>({label:row.bucket,value:row.count,display:row.count+' '+uiText('Bills'),color:i>=3?'#b45309':'#2563eb'}))}/>
+
           </CardContent>
         </Card>
 
@@ -205,14 +212,15 @@ export function FinanceTab({ project }: { project: Project }) {
       </div>
 
       <FundDisbursalReports projects={[project]} scopeLabel={project.name} />
+      <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-900">{uiText('Bill guide: Net equals gross plus GST minus deductions, retention and penalty. Certified shows net bills after quality verification; Paid comes from verified payment records. Ageing counts days since submission.')}</p>
       {/* B. Bill Status */}
-      <Card>
+      <Card id="project-bills" className="scroll-mt-24">
         <CardHeader>
           <CardTitle>{uiText("Bills")}</CardTitle>
           {currentUser?.role === 'CONTRACTOR' && <Button size="sm" onClick={() => setSubmitOpen(true)}><Plus size={13} />{uiText(" Submit RA Bill")}</Button>}
         </CardHeader>
         <Table>
-          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Submitted on")}</Th><Th>{uiText("Period")}</Th><Th>{uiText("Claimed")}</Th><Th>{uiText("Certified")}</Th><Th>{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
+          <THead><Tr><Th>{uiText("Bill No.")}</Th><Th>{uiText("Submitted on")}</Th><Th>{uiText("Period")}</Th><Th className="text-right">{uiText("Claimed")}</Th><Th className="text-right">{uiText("Certified")}</Th><Th className="text-right">{uiText("Paid")}</Th><Th>{uiText("Status")}</Th><Th>{uiText("Pending With")}</Th><Th>{uiText("Ageing")}</Th><Th /></Tr></THead>
           <TBody>
             {bills.map((b) => {
               const certified = ['QUALITY_VERIFIED', 'APPROVED', 'PAID'].includes(b.status) ? b.netPayable : 0;
@@ -223,9 +231,9 @@ export function FinanceTab({ project }: { project: Project }) {
                   <Td className="font-medium text-slate-800">{uiText(b.billNumber)}</Td>
                   <Td>{formatDate(b.submittedDate)}</Td>
                   <Td>{uiText(formatDate(b.periodFrom))} — {uiText(formatDate(b.periodTo))}</Td>
-                  <Td>{uiText(formatCurrency(b.grossAmount))}</Td>
-                  <Td>{uiText(certified ? formatCurrency(certified) : '—')}</Td>
-                  <Td>{uiText(paid ? formatCurrency(paid) : '—')}</Td>
+                  <Td className="text-right whitespace-nowrap">{uiText(formatCurrency(b.grossAmount))}</Td>
+                  <Td className="text-right whitespace-nowrap">{uiText(certified ? formatCurrency(certified) : '—')}</Td>
+                  <Td className="text-right whitespace-nowrap">{uiText(paid ? formatCurrency(paid) : '—')}</Td>
                   <Td><StatusBadge status={b.status} /></Td>
                   <Td className="text-[11px] text-slate-500">{uiText(PENDING_WITH[b.status] ?? '—')}</Td>
                   <Td className={age > 30 && !['PAID', 'REJECTED'].includes(b.status) ? 'font-medium text-red-600' : ''}>{uiText(['PAID', 'REJECTED'].includes(b.status) ? '—' : `${age}d`)}</Td>
@@ -265,7 +273,7 @@ export function FinanceTab({ project }: { project: Project }) {
 
       {submitOpen && currentUser?.role === 'CONTRACTOR' && <RABillSubmission project={project} onClose={() => setSubmitOpen(false)} />}
 
-      <Dialog open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)}>
+      <Dialog open={!!detailId} onOpenChange={(v) => !v && closeBillReview()}>
         {active && (
           <DialogContent title={uiText(active.billNumber)} description={uiText(project.name)} size="lg">
             <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">

@@ -1,4 +1,5 @@
 import { uiText, useUiLanguage } from '../../../../i18n/ui';
+import { PhotosTab } from './PhotosTab';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, Lock } from 'lucide-react';
@@ -12,6 +13,7 @@ import { isMilestoneDelivered, isMilestoneOverdue, dependenciesSatisfied } from 
 export function MilestonesTab({ project }: { project: Project }) {
   useUiLanguage();
   const allMilestones = useStore((s) => s.milestones);
+  const photos = useStore((s) => s.photos);
   const milestones = allMilestones.filter((m) => m.projectId === project.id).sort((a, b) => a.order - b.order);
   const currentUser = useStore((s) => s.currentUser);
   const submitMilestone = useStore((s) => s.submitMilestone);
@@ -110,7 +112,7 @@ export function MilestonesTab({ project }: { project: Project }) {
               <F label={uiText("Claimed Value")} value={active.claimedValue ? formatCurrency(active.claimedValue) : '—'} />
               <F label={uiText("Certified Value")} value={active.certifiedValue ? formatCurrency(active.certifiedValue) : '—'} />
               <F label={uiText("Payment Slab")} value={active.paymentSlabPct ? `${active.paymentSlabPct}%` : '—'} />
-              <F label={uiText("Evidence Items")} value={String(active.evidenceCount)} />
+              <F label={uiText("Evidence Items")} value={String(photos.filter(p => p.projectId === project.id && p.milestoneId === active.id).length)} />
               <F label={uiText("Inspection Required")} value={active.inspectionRequired ? 'Yes' : 'No'} />
               <F label={uiText("Responsible Contractor")} value={project.contractorId === active.responsibleContractorId ? 'Assigned firm' : '—'} />
             </div>
@@ -125,6 +127,10 @@ export function MilestonesTab({ project }: { project: Project }) {
             )}
 
             <p className="mt-3 rounded-md bg-slate-50 p-2.5 text-xs text-slate-600">{uiText(active.comments)}</p>
+            <section className="mt-4" aria-label={uiText('Milestone photo evidence')}>
+              <h3 className="mb-3 text-sm font-semibold">{uiText('Milestone photo evidence')}</h3>
+              <PhotosTab key={active.id} project={project} milestoneId={active.id} />
+            </section>
 
             {/* Workflow actions, gated by role and current status */}
             {(active.status === 'NOT_STARTED' || active.status === 'IN_PROGRESS' || active.status === 'CORRECTION_REQUIRED') && canSubmit && (

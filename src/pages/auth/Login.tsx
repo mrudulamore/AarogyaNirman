@@ -1,6 +1,6 @@
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { AuthLayout } from './AuthLayout';
@@ -8,7 +8,10 @@ import { Button, Input, Label } from '../../components/ui/primitives';
 import { useStore } from '../../store/useStore';
 import type { Role } from '../../types';
 
-const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
+const DEMO_ACCOUNTS: { role: Role; username: string; userId?: string; name?: string }[] = [
+  { role: 'CHIEF_ENGINEER', username: 'chief.engineer' },
+  { role: 'SUPERINTENDING_ENGINEER', username: 'superintending.engineer' },
+  { role: 'SITE_SUPERVISOR', username: 'site.supervisor' },
   { role: 'WORKFORCE', username: 'workforce' },
   { role: 'SUPERADMIN', username: 'superadmin' },
   { role: 'MINISTER', username: 'minister.secretary' },
@@ -18,6 +21,10 @@ const DEMO_ACCOUNTS: { role: Role; username: string }[] = [
   { role: 'EXECUTIVE_ENGINEER', username: 'exec.engineer' },
   { role: 'PROJECT_MANAGER', username: 'project.manager' },
   { role: 'DEPUTY_ENGINEER', username: 'deputy.engineer' },
+  { role: 'DEPUTY_ENGINEER', username: 'pune.je1@example.test', userId: 'PUNE-DEMO-JE-1', name: 'Aditya Patil' },
+  { role: 'DEPUTY_ENGINEER', username: 'pune.je2@example.test', userId: 'PUNE-DEMO-JE-2', name: 'Sneha Deshmukh' },
+  { role: 'DEPUTY_ENGINEER', username: 'pune.je3@example.test', userId: 'PUNE-DEMO-JE-3', name: 'Rohan Jadhav' },
+  { role: 'DEPUTY_ENGINEER', username: 'pune.je4@example.test', userId: 'PUNE-DEMO-JE-4', name: 'Priya Shinde' },
   { role: 'CONTRACTOR', username: 'contractor' },
   { role: 'MEDICAL_OFFICER', username: 'medical.officer' },
   { role: 'VIGILANCE_AUDIT', username: 'vigilance.audit' },
@@ -34,18 +41,13 @@ export function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState(false);
 
-  function quickLogin(role: Role) {
-    login(role);
-    navigate('/dashboard', { replace: true });
-  }
-
   function manualSubmit(e: React.FormEvent) {
     e.preventDefault();
     const match = DEMO_ACCOUNTS.find((a) => a.username === username.trim().toLowerCase());
     const entered = username.trim().toLowerCase();
     const user = useStore.getState().users.find(u => u.email.toLowerCase() === entered || u.id.toLowerCase() === entered);
     if (user) login(user.role, user.id);
-    else if (match) login(match.role);
+    else if (match) login(match.role, match.userId);
     else { setError(true); return; }
     if (!useStore.getState().currentUser) { setError(true); return; }
     navigate('/dashboard', { replace: true });
@@ -79,18 +81,9 @@ export function Login() {
         <div className="h-px flex-1 bg-slate-200" /> {t('auth.demoAccounts').toUpperCase()} <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <div className="login-card-grid grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto pr-1">
-        {DEMO_ACCOUNTS.map((a) => (
-          <button
-            key={a.role}
-            onClick={() => quickLogin(a.role)}
-            className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs hover:border-navy-300 hover:bg-navy-50"
-          >
-            <span className="font-medium text-slate-700">{t(`roles.${a.role}`)}</span>
-            <span className="text-[10px] text-slate-400">{a.username}</span>
-          </button>
-        ))}
-      </div>
+      <Link to="/select-role" className="flex min-h-11 w-full items-center justify-center rounded-lg border border-navy-300 px-4 py-3 text-sm font-semibold text-navy-700 hover:bg-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-govblue-500">
+        {t('auth.selectDemoRole')}
+      </Link>
     </AuthLayout>
   );
 }

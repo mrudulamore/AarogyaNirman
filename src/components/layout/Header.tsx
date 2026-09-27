@@ -3,7 +3,7 @@ import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Menu, Search, Bell, LogOut, ChevronDown, UserCog } from 'lucide-react';
+import { ArrowLeft, Menu, Search, Bell, LogOut, ChevronDown } from 'lucide-react';
 import { useProjectScope } from '../../lib/scope';
 import { useStore } from '../../store/useStore';
 import { Avatar } from '../ui/forms';
@@ -28,10 +28,10 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const myNotifications = notifications.filter((n) => currentUser && n.targetRoles.includes(currentUser.role));
   const unread = myNotifications.filter((n) => !n.read).length;
 
-  function switchAccount() {
+  function handleLogout() {
     logout();
     setQ('');
-    navigate('/login', { replace: true });
+    navigate('/select-role', { replace: true });
   }
 
   return (
@@ -63,8 +63,8 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         </button>
 
         <LanguageSwitcher />
-        <button type="button" onClick={switchAccount} className="flex min-h-10 max-w-24 items-center gap-1 rounded-md border border-slate-200 px-2 py-1.5 text-left text-[11px] font-medium text-navy-700 hover:bg-slate-100">
-          <UserCog size={15} className="shrink-0" /> {t('header.switchAccount')}
+        <button type="button" onClick={handleLogout} className="flex min-h-10 max-w-24 items-center gap-1 rounded-md border border-slate-200 px-2 py-1.5 text-left text-[11px] font-medium text-navy-700 hover:bg-slate-100">
+          <LogOut size={15} className="shrink-0" /> {t('header.signOut')}
         </button>
 
         <DropdownMenu>
@@ -110,9 +110,8 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{uiText(currentUser?.designation)}</DropdownMenuLabel>
             <DropdownMenuItem onSelect={() => setKycOpen(true)}>{uiText('KYC application')}</DropdownMenuItem>
-            {currentUser?.role !== 'WORKFORCE' && <DropdownMenuItem onSelect={() => navigate('/select-role')}><UserCog size={14} /> {t('header.switchRole')}</DropdownMenuItem>}
             <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onSelect={switchAccount}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>
+            <DropdownMenuItem destructive onSelect={handleLogout}><LogOut size={14} /> {t('header.signOut')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

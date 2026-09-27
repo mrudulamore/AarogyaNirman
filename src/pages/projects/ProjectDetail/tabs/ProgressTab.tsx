@@ -38,6 +38,8 @@ export function ProgressTab({ project }: { project: Project }) {
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [previewReportId, setPreviewReportId] = useState<string | null>(null);
+  const previewReport = reports.find(report => report.id === previewReportId);
   const [form, setForm] = useState({ date: todayDate(), workCompleted: '', delayReason: '', measurementsNotes: '', drawingId: '', stage: STAGE_OPTIONS[0], progressPct: project.reportedProgress, workersPresent: 0, weather: 'Clear' as typeof WEATHER[number], materialsReceived: '', materialsUsed: '', issues: '' });
 
   useEffect(() => {
@@ -103,8 +105,11 @@ export function ProgressTab({ project }: { project: Project }) {
           <THead><Tr><Th>{uiText("Date")}</Th><Th>{uiText("Stage")}</Th><Th>{uiText("Progress")}</Th><Th>{uiText("Workers")}</Th><Th>{uiText("Weather")}</Th><Th>{uiText("Issues")}</Th><Th>{uiText("Submitted By")}</Th><Th>{uiText("Documents")}</Th></Tr></THead>
           <TBody>
             {reports.map((r) => (
-              <Tr key={r.id}>
-                <Td>{uiText(formatDate(r.date))}</Td>
+              <Tr key={r.id} className="cursor-pointer hover:bg-blue-50" onClick={event => {
+                if ((event.target as HTMLElement).closest('button, a, input, details')) return;
+                setPreviewReportId(r.id);
+              }}>
+                <Td><button type="button" className="text-left text-navy-700 underline underline-offset-2" aria-label={`${uiText('Preview')} ${formatDate(r.date)}`} onClick={() => setPreviewReportId(r.id)}>{uiText(formatDate(r.date))}</button></Td>
                 <Td className="font-medium text-slate-800">{uiText(r.stage)}</Td>
                 <Td>{r.progressPct}%</Td>
                 <Td>{r.workersPresent}</Td>
@@ -117,6 +122,16 @@ export function ProgressTab({ project }: { project: Project }) {
           </TBody>
         </Table>
       </Card>
+
+      <Dialog open={!!previewReport} onOpenChange={open => !open && setPreviewReportId(null)}>
+        {previewReport && <DialogContent title={`${uiText('Daily Progress Reports')} — ${formatDate(previewReport.date)}`} description={`${uiText(previewReport.stage)} · ${previewReport.progressPct}% · ${previewReport.submittedBy}`} size="lg">
+          <div className="space-y-3">
+            <p className="text-sm">{previewReport.workCompleted || previewReport.issues}</p>
+            <h3 className="text-sm font-semibold">{uiText('Documents')}</h3>
+            <ProgressDocumentLinks key={previewReport.id} attachments={previewReport.attachments} />
+          </div>
+        </DialogContent>}
+      </Dialog>
 
       <Dialog open={reportOpen} onOpenChange={open => !saving && setReportOpen(open)}>
         <DialogContent title={uiText("Submit Daily Progress Report")} description={uiText(project.name)} size="lg">
