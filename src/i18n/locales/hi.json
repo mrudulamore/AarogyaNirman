@@ -115,8 +115,8 @@
     "VIGILANCE_AUDIT": "सतर्कता एवं लेखा परीक्षा अधिकारी",
     "IT_ADMIN": "आईटी / सिस्टम प्रशासक",
     "WORKFORCE": "कार्यबल",
-    "CHIEF_ENGINEER": "????? ???????",
-    "SUPERINTENDING_ENGINEER": "??????? ???????"
+    "CHIEF_ENGINEER": "मुख्य अभियंता",
+    "SUPERINTENDING_ENGINEER": "अधीक्षक अभियंता"
   },
   "status": {
     "ON_TRACK": "योजनानुसार",
