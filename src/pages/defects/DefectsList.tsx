@@ -1,6 +1,7 @@
+import { defectReviewQuery } from '../../lib/billReviewNavigation';
 import { uiText, useUiLanguage } from '../../i18n/ui';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
@@ -20,8 +21,12 @@ export function DefectsList() {
   const allDefects = useStore((s) => s.defects);
   const defects = allDefects.filter((d) => projectIds.has(d.projectId));
   const contractors = useStore((s) => s.contractors);
-  const [severityFilter, setSeverityFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [params, setParams] = useSearchParams();
+  const severityFilter = params.get('severity') ?? 'ALL';
+  const statusFilter = params.get('status') ?? 'ALL';
+  function setFilter(key: string, value: string) { setParams(previous => { const next = new URLSearchParams(previous); if (value === 'ALL') next.delete(key); else next.set(key, value); return next; }, { replace: true }); }
+  const setSeverityFilter = (value: string) => setFilter('severity', value);
+  const setStatusFilter = (value: string) => setFilter('status', value);
 
   const filtered = defects.filter((d) => (severityFilter === 'ALL' || d.severity === severityFilter) && (statusFilter === 'ALL' || d.status === statusFilter))
     .sort((a, b) => (a.createdDate < b.createdDate ? 1 : -1));
@@ -67,7 +72,7 @@ export function DefectsList() {
           <THead><Tr><Th>{uiText("ID")}</Th><Th>{uiText("Project")}</Th><Th>{uiText("Location")}</Th><Th>{uiText("Category")}</Th><Th>{uiText("Severity")}</Th><Th>{uiText("Contractor")}</Th><Th>{uiText("Due Date")}</Th><Th>{uiText("Status")}</Th></Tr></THead>
           <TBody>
             {filtered.map((d) => (
-              <Tr key={d.id} onClick={() => navigate(`/projects/${d.projectId}?tab=defects`)}>
+              <Tr key={d.id} onClick={() => navigate(`/projects/${d.projectId}?tab=defects${defectReviewQuery(d.id)}`)}>
                 <Td className="font-mono text-[11px] text-slate-500">{d.id}</Td>
                 <Td className="max-w-[160px] truncate font-medium text-slate-800">{projects.find((p) => p.id === d.projectId)?.name}</Td>
                 <Td className="max-w-[140px] truncate">{uiText(d.location)}</Td>

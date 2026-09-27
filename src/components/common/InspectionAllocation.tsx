@@ -18,8 +18,8 @@ export function InspectionAllocation({ project, inspection, request, onClose }: 
   const [projectId, setProjectId] = useState(project.id);
   const selectedProject = state.projects.find(p => p.id === projectId) ?? project;
   const roles = inspectionAssignmentRoles(state.currentUser);
-  const [role, setRole] = useState<Role>(roles.includes(inspection?.assignedRole as Role) ? inspection!.assignedRole! : roles[0]);
-  const [assigneeId, setAssigneeId] = useState(inspection?.assignedToId ?? project.siteEngineerId);
+  const [role, setRole] = useState<Role>(roles.includes(inspection?.assignedRole as Role) ? inspection!.assignedRole! : roles.includes('DEPUTY_ENGINEER') ? 'DEPUTY_ENGINEER' : roles[0]);
+  const [assigneeId, setAssigneeId] = useState(roles.includes(inspection?.assignedRole as Role) ? inspection!.assignedToId ?? '' : project.siteEngineerId);
   const [category, setCategory] = useState<InspectionCategory>(request?.inspectionType ?? 'STRUCTURAL');
   const [date, setDate] = useState(request?.date ?? '');
   const [time, setTime] = useState(request?.time ?? '');
@@ -28,7 +28,7 @@ export function InspectionAllocation({ project, inspection, request, onClose }: 
   const [instructions, setInstructions] = useState('');
   const [drawingId, setDrawingId] = useState('');
   const [reason, setReason] = useState('');
-  const assignees = inspectionAccounts(state.users, state.projects, state.contractors).filter(user => user.role === role && computeProjectScope(user, state.projects, state.contractors).projectIds.has(projectId));
+  const assignees = inspectionAccounts(state.users, state.projects, state.contractors).filter(user => user.role === role && computeProjectScope(user, state.projects, state.contractors).projectIds.has(projectId)).sort((a, b) => a.name.localeCompare(b.name));
   const drawings = activeControls(state, projectId).filter(r => (r.kind === 'DOCUMENT' && r.fields.documentType === 'Drawing') || (r.kind === 'PROCUREMENT' && r.category === 'Approved drawings / estimate'));
   const inputClass = 'ui-input min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm';
   function submit(event: React.FormEvent) {

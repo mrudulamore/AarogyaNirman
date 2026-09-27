@@ -1,8 +1,9 @@
+import { ProjectSearchSelect } from '../../components/common/ProjectSearchSelect';
 import { isMilestoneDelivered, isMilestoneOverdue } from '../../lib/milestones';
 import { tabsForRole } from '../../lib/projectTabAccess';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useProjectScope } from '../../lib/scope';
 import { reconcileProjects, outstandingBills } from '../../lib/financeLedger';
@@ -16,12 +17,15 @@ export function InsightOverview() {
   const state = useStore();
   const scope = useProjectScope();
   const [query,setQuery] = useState('');
+  const [projectFilter,setProjectFilter] = useState('');
+  const [scheme,setScheme] = useState('ALL');
   const [status,setStatus] = useState('ALL');
   const [district,setDistrict] = useState('ALL');
-  const [sort,setSort] = useState('attention');
+  const [sort,setSort] = useState('budget');
   const scoped = reconcileProjects(scope.projects,state.controlRecords);
   const rank: Record<string,number> = {DELAYED:0,AT_RISK:1,ON_TRACK:2,COMPLETED:3};
-  const projects = scoped.filter(p => (status==='ALL'||p.status===status) && (district==='ALL'||p.district===district)
+  const available = scoped.filter(p => scheme === 'ALL' || p.scheme === scheme);
+  const projects = available.filter(p => (!projectFilter || p.id === projectFilter) && (status==='ALL'||p.status===status) && (district==='ALL'||p.district===district)
     && [p.name,p.id,p.district].join(' ').toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a,b) => sort==='progress' ? a.physicalProgress-b.physicalProgress : sort==='expenditure' ? b.amountSpent-a.amountSpent : sort==='budget' ? b.sanctionedBudget-a.sanctionedBudget : (rank[a.status]??4)-(rank[b.status]??4)||a.name.localeCompare(b.name));
   const ids = new Set(projects.map(p=>p.id));
@@ -47,11 +51,12 @@ export function InsightOverview() {
       <p className="mt-2 max-w-2xl text-sm text-blue-100">{uiText('Compare project progress, current status and finances in one place.')}</p>
     </header>
     <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-blue-100 bg-white p-4">
-      <label className="min-w-0 flex-[2] basis-64 text-xs font-medium text-slate-600">{uiText('Search projects')}<span className="mt-1 flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-3"><Search size={16}/><input aria-label={uiText('Search projects')} value={query} onChange={e=>setQuery(e.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none"/></span></label>
-      <label className="flex-1 basis-40 text-xs font-medium text-slate-600">{uiText('Status')}<select className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-label={uiText("Status")} value={status} onChange={e=>setStatus(e.target.value)}><option value="ALL">{uiText('All Statuses')}</option>{['ON_TRACK','AT_RISK','DELAYED','COMPLETED'].map(s=><option key={s} value={s}>{uiText(s)}</option>)}</select></label>
-      <label className="flex-1 basis-40 text-xs font-medium text-slate-600">{uiText('District')}<select className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-label={uiText("District")} value={district} onChange={e=>setDistrict(e.target.value)}><option value="ALL">{uiText('All Districts')}</option>{[...new Set(scoped.map(p=>p.district))].sort().map(d=><option key={d}>{d}</option>)}</select></label>
+      <ProjectSearchSelect projects={available.filter(p => (status==='ALL'||p.status===status) && (district==='ALL'||p.district===district)).sort((a,b)=>sort==='budget'?b.sanctionedBudget-a.sanctionedBudget:a.name.localeCompare(b.name))} query={query} selectedId={projectFilter} onSearch={value=>{setQuery(value);setProjectFilter('');}} onSelect={id=>{setProjectFilter(id);setQuery('');}} />
+      <label className="flex-1 basis-40 text-xs font-medium text-slate-600">{uiText('Scheme')}<select aria-label={uiText('Scheme')} value={scheme} onChange={e=>{setScheme(e.target.value);setProjectFilter('');setQuery('');}} className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="ALL">{uiText('All Schemes')}</option>{[...new Set(scoped.map(p=>p.scheme))].sort().map(value=><option key={value} value={value}>{uiText(value)}</option>)}</select></label>
+      <label className="flex-1 basis-40 text-xs font-medium text-slate-600">{uiText('Status')}<select className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-label={uiText("Status")} value={status} onChange={e=>{setStatus(e.target.value);setProjectFilter('');setQuery('');}}><option value="ALL">{uiText('All Statuses')}</option>{['ON_TRACK','AT_RISK','DELAYED','COMPLETED'].map(s=><option key={s} value={s}>{uiText(s)}</option>)}</select></label>
+      <label className="flex-1 basis-40 text-xs font-medium text-slate-600">{uiText('District')}<select className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-label={uiText("District")} value={district} onChange={e=>{setDistrict(e.target.value);setProjectFilter('');setQuery('');}}><option value="ALL">{uiText('All Districts')}</option>{[...new Set(scoped.map(p=>p.district))].sort().map(d=><option key={d}>{d}</option>)}</select></label>
       <label className="flex-1 basis-44 text-xs font-medium text-slate-600">{uiText('Sort by')}<select className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-label={uiText("Sort by")} value={sort} onChange={e=>setSort(e.target.value)}>{[['attention','Needs attention first'],['progress','Lowest progress first'],['expenditure','Highest expenditure first'],['budget','Highest budget first']].map(([key,label])=><option key={key} value={key}>{uiText(label)}</option>)}</select></label>
-      <button className="min-h-11 px-3 text-sm font-semibold text-blue-700" onClick={()=>{setQuery('');setStatus('ALL');setDistrict('ALL');setSort('attention');}}>{uiText('Reset filters')}</button>
+      <button className="min-h-11 px-3 text-sm font-semibold text-blue-700" onClick={()=>{setQuery('');setStatus('ALL');setDistrict('ALL');setSort('budget');setScheme('ALL');setProjectFilter('');}}>{uiText('Reset filters')}</button>
     </div>
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {[

@@ -1,3 +1,4 @@
+import { usePlaceName } from '../../lib/placeName';
 import { PhotoGeotagMap } from './PhotoGeotagMap';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { cn } from '../../lib/utils';
@@ -12,6 +13,7 @@ export function GeoPhoto({ src, mediaKey, lat, lng, timestamp, location, gpsAccu
   const reference = !mediaKey && src.startsWith('/site-photos/');
   const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 
+  const place = usePlaceName(lat, lng, !!mediaKey && hasCoordinates && locationSource !== 'MANUAL');
   const dt = new Date(timestamp);
   const dateLabel = dt.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
   const timeLabel = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -22,7 +24,9 @@ export function GeoPhoto({ src, mediaKey, lat, lng, timestamp, location, gpsAccu
       <div className={cn('absolute inset-x-0 bottom-0 flex items-center gap-3 bg-slate-950/70 p-2 text-white', compact && 'gap-1 p-1')}>
         {!compact && hasCoordinates && <PhotoGeotagMap key={lat + ':' + lng} lat={lat} lng={lng} />}
         <div className={cn('min-w-0 flex-1 py-1 [text-shadow:0_1px_2px_rgb(0_0_0_/_70%)]', compact && '[&_p]:text-[8px] [&_p]:leading-tight')}>
-          <p className={cn('break-words text-base font-semibold leading-tight sm:text-lg', compact && 'text-[9px] sm:text-[9px]')}>{uiText(location)}</p>
+          <p className={cn('break-words text-base font-semibold leading-tight sm:text-lg', compact && 'text-[9px] sm:text-[9px]')}>{place?.title ?? uiText(location)}</p>
+          {place?.address && <p className="text-xs leading-snug">{place.address}</p>}
+          {reference && <p className="text-xs">{uiText('Sample location')}</p>}
           <p className="mt-1 break-words text-xs leading-snug">{hasCoordinates ? `Lat ${lat.toFixed(6)}, Long ${lng.toFixed(6)}` : uiText('GPS coordinates unavailable')}</p>
           {Number.isFinite(dt.getTime()) && <p className="text-xs leading-snug">{uiText(dateLabel)}, {uiText(timeLabel)}</p>}
           {!reference && locationSource && <p className="mt-1 text-[11px]">{uiText(locationSource === 'CAPTURED' ? 'Device GPS' : 'Manual entry')}{gpsAccuracyM !== undefined && Number.isFinite(gpsAccuracyM) ? ` · ±${gpsAccuracyM} m` : ''}</p>}

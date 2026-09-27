@@ -45,8 +45,8 @@ export const PROJECT_360_TABS: Project360Tab[] = [
  * Overview instead (see MinistryOverview), and only Timeline/Tender & Contract/Field Evidence/
  * Team/Inspections/Safety & Commissioning/Approvals/Documents/Handover remain as their own tabs. */
 export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
-  CHIEF_ENGINEER: ['overview', 'documents', 'inspections'],
-  SUPERINTENDING_ENGINEER: ['overview', 'documents', 'inspections'],
+  CHIEF_ENGINEER: ['overview', 'timeline', 'tender', 'controls', 'boq', 'milestones', 'progress', 'monthly', 'field evidence', 'team', 'contractor', 'quality', 'inspections', 'defects', 'risks', 'finance', 'documents', 'handover'],
+  SUPERINTENDING_ENGINEER: ['overview', 'timeline', 'tender', 'controls', 'boq', 'milestones', 'progress', 'monthly', 'field evidence', 'team', 'contractor', 'quality', 'inspections', 'defects', 'risks', 'finance', 'documents', 'handover'],
   WORKFORCE: [],
   SITE_SUPERVISOR: ['overview', 'milestones', 'progress', 'photos', 'field evidence', 'quality', 'inspections', 'defects', 'documents'],
   SUPERADMIN: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover', 'audit'],

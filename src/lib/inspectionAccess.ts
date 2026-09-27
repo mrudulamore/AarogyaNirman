@@ -13,8 +13,9 @@ export function inspectionAccounts(users: User[], projects: Project[], contracto
 }
 
 // Junior Engineer is represented by DEPUTY_ENGINEER in the existing role model.
-export const INSPECTION_OPERATOR_ROLES: Role[] = ['DEPUTY_ENGINEER'];
-export const INSPECTION_ASSIGNEE_ROLES: Role[] = ['DEPUTY_ENGINEER'];
+export const INSPECTION_HIERARCHY: Role[] = ['CHIEF_ENGINEER', 'SUPERINTENDING_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER', 'DEPUTY_ENGINEER'];
+export const INSPECTION_OPERATOR_ROLES: Role[] = INSPECTION_HIERARCHY.slice(1);
+export const INSPECTION_ASSIGNEE_ROLES: Role[] = INSPECTION_HIERARCHY.slice(1);
 export function canReviewInspection(user: User | null): boolean {
   return user?.role === 'EXECUTIVE_ENGINEER';
 }
@@ -25,5 +26,10 @@ export function canManageInspection(user: User | null, inspection: Inspection): 
 }
 
 export function inspectionAssignmentRoles(user: User | null): Role[] {
-  return canReviewInspection(user) ? INSPECTION_ASSIGNEE_ROLES : [];
+  const index = user ? INSPECTION_HIERARCHY.indexOf(user.role) : -1;
+  return index < 0 ? [] : INSPECTION_HIERARCHY.slice(index + 1);
+}
+
+export function canAssignInspection(user: User | null): boolean {
+  return inspectionAssignmentRoles(user).length > 0;
 }

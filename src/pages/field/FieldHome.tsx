@@ -47,6 +47,8 @@ export function FieldHome() {
   const [submitting, setSubmitting] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [defectDesc, setDefectDesc] = useState('');
+  const [defectFiles,setDefectFiles] = useState<File[]>([]);
+  const [savingDefect,setSavingDefect] = useState(false);
   const [photoType, setPhotoType] = useState<PhotoType>('PROGRESS');
   const [photoPlace, setPhotoPlace] = useState({ building: '', floor: '', activity: '' });
   const [locationReason, setLocationReason] = useState('');
@@ -226,12 +228,18 @@ export function FieldHome() {
       <Dialog open={action === 'defect'} onOpenChange={(v) => !v && setAction(null)}>
         <DialogContent title={uiText("Report Defect")}>
           <Textarea rows={3} placeholder={uiText("Describe the defect…")} value={defectDesc} onChange={(e) => setDefectDesc(e.target.value)} />
+          <ProgressDocuments files={defectFiles} onChange={setDefectFiles} disabled={savingDefect} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setAction(null)}>{uiText("Cancel")}</Button>
-            <Button variant="destructive" onClick={() => {
+            <Button variant="destructive" disabled={savingDefect} onClick={async () => {
+              if (savingDefect) return;
               if (!defectDesc.trim()) { toast.error(uiText('Description required.')); return; }
-              createDefect({ projectId: project.id, location: 'Site — field report', category: 'CIVIL', severity: 'MEDIUM', description: defectDesc, imageSeed: Math.floor(Math.random() * 99999), reportedBy: currentUser?.name ?? 'Deputy Engineer', contractorId: project.contractorId, dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) });
-              closeAndToast('Defect reported.');
+              if (!defectFiles.length) { toast.error(uiText('Description and supporting evidence are required.')); return; }
+              setSavingDefect(true); try {
+              const attachments=await saveBillFiles(defectFiles.map(file=>({file,category:'SUPPORTING' as const})));
+              createDefect({ attachments, projectId: project.id, location: 'Site — field report', category: 'CIVIL', severity: 'MEDIUM', description: defectDesc, imageSeed: 0, reportedBy: currentUser?.name ?? 'Deputy Engineer', contractorId: project.contractorId, dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) });
+              closeAndToast('Defect reported.'); setDefectFiles([]); setDefectDesc('');
+              } catch(error) { toast.error(uiText((error as Error).message)); } finally { setSavingDefect(false); }
             }}>{uiText("Report")}</Button>
           </DialogFooter>
         </DialogContent>

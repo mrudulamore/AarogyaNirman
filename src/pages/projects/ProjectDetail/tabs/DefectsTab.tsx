@@ -1,7 +1,11 @@
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { billReviewReturnPath } from '../../../../lib/billReviewNavigation';
+import { ProgressDocuments, ProgressDocumentLinks } from '../../../../components/common/ProgressDocuments';
+import { saveBillFiles } from '../../../../lib/billAttachments';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Camera, UserCheck, Wrench, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, UserCheck, Wrench, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { Project, DefectSeverity, InspectionCategory } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, Button, StatusBadge, SeverityBadge, Table, THead, TBody, Tr, Th, Td, Textarea, Input, EmptyState } from '../../../../components/ui/primitives';
@@ -30,34 +34,52 @@ export function DefectsTab({ project }: { project: Project }) {
   const addCorrectiveAction = useStore((s) => s.addCorrectiveAction);
   const closeDefect = useStore((s) => s.closeDefect);
 
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(params.get('defect'));
   const [correctiveOpen, setCorrectiveOpen] = useState(false);
   const [notes, setNotes] = useState('');
+  const [files,setFiles] = useState<File[]>([]);
+  const [correctiveFiles,setCorrectiveFiles] = useState<File[]>([]);
+  const [saving,setSaving] = useState(false);
   const [assignPocId, setAssignPocId] = useState<string>('');
   const [form, setForm] = useState({ location: '', category: INSPECTION_CATEGORIES[0] as InspectionCategory, severity: 'MEDIUM' as DefectSeverity, description: '', dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) });
 
+  function closeDefectReview() {
+    setDetailId(null);
+    const returnTo = billReviewReturnPath(params.get('returnTo'));
+    if (returnTo && params.get('defect')) { navigate(returnTo, { replace: true }); return; }
+    setParams(previous => { const next = new URLSearchParams(previous); next.delete('defect'); next.delete('returnTo'); return next; }, { replace: true });
+  }
   const active = defects.find((d) => d.id === detailId);
   const overdueCount = defects.filter((d) => d.status !== 'CLOSED' && new Date(d.dueDate) < new Date()).length;
   const projectPocs = contractorPocs.filter((poc) => poc.contractorId === project.contractorId);
   const isContractor = currentUser?.role === 'CONTRACTOR';
   const readOnly = currentUser?.role === 'MINISTER' || currentUser?.role === 'VIGILANCE_AUDIT' || currentUser?.role === 'MEDICAL_OFFICER';
 
-  function submitCreate() {
+  async function submitCreate() {
+    if (saving) return;
+    if (!form.description.trim() || !files.length) { toast.error(uiText('Description and supporting evidence are required.')); return; }
+    setSaving(true);
+    try {
+    const attachments = await saveBillFiles(files.map(file => ({file, category: 'SUPPORTING' as const})));
     createDefect({
+      attachments,
       projectId: project.id, location: form.location || 'Site — general', category: form.category, severity: form.severity,
-      description: form.description, imageSeed: Math.floor(Math.random() * 99999), reportedBy: currentUser?.name ?? 'Deputy Engineer',
+      description: form.description, imageSeed: 0, reportedBy: currentUser?.name ?? 'Deputy Engineer',
       contractorId: project.contractorId, dueDate: form.dueDate,
     });
     toast.success(uiText('Defect logged.'));
-    setCreateOpen(false);
+    setCreateOpen(false); setFiles([]);
+    } catch(error) { toast.error(uiText((error as Error).message)); } finally { setSaving(false); }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {overdueCount > 0 && <div className="flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1.5 text-xs text-red-700"><AlertTriangle size={13} /> {overdueCount}{uiText(" overdue defect(s)")}</div>}
-        {!readOnly && <div className="ml-auto"><Button onClick={() => setCreateOpen(true)}><Plus size={15} />{uiText(" Log Defect")}</Button></div>}
+        {['DEPUTY_ENGINEER', 'EXECUTIVE_ENGINEER', 'PROJECT_MANAGER'].includes(currentUser?.role ?? '') && <div className="ml-auto"><Button onClick={() => setCreateOpen(true)}><Plus size={15} />{uiText(" Log Defect")}</Button></div>}
       </div>
 
       <Card>
@@ -114,14 +136,15 @@ export function DefectsTab({ project }: { project: Project }) {
             <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Due Date")}</p><Input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></div>
             <div><p className="mb-1 text-xs font-medium text-slate-600">{uiText("Description")}</p><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           </div>
+          <ProgressDocuments files={files} onChange={setFiles} disabled={saving} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={submitCreate}>{uiText("Log Defect")}</Button>
+            <Button disabled={saving} onClick={() => void submitCreate()}>{uiText("Log Defect")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)}>
+      <Dialog open={!!detailId} onOpenChange={(v) => !v && closeDefectReview()}>
         {active && (
           <DialogContent title={uiMessage("Defect {{0}}", [active.id])} description={uiText(active.location)} size="lg">
             <div className="mb-3 flex gap-2">
@@ -130,9 +153,11 @@ export function DefectsTab({ project }: { project: Project }) {
             <p className="mb-3 text-xs text-slate-600">{active.description}</p>
 
             <p className="mb-2 text-xs font-semibold text-slate-600">{uiText("Evidence")}</p>
+            <ProgressDocumentLinks attachments={active.attachments} />
+            {!!active.correctiveAttachments?.length && <section className="my-3"><h3>{uiText("RECTIFICATION")}</h3><ProgressDocumentLinks attachments={active.correctiveAttachments} /></section>}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <EvidenceCard label={uiText("BEFORE")} seed={active.imageSeed} category={active.category} date={active.createdDate} by={active.reportedBy} />
-              <EvidenceCard label={uiText("RECTIFICATION")} seed={active.correctiveActionPhotoSeed} category={active.category} date={active.acknowledgedDate} by={contractorPocs.find((p) => p.id === active.assignedPocId)?.name} empty="Awaiting contractor rectification evidence" />
+              {!active.attachments?.length && <EvidenceCard label={uiText("BEFORE")} seed={active.imageSeed} category={active.category} date={active.createdDate} by={active.reportedBy} />}
+              {!active.correctiveAttachments?.length && <EvidenceCard label={uiText("RECTIFICATION")} seed={active.correctiveActionPhotoSeed} category={active.category} date={active.acknowledgedDate} by={contractorPocs.find((p) => p.id === active.assignedPocId)?.name} empty="Awaiting contractor rectification evidence" />}
               <EvidenceCard label={uiText("AFTER / REINSPECTION")} seed={active.reinspectionPhotoSeed} category={active.category} date={active.closedDate} by={users.find((u) => u.id === active.responsibleEngineerId)?.name} empty="Awaiting reinspection closure evidence" />
             </div>
 
@@ -172,11 +197,11 @@ export function DefectsTab({ project }: { project: Project }) {
             {active.status === 'ASSIGNED' && isContractor && !active.acknowledgedDate && (
               <div className="mt-4"><Button onClick={() => { acknowledgeDefect(active.id); toast.success(uiText('Defect acknowledged.')); }}><CheckCircle2 size={13} />{uiText(" Acknowledge Defect")}</Button></div>
             )}
-            {(active.status === 'ASSIGNED' || active.status === 'IN_PROGRESS') && !readOnly && (
+            {(active.status === 'ASSIGNED' || active.status === 'IN_PROGRESS') && isContractor && !readOnly && (
               <div className="mt-4"><Button onClick={() => setCorrectiveOpen(true)}><Wrench size={13} />{uiText(" Upload Corrective Action")}</Button></div>
             )}
             {active.status === 'FIXED' && !isContractor && !readOnly && <div className="mt-4"><Button variant="outline" onClick={() => { try {  updateDefectStatus(active.id, 'IN_PROGRESS'); toast.info(uiText('Awaiting re-inspection from Quality module.'));  } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Awaiting Re-inspection")}</Button></div>}
-            {(active.status === 'FIXED' || active.status === 'REINSPECTION') && !isContractor && !readOnly && <div className="mt-4"><Button variant="success" onClick={() => { try {  closeDefect(active.id); toast.success(uiText('Defect closed.')); setDetailId(null);  } catch (error) { toast.error(uiText((error as Error).message)); } }}><CheckCircle2 size={13} />{uiText(" Close Defect")}</Button></div>}
+            {(active.status === 'FIXED' || active.status === 'REINSPECTION') && !isContractor && !readOnly && <div className="mt-4"><Button variant="success" onClick={() => { try {  closeDefect(active.id); toast.success(uiText('Defect closed.')); closeDefectReview();  } catch (error) { toast.error(uiText((error as Error).message)); } }}><CheckCircle2 size={13} />{uiText(" Close Defect")}</Button></div>}
           </DialogContent>
         )}
       </Dialog>
@@ -184,18 +209,17 @@ export function DefectsTab({ project }: { project: Project }) {
       <Dialog open={correctiveOpen} onOpenChange={setCorrectiveOpen}>
         <DialogContent title={uiText("Upload Corrective Action")} description={uiText("Contractor evidence of rectification")}>
           <div className="space-y-3">
-            <div className="flex h-32 items-center justify-center rounded-md border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">
-              <div><Camera className="mx-auto mb-1" size={20} />{uiText(" Simulated corrective-action photo upload")}</div>
-            </div>
+            <ProgressDocuments files={correctiveFiles} onChange={setCorrectiveFiles} disabled={saving} />
             <Textarea rows={3} placeholder={uiText("Describe the corrective action taken…")} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCorrectiveOpen(false)}>{uiText("Cancel")}</Button>
-            <Button onClick={() => { try { 
-              if (active) addCorrectiveAction(active.id, notes || 'Rectification completed as per inspection remarks.', Math.floor(Math.random() * 99999));
+            <Button disabled={saving} onClick={async () => { if (!active || saving) return; if (!notes.trim() || !correctiveFiles.length) { toast.error(uiText('Description and supporting evidence are required.')); return; } setSaving(true); try {
+              const attachments = await saveBillFiles(correctiveFiles.map(file => ({file, category: 'SUPPORTING' as const})));
+              addCorrectiveAction(active.id, notes.trim(), 0, attachments);
               toast.success(uiText('Corrective action submitted. Ready for re-inspection.'));
-              setCorrectiveOpen(false); setNotes('');
-             } catch (error) { toast.error(uiText((error as Error).message)); } }}>{uiText("Submit")}</Button>
+              setCorrectiveOpen(false); setNotes(''); setCorrectiveFiles([]);
+             } catch (error) { toast.error(uiText((error as Error).message)); } finally { setSaving(false); } }}>{uiText("Submit")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

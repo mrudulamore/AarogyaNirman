@@ -1,3 +1,4 @@
+import { billReviewQuery } from '../../lib/billReviewNavigation';
 import { FinanceDecisionPanel } from './FinanceDecisionPanel';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useRef } from 'react';
@@ -46,7 +47,7 @@ export function FinanceDashboard() {
   const pendingTotal = pending.reduce((n,b) => n + b.netPayable, 0);
   const projectName = (id: string) => projects.find(p => p.id === id)?.name ?? id;
   const matches = (...values: string[]) => values.join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
-  const billLink = (project: string, bill: string) => `/projects/${encodeURIComponent(project)}?tab=finance&bill=${encodeURIComponent(bill)}`;
+  const billLink = (project: string, bill: string) => `/projects/${encodeURIComponent(project)}?tab=finance${billReviewQuery(bill)}`;
   const recordLink = (project: string, record: string) => `/projects/${encodeURIComponent(project)}?tab=controls&record=${encodeURIComponent(record)}`;
   function update(changes: Record<string,string>) {
     setParams(previous => { const next = new URLSearchParams(previous); Object.entries(changes).forEach(([key,value]) => value ? next.set(key,value) : next.delete(key)); return next; });

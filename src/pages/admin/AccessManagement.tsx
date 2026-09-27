@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { CustomRoles } from './CustomRoles';
 import { AddUserButton, IdentityReview } from './UserEnrollment';
 import { uiMessage, uiText, useUiLanguage } from '../../i18n/ui';
@@ -26,7 +27,11 @@ export function AccessManagement() {
   const rolePermissions = useStore((s) => s.rolePermissions);
   const setRoleNavAccess = useStore((s) => s.setRoleNavAccess);
   const updateUserRole = useStore((s) => s.updateUserRole);
-  const [applicationsOnly, setApplicationsOnly] = useState(false);
+  const [params] = useSearchParams();
+  const [applicationsOnly, setApplicationsOnly] = useState(params.get('view') === 'identities');
+  const [view, setView] = useState(params.get('view') === 'users' || params.get('view') === 'identities' ? 'users' : 'roles');
+  const [selectedRole, setSelectedRole] = useState<Role>('IT_ADMIN');
+  const visibleRoles = [selectedRole];
   const [search, setSearch] = useState('');
   const [moduleSearch, setModuleSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -38,18 +43,19 @@ export function AccessManagement() {
     }
     const current = rolePermissions[role] ?? [];
     const next = enabled ? [...current, key] : current.filter((k) => k !== key);
-    setRoleNavAccess(role, next);
+    try { setRoleNavAccess(role, next); } catch (error) { toast.error(uiText((error as Error).message)); return; }
     toast.success(uiMessage("{{0}} \"{{1}}\" for {{2}}", [enabled ? 'Granted' : 'Revoked', NAV_ITEMS[key].label, ROLE_LABELS[role]]));
   }
 
   function changeRole(userId: string, role: Role) {
-    updateUserRole(userId, role);
+    try { updateUserRole(userId, role); } catch (error) { toast.error(uiText((error as Error).message)); return; }
     toast.success(uiText('User role updated.'));
   }
 
-  const filteredUsers = users.filter(u => (!applicationsOnly || (!!u.kycApplication && u.identityReview?.status === 'PENDING')) && (roleFilter === 'ALL' || u.role === roleFilter) && [u.name,u.email,u.department,ROLE_LABELS[u.role]].some(value => value.toLowerCase().includes(search.toLowerCase().trim())));
+  const filteredUsers = users.filter(u => (!applicationsOnly || u.identityReview?.status === 'PENDING') && (roleFilter === 'ALL' || u.role === roleFilter) && [u.name,u.email,u.department,ROLE_LABELS[u.role]].some(value => value.toLowerCase().includes(search.toLowerCase().trim())));
   const superadminCount = users.filter((u) => u.role === 'SUPERADMIN').length;
 
+  if (currentUser?.role !== 'SUPERADMIN') return <p role="alert">{uiText('Only Super Administrators can manage access.')}</p>;
   return (
     <div>
       <PageHeader title={uiText(t('pages.access.title', { defaultValue: 'Access Management' }))} description={uiText(t('pages.access.desc', { defaultValue: 'Grant or revoke module-level access per role, and reassign user roles' }))} />
@@ -61,19 +67,21 @@ export function AccessManagement() {
         <KpiCard icon={KeyRound} label={uiText("Superadmins")} value={superadminCount} />
       </div>
 
-      <Card className="mb-5">
-        <CardHeader>
+      <nav className="mb-4 flex gap-2">{['roles', 'users'].map(tab => <button key={tab} type="button" className={view === tab ? 'min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white' : 'min-h-11 rounded-xl border border-blue-200 px-4 text-sm font-semibold text-blue-800'} onClick={() => setView(tab)}>{uiText(tab === 'roles' ? 'Module access' : 'User accounts')}</button>)}</nav>
+      {view === 'roles' && <Card className="mb-5">
+        <CardHeader className="flex-wrap gap-3">
           <CardTitle>{uiText("Role Access Matrix")}</CardTitle><Input aria-label={uiText("Search modules")} placeholder={uiText("Search modules")} value={moduleSearch} onChange={e => setModuleSearch(e.target.value)} className="max-w-xs"/>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="p-4"><label className="text-xs font-semibold">{uiText('Select role')}<select aria-label={uiText('Select role')} className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm" value={selectedRole} onChange={e => setSelectedRole(e.target.value as Role)}>{ALL_ROLES.map(role => <option key={role} value={role}>{uiText(ROLE_LABELS[role])}</option>)}</select></label></div>
           {/* Plain grid, not a <table> — position:sticky on a <td>/<th> inside a
               border-collapse table renders inconsistently (columns visually overlap).
               A div-grid keeps the Module column fixed while the role columns scroll. */}
           <div className="overflow-x-auto">
-            <div className="grid text-sm" style={{ gridTemplateColumns: `180px repeat(${ALL_ROLES.length}, 150px)` }}>
+            <div className="grid text-sm" style={{ gridTemplateColumns: 'minmax(140px, 1fr) minmax(120px, 1fr)' }}>
               <div className="sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.12)]">{uiText("Module")}</div>
-              {ALL_ROLES.map((r) => (
-                <div key={r} className="whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {visibleRoles.map((r) => (
+                <div key={r} className="break-words border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {t(`roles.${r}`, { defaultValue: ROLE_LABELS[r] })}
                 </div>
               ))}
@@ -83,9 +91,10 @@ export function AccessManagement() {
                   <div className="sticky left-0 z-10 flex items-center border-b border-r border-slate-100 bg-white px-4 py-2.5 font-medium text-slate-800 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.08)]">
                     {uiText(NAV_ITEMS[key].label)}
                   </div>
-                  {ALL_ROLES.map((r) => (
+                  {visibleRoles.map((r) => (
                     <div key={r} className="flex items-center justify-center border-b border-slate-100 px-3 py-2.5">
                       <Switch
+                        disabled={(key === 'access') || (r === 'SUPERADMIN' && key === 'dashboard')}
                         aria-label={`${uiText(NAV_ITEMS[key].label)}: ${uiText(ROLE_LABELS[r])}`}
                         checked={(rolePermissions[r] ?? []).includes(key)}
                         onCheckedChange={(v) => toggleModule(r, key, v)}
@@ -99,10 +108,12 @@ export function AccessManagement() {
         </CardContent>
       </Card>
 
-      <CustomRoles />
+      }
+      {view === 'roles' && <CustomRoles />}
+      {view === 'users' && <>
       <Card>
         <CardHeader className="flex-wrap gap-2">
-          <CardTitle>{uiText("User Role Assignments")}</CardTitle><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={applicationsOnly} onChange={e=>setApplicationsOnly(e.target.checked)}/>{uiText("Pending KYC applications")}</label><AddUserButton /><Input aria-label={uiText("Search people")} placeholder={uiText("Search people")} value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs"/>
+          <CardTitle>{uiText("User Role Assignments")}</CardTitle><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={applicationsOnly} onChange={e=>setApplicationsOnly(e.target.checked)}/>{uiText("Identity reviews")}</label><AddUserButton /><Input aria-label={uiText("Search people")} placeholder={uiText("Search people")} value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs"/>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -150,6 +161,7 @@ export function AccessManagement() {
           </Table>
         </CardContent>
       </Card>
+      </>}
     </div>
   );
 }

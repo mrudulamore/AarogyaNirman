@@ -1,3 +1,4 @@
+import { SelectedFilePreview } from '../../../../components/common/SelectedFilePreview';
 import { uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -111,7 +112,7 @@ export function RABillSubmission({ project, onClose }: { project: Project; onClo
                 {!files[category]?.length && <span className="ml-2 text-slate-500">{uiText('No files selected')}</span>}
                 <input aria-label={uiText(label)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" type="file" required={required} multiple={category === 'SUPPORTING'} accept="application/pdf,image/jpeg,image/png" onChange={(event) => setFiles((previous) => ({ ...previous, [category]: Array.from(event.target.files ?? []) }))} />
               </span>
-              {!!files[category]?.length && <span className="block break-words text-[11px] text-slate-500">{files[category]!.map((file) => file.name).join(', ')}</span>}
+              {!!files[category]?.length && <span className="block break-words text-[11px] text-slate-500">{files[category]!.map((file,index) => <SelectedFilePreview key={index} file={file} />)}</span>}
             </label>)}
           </div>
           <label className="flex items-start gap-2 text-xs text-slate-600"><input type="checkbox" required checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} className="mt-0.5" />{uiText("I confirm that the claimed work was executed, the attached documents support this claim, and this claim does not duplicate previously billed work.")}</label>

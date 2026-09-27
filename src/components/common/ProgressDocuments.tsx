@@ -1,3 +1,5 @@
+import { sampleDocumentBlob } from '../../lib/sampleDocuments';
+import { PdfPreview } from './PdfPreview';
 import { toast } from 'sonner';
 import { useEffect, useRef, useState } from 'react';
 import { Download, Eye } from 'lucide-react';
@@ -6,16 +8,18 @@ import type { BillAttachment } from '../../types';
 import { readBillFile } from '../../lib/billAttachments';
 import { uiText } from '../../i18n/ui';
 
-export function ProgressDocuments({ files, onChange, disabled }: { files: File[]; onChange: (files: File[]) => void; disabled?: boolean }) {
+export function ProgressDocuments({ files, onChange, disabled, required = true }: { files: File[]; onChange: (files: File[]) => void; disabled?: boolean; required?: boolean }) {
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
   useEffect(() => { if (preview && !files.includes(preview.file)) setPreview(null); }, [files, preview]);
   return <div className="space-y-2">
     <label className="block text-xs font-medium text-slate-600">
-      {uiText('Supporting documents (required)')}
+      {uiText(required ? 'Supporting documents (required)' : 'Supporting documents')}
       <input type="file" multiple accept="application/pdf,image/jpeg,image/png" disabled={disabled}
         className="mt-2 block w-full text-xs" onChange={event => {
-          onChange([...files, ...Array.from(event.target.files ?? [])]); event.target.value = '';
+          const next = [...files, ...Array.from(event.target.files ?? [])]; event.target.value = '';
+          if (next.length > 5 || next.some(file => !['application/pdf','image/jpeg','image/png'].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024)) { toast.error(uiText('PDF, JPEG or PNG. Up to 5 files, 5 MB each.')); return; }
+          onChange(next);
         }} />
     </label>
     <p className="text-xs text-slate-500">{uiText('PDF, JPEG or PNG. Up to 5 files, 5 MB each.')}</p>
@@ -28,7 +32,7 @@ export function ProgressDocuments({ files, onChange, disabled }: { files: File[]
         {['image/jpeg', 'image/png'].includes(preview.file.type)
           ? <img src={preview.url} alt={preview.file.name} className="max-h-[65vh] w-full rounded object-contain" />
           : preview.file.type === 'application/pdf'
-            ? <object data={preview.url} type="application/pdf" aria-label={preview.file.name} className="h-[60vh] w-full"><p>{uiText('PDF preview is unavailable in this browser. Use the file link below.')}</p></object>
+            ? <PdfPreview url={preview.url} />
             : <p>{uiText('Preview unavailable for this file type.')}</p>}
         <a href={preview.url} download={preview.file.name} className="mt-3 inline-flex min-h-10 items-center gap-2 text-navy-700"><Download size={14} />{uiText('Download file')}</a>
       </DialogContent>}
@@ -47,7 +51,7 @@ export function ProgressDocumentLinks({ attachments }: { attachments?: BillAttac
     const request = ++requestId.current;
     setLoading(attachment.id);
     try {
-      const blob = await readBillFile(attachment.id);
+      const blob = await (attachment.sample ? sampleDocumentBlob(attachment.sample) : readBillFile(attachment.id));
       if (request !== requestId.current) return;
       setPreview({ attachment, url: URL.createObjectURL(blob) });
     } catch (error) {
@@ -58,7 +62,7 @@ export function ProgressDocumentLinks({ attachments }: { attachments?: BillAttac
   }
   async function download(attachment: BillAttachment) {
     try {
-      const blob = await readBillFile(attachment.id);
+      const blob = await (attachment.sample ? sampleDocumentBlob(attachment.sample) : readBillFile(attachment.id));
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a'); link.href = url; link.download = attachment.name;
       document.body.appendChild(link); link.click(); link.remove();
@@ -67,6 +71,7 @@ export function ProgressDocumentLinks({ attachments }: { attachments?: BillAttac
   }
   return <div className="space-y-2" onClick={event => event.stopPropagation()}>
     {attachments?.length ? attachments.map(file => <div key={file.id} className="text-xs">
+      {file.sample && <p className="font-medium text-amber-700">{uiText('Sample document - demonstration only')}</p>}
       <button type="button" onClick={() => void view(file)} disabled={loading === file.id} className="block break-all text-left text-navy-700 underline">{file.name}</button>
       <div className="mt-1 flex flex-wrap gap-2">
         <button type="button" onClick={() => void view(file)} disabled={loading === file.id} aria-label={`${uiText('Preview')} ${file.name}`} className="inline-flex min-h-10 items-center gap-1 rounded border border-slate-200 px-2 text-navy-700 hover:bg-slate-50"><Eye size={14} />{uiText(loading === file.id ? 'Loading...' : 'Preview')}</button>
@@ -78,7 +83,7 @@ export function ProgressDocumentLinks({ attachments }: { attachments?: BillAttac
         {['image/jpeg', 'image/png'].includes(preview.attachment.mimeType)
           ? <img src={preview.url} alt={preview.attachment.name} className="max-h-[65vh] w-full rounded bg-slate-50 object-contain" />
           : preview.attachment.mimeType === 'application/pdf'
-            ? <object data={preview.url} type="application/pdf" aria-label={preview.attachment.name} className="h-[60vh] w-full"><p className="text-sm">{uiText('PDF preview is unavailable in this browser. Use the file link below.')}</p></object>
+            ? <PdfPreview url={preview.url} />
             : <p className="text-sm">{uiText('Preview unavailable for this file type.')}</p>}
         <a href={preview.url} download={preview.attachment.name} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded border border-slate-200 px-3 text-sm text-navy-700"><Download size={16} />{uiText('Download file')}</a>
       </DialogContent>}

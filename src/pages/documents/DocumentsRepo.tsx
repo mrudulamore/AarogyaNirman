@@ -1,3 +1,4 @@
+import { ProgressDocumentLinks } from '../../components/common/ProgressDocuments';
 import { uiText, useUiLanguage } from '../../i18n/ui';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -114,7 +115,7 @@ export function DocumentsRepo() {
                     <Td>{uiText(formatDate(d.uploadDate))}</Td>
                     <Td><StatusBadge status={d.approvalStatus} /></Td>
                     <Td className="space-x-1.5 whitespace-nowrap">
-                      <Button size="sm" variant="ghost" onClick={() => downloadRecord(d)}><Download size={12} /></Button>
+                      <ProgressDocumentLinks attachments={d.attachments} /><Button size="sm" variant="ghost" title={uiText("Download record summary")} onClick={() => downloadRecord(d)}><Download size={12} /></Button>
                       {d.approvalStatus === 'PENDING' && <Button size="sm" variant="outline" onClick={() => { setDocumentStatus(d.id, 'APPROVED'); toast.success(uiText('Document approved.')); }}><CheckCircle2 size={12} /></Button>}
                     </Td>
                   </Tr>

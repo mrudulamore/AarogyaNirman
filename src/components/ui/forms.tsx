@@ -18,14 +18,15 @@ export function Checkbox({ checked, onCheckedChange, className }: { checked?: bo
   );
 }
 
-export function Switch({ checked, onCheckedChange, 'aria-label': ariaLabel }: { checked?: boolean; onCheckedChange?: (v: boolean) => void; 'aria-label'?: string }) {
+export function Switch({ checked, onCheckedChange, disabled, 'aria-label': ariaLabel }: { checked?: boolean; onCheckedChange?: (v: boolean) => void; 'aria-label'?: string; disabled?: boolean }) {
   useUiLanguage();
   return (
     <SwitchPrimitive.Root
+      disabled={disabled}
       aria-label={ariaLabel}
       checked={checked}
       onCheckedChange={onCheckedChange}
-      className="relative h-5 w-9 rounded-full bg-slate-200 outline-none transition-colors data-[state=checked]:bg-navy-700"
+      className="relative h-5 w-9 rounded-full disabled:opacity-50 bg-slate-200 outline-none transition-colors data-[state=checked]:bg-navy-700"
     >
       <SwitchPrimitive.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[18px]" />
     </SwitchPrimitive.Root>
