@@ -11,7 +11,7 @@ import { cn } from '../../lib/utils';
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 
-export function DialogContent({ className, children, title, description, size = 'md' }: { className?: string; children: React.ReactNode; title: string; description?: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+export function DialogContent({ className, children, title, description, size = 'md', card = false }: { className?: string; children: React.ReactNode; title: string; description?: string; size?: 'sm' | 'md' | 'lg' | 'xl'; card?: boolean }) {
   useUiLanguage();
   const widths = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
   return (
@@ -21,16 +21,16 @@ export function DialogContent({ className, children, title, description, size = 
         'fixed left-1/2 top-1/2 z-50 max-h-[88dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95',
         widths[size], className,
       )}>
-        <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+        <div className={card ? 'sr-only' : 'flex items-start justify-between border-b border-slate-100 px-5 py-4'}>
           <div>
             <DialogPrimitive.Title className="text-base font-semibold text-slate-900">{uiText(title)}</DialogPrimitive.Title>
             {description && <DialogPrimitive.Description className="mt-0.5 text-xs text-slate-500">{uiText(description)}</DialogPrimitive.Description>}
           </div>
-          <DialogPrimitive.Close aria-label={uiText('Close')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600">
+          {!card && <DialogPrimitive.Close aria-label={uiText('Close')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600">
             <X size={16} />
-          </DialogPrimitive.Close>
+          </DialogPrimitive.Close>}
         </div>
-        <div className="p-5">{children}</div>
+        <div className={card ? '' : 'p-5'}>{children}</div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );

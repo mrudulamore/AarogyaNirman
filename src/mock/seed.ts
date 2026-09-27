@@ -1103,7 +1103,7 @@ export function generateMockData(): SeedResult {
   }
 
   return {
-    users, projects, tenders, milestones, progressReports, photos, inspections, defects, approvals,
+    users, projects, tenders, milestones, progressReports, photos: photos.map(photo => ({ ...photo, isReference: !photo.dataUrl && !photo.mediaKey })), inspections, defects, approvals,
     contractors, workers, attendance, bills, measurements, boqItems, materials, materialTests,
     safetyRecords, risks, documents, commissioning, handoverSteps, notifications, auditLog, observations,
     changeOrders, extensionsOfTime, siteIssues, decisions,

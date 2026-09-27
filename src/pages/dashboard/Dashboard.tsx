@@ -1,3 +1,4 @@
+import { GeoPhoto } from '../../components/common/GeoPhoto';
 import { selectRecentPhotos } from '../../lib/recentPhotos';
 import { outstandingBills } from '../../lib/financeLedger';
 import { saveBillFiles } from '../../lib/billAttachments';
@@ -679,7 +680,7 @@ export function Dashboard() {
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setPhotoId(null)}>
         {selectedPhoto && (
           <DialogContent title={uiText(selectedPhotoProject?.name ?? selectedPhoto.projectId)} description={uiMessage("{{0}} - {{1}}", [selectedPhoto.stage, formatDateTime(selectedPhoto.capturedAt || selectedPhoto.date)])} size="lg">
-            <img src={photoSrc(selectedPhoto)} alt={uiText(selectedPhoto.description || selectedPhoto.stage)} className="max-h-[50vh] w-full rounded-lg bg-slate-100 object-contain" />
+            <GeoPhoto src={photoSrc(selectedPhoto)} mediaKey={selectedPhoto.mediaKey} lat={selectedPhoto.lat} lng={selectedPhoto.lng} timestamp={selectedPhoto.capturedAt} location={selectedPhoto.location} gpsAccuracyM={selectedPhoto.gpsAccuracyM} locationSource={selectedPhoto.locationSource} className="mx-auto aspect-square w-[min(100%,45dvh)]" imgClassName="absolute inset-0 object-cover" />
             <div className="mt-3 space-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
               <p className="font-semibold text-slate-800">{uiText(selectedPhoto.location)}</p>
               <p className="tabular-nums">{uiText("Latitude ")}{uiText(selectedPhoto.lat.toFixed(6))}{uiText(" · Longitude ")}{uiText(selectedPhoto.lng.toFixed(6))}</p>
