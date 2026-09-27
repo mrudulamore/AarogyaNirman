@@ -44,9 +44,11 @@ export const PROJECT_360_TABS: Project360Tab[] = [
  * Governance/Quality/Defects/Finance/Audit tabs — that content is combined into one executive
  * Overview instead (see MinistryOverview), and only Timeline/Tender & Contract/Field Evidence/
  * Team/Inspections/Safety & Commissioning/Approvals/Documents/Handover remain as their own tabs. */
+const ENGINEER_PROJECT_TABS = ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'];
+
 export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
-  CHIEF_ENGINEER: ['overview', 'timeline', 'tender', 'controls', 'boq', 'milestones', 'progress', 'monthly', 'field evidence', 'team', 'contractor', 'quality', 'inspections', 'defects', 'risks', 'finance', 'documents', 'handover'],
-  SUPERINTENDING_ENGINEER: ['overview', 'timeline', 'tender', 'controls', 'boq', 'milestones', 'progress', 'monthly', 'field evidence', 'team', 'contractor', 'quality', 'inspections', 'defects', 'risks', 'finance', 'documents', 'handover'],
+  CHIEF_ENGINEER: [...ENGINEER_PROJECT_TABS],
+  SUPERINTENDING_ENGINEER: [...ENGINEER_PROJECT_TABS],
   WORKFORCE: [],
   SITE_SUPERVISOR: ['overview', 'milestones', 'progress', 'photos', 'field evidence', 'quality', 'inspections', 'defects', 'documents'],
   SUPERADMIN: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover', 'audit'],
@@ -55,7 +57,7 @@ export const ROLE_PROJECT_360_TABS: Record<Role, string[]> = {
   COMMISSIONER: ['overview', 'governance', 'timeline', 'tender', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'safety & commissioning', 'defects', 'finance', 'approvals', 'documents', 'handover', 'audit'],
   REGIONAL_DIRECTOR: ['overview', 'governance', 'timeline', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'defects', 'finance', 'approvals', 'documents', 'handover'],
   CIVIL_SURGEON: ['overview', 'governance', 'timeline', 'milestones', 'field evidence', 'team', 'quality', 'inspections', 'defects', 'finance', 'approvals', 'documents', 'handover'],
-  EXECUTIVE_ENGINEER: ['overview', 'governance', 'timeline', 'tender', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'],
+  EXECUTIVE_ENGINEER: [...ENGINEER_PROJECT_TABS],
   PROJECT_MANAGER: ['overview', 'governance', 'timeline', 'tender', 'boq', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'contractor', 'workers', 'quality', 'inspections', 'safety & commissioning', 'defects', 'risks', 'finance', 'approvals', 'documents', 'handover'],
   DEPUTY_ENGINEER: ['overview', 'boq', 'materials', 'milestones', 'progress', 'photos', 'field evidence', 'workers', 'quality', 'inspections', 'defects', 'approvals', 'documents'],
   CONTRACTOR: ['overview', 'milestones', 'progress', 'photos', 'field evidence', 'team', 'inspections', 'safety & commissioning', 'defects', 'finance', 'documents'],

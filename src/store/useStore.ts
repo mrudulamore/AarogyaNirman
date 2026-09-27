@@ -58,6 +58,7 @@ export interface StoreState extends ControlActions, ProposalActions {
   /** Which nav sections each role can see — seeded from ROLE_NAV, editable by Superadmin via
    * the Access Management screen so permission changes apply live across Sidebar/AppShell. */
   rolePermissions: Record<Role, string[]>;
+  seniorEngineerAccessVersion?: number;
   projects: Project[];
   fundInstallments: FundInstallment[];
   tenders: Tender[];
@@ -1046,6 +1047,12 @@ export const useStore = create<StoreState>()(
         const users = proposalAccounts([...merged.users, ...current.users.filter(user => user.role === 'SITE_SUPERVISOR' && !merged.users.some(existing => existing.id === user.id))]);
         const photos = saved?.referencePhotosRestored ? merged.photos : [...merged.photos, ...seed.photos.filter(photo => !merged.photos.some(existing => existing.id === photo.id))];
         merged.rolePermissions.EXECUTIVE_ENGINEER = [...new Set([...merged.rolePermissions.EXECUTIVE_ENGINEER, 'tenders'])];
+        if (!saved?.seniorEngineerAccessVersion) {
+          for (const role of ['CHIEF_ENGINEER', 'SUPERINTENDING_ENGINEER'] as const) {
+            merged.rolePermissions[role] = [...new Set([...merged.rolePermissions[role], ...ROLE_NAV.EXECUTIVE_ENGINEER])];
+          }
+        }
+        merged.seniorEngineerAccessVersion = 1;
         for (const role of Object.keys(merged.rolePermissions) as Role[]) {
           merged.rolePermissions[role] = merged.rolePermissions[role].filter(key => key !== 'proposals');
         }
