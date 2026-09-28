@@ -43,7 +43,7 @@ try {
     const reports=[{id:'R1',reportNo:'QR-1',reportType:'Inspection Report',status:'PENDING',inspector:'Officer One',agency:'PWD',testType:'Site check',date:'2026-09-28',observations:'Review wiring before approval'}];
     createRoot(div).render(React.createElement(QualitySummary,{inspections,failures,reports,score:65,onInspection:id=>window.openedInspection=id,onFailure:id=>window.openedFailure=id}));
   })()`);
-  await until("document.querySelectorAll('#quality-test section').length===4");
+  await until("document.querySelectorAll('#quality-test [aria-label=\"Quality summary\"] > button').length===8");
   for(const width of [360,768,1440]) {
     await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<600});
     assert.ok(await evaluate("document.documentElement.scrollWidth <= window.innerWidth"),'No horizontal overflow at '+width);
@@ -62,6 +62,6 @@ try {
   await until("!!document.querySelector('[role=dialog]')");
   await evaluate("Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('QR-1')).click()");
   await until("document.body.textContent.includes('Review wiring before approval')");
-  console.log('Four quality cards: responsive widths, result filter, empty state, inspection action and report details passed.');
+  console.log('Eight quality cards: responsive widths, result filter, empty state, inspection action and report details passed.');
 } finally {socket?.close();browser.kill();await server.close();}
 
