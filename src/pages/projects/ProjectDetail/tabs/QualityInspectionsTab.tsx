@@ -9,13 +9,13 @@ import { drawingWarning } from '../../../../lib/pendingWork';
 import { uiMessage, uiText, useUiLanguage } from '../../../../i18n/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarPlus, ClipboardCheck, ShieldCheck, ShieldAlert, RefreshCw, FileWarning, FileBarChart2, Download } from 'lucide-react';
+import { CalendarPlus, ClipboardCheck, ShieldAlert, RefreshCw, FileWarning, FileBarChart2, Download } from 'lucide-react';
 import type { Project, ChecklistItem, Inspection, InspectionResult } from '../../../../types';
 import { useStore } from '../../../../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, SeverityBadge, Table, THead, TBody, Tr, Th, Td, EmptyState } from '../../../../components/ui/primitives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Dialog, DialogContent, DialogFooter } from '../../../../components/ui/overlays';
-import { KpiCard } from '../../../../components/common/KpiCard';
+import { QualitySummary } from '../../../../components/common/QualitySummary';
 import { Textarea } from '../../../../components/ui/primitives';
 import { INSPECTION_CATEGORIES } from '../../../../lib/constants';
 import { CHECKLIST_REQUIREMENTS, CHECKLIST_STANDARDS } from '../../../../lib/checklists';
@@ -27,13 +27,8 @@ export function QualityTab({ project }: { project: Project }) {
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id);
   const [detailId, setDetailId] = useState<string | null>(null);
   const completed = inspections.filter((i) => i.status === 'COMPLETED');
-  const passed = completed.filter((i) => i.overallResult === 'PASS').length;
-  const conditional = completed.filter((i) => i.overallResult === 'CONDITIONAL').length;
-  const failed = completed.filter((i) => i.overallResult === 'FAIL').length;
   const qualityFailures = useStore((s) => s.qualityFailures).filter((f) => f.projectId === project.id);
   const qualityReports = useStore((s) => s.qualityReports).filter((r) => r.projectId === project.id);
-  const reinspectionPending = qualityFailures.filter((f) => f.reinspectionStatus === 'PENDING' || f.reinspectionStatus === 'SCHEDULED').length;
-  const reportsPending = qualityReports.filter((r) => r.status === 'PENDING').length;
   const [activeFailureId, setActiveFailureId] = useState<string | null>(null);
   const activeFailure = qualityFailures.find((f) => f.id === activeFailureId);
   const contractors = useStore((s) => s.contractors);
@@ -47,16 +42,7 @@ export function QualityTab({ project }: { project: Project }) {
   return (
     <div className="space-y-4">
       <SiteReports key={project.id + useStore.getState().currentUser?.id} project={project} />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-        <KpiCard label={uiText("Total Inspections")} value={inspections.length} icon={ClipboardCheck} />
-        <KpiCard label={uiText("Passed")} value={passed} icon={ShieldCheck} tone="emerald" />
-        <KpiCard label={uiText("Conditional Pass")} value={conditional} icon={ShieldAlert} tone="amber" />
-        <KpiCard label={uiText("Failed")} value={failed} icon={ShieldAlert} tone="red" />
-        <KpiCard label={uiText("Critical Failures")} value={qualityFailures.filter((f) => f.severity === 'CRITICAL').length} icon={FileWarning} tone="red" />
-        <KpiCard label={uiText("Reinspection Pending")} value={reinspectionPending} icon={RefreshCw} tone="amber" />
-        <KpiCard label={uiText("Quality Score")} value={`${project.qualityScore}%`} icon={ShieldCheck} />
-        <KpiCard label={uiText("Reports Pending")} value={reportsPending} icon={FileBarChart2} tone={reportsPending > 0 ? 'amber' : 'default'} />
-      </div>
+      <QualitySummary key={project.id} inspections={inspections} failures={qualityFailures} reports={qualityReports} score={project.qualityScore} onInspection={setDetailId} onFailure={setActiveFailureId} />
 
       {qualityFailures.length > 0 && (
         <Card>
