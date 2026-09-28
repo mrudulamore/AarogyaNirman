@@ -1,0 +1,11 @@
+.quality-summary-cards > .quality-summary-button > .metric-card { padding: 12px; border-radius: 16px; }
+.quality-summary-cards > .quality-summary-button > .metric-card > div:first-child { min-height: 32px; gap: 6px; }
+.quality-summary-cards > .quality-summary-button > .metric-card > div:first-child > p { min-width: 0; font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+.quality-summary-cards > .quality-summary-button > .metric-card > div:first-child > div { width: 28px; height: 28px; border-radius: 9px; }
+.quality-summary-cards > .quality-summary-button > .metric-card > div:first-child > div svg { width: 15px; height: 15px; }
+.quality-summary-cards > .quality-summary-button > .metric-card > p.text-2xl { margin-top: 8px; font-size: 26px; }
+
+.quality-summary-button { min-width: 0; text-align: left; border-radius: 16px; }
+.quality-summary-button > .metric-card { height: 100%; }
+.quality-summary-button:hover > .metric-card { border-color: #6098e1; }
+.quality-summary-button:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }

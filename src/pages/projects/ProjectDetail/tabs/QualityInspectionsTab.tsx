@@ -1,3 +1,4 @@
+import './QualityInspectionsTab.css';
 import { SiteReports } from './SiteReports';
 import { InspectionRequests } from '../../../../components/common/InspectionRequests';
 import { ProgressDocumentLinks } from '../../../../components/common/ProgressDocuments';
@@ -26,6 +27,7 @@ export function QualityTab({ project }: { project: Project }) {
   useUiLanguage();
   const inspections = useStore((s) => s.inspections).filter((i) => i.projectId === project.id);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
   const completed = inspections.filter((i) => i.status === 'COMPLETED');
   const passed = completed.filter((i) => i.overallResult === 'PASS').length;
   const conditional = completed.filter((i) => i.overallResult === 'CONDITIONAL').length;
@@ -47,15 +49,15 @@ export function QualityTab({ project }: { project: Project }) {
   return (
     <div className="space-y-4">
       <SiteReports key={project.id + useStore.getState().currentUser?.id} project={project} />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-        <KpiCard label={uiText("Total Inspections")} value={inspections.length} icon={ClipboardCheck} />
-        <KpiCard label={uiText("Passed")} value={passed} icon={ShieldCheck} tone="emerald" />
-        <KpiCard label={uiText("Conditional Pass")} value={conditional} icon={ShieldAlert} tone="amber" />
-        <KpiCard label={uiText("Failed")} value={failed} icon={ShieldAlert} tone="red" />
-        <KpiCard label={uiText("Critical Failures")} value={qualityFailures.filter((f) => f.severity === 'CRITICAL').length} icon={FileWarning} tone="red" />
-        <KpiCard label={uiText("Reinspection Pending")} value={reinspectionPending} icon={RefreshCw} tone="amber" />
-        <KpiCard label={uiText("Quality Score")} value={`${project.qualityScore}%`} icon={ShieldCheck} />
-        <KpiCard label={uiText("Reports Pending")} value={reportsPending} icon={FileBarChart2} tone={reportsPending > 0 ? 'amber' : 'default'} />
+      <div className="quality-summary-cards grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Total Inspections')}><KpiCard label={uiText("Total Inspections")} value={inspections.length} icon={ClipboardCheck} /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Passed')}><KpiCard label={uiText("Passed")} value={passed} icon={ShieldCheck} tone="emerald" /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Conditional Pass')}><KpiCard label={uiText("Conditional Pass")} value={conditional} icon={ShieldAlert} tone="amber" /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Failed')}><KpiCard label={uiText("Failed")} value={failed} icon={ShieldAlert} tone="red" /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Critical Failures')}><KpiCard label={uiText("Critical Failures")} value={qualityFailures.filter((f) => f.severity === 'CRITICAL').length} icon={FileWarning} tone="red" /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Reinspection Pending')}><KpiCard label={uiText("Reinspection Pending")} value={reinspectionPending} icon={RefreshCw} tone="amber" /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Quality Score')}><KpiCard label={uiText("Quality Score")} value={`${project.qualityScore}%`} icon={ShieldCheck} /></button>
+        <button type="button" className="quality-summary-button" aria-haspopup="dialog" onClick={() => setSummary('Reports Pending')}><KpiCard label={uiText("Reports Pending")} value={reportsPending} icon={FileBarChart2} tone={reportsPending > 0 ? 'amber' : 'default'} /></button>
       </div>
 
       {qualityFailures.length > 0 && (
@@ -131,6 +133,37 @@ export function QualityTab({ project }: { project: Project }) {
         )}
       </Card>
 
+      <Dialog open={summary !== null} onOpenChange={open => !open && setSummary(null)}>
+        <DialogContent title={uiText(summary ?? '')} description={uiText(project.name)} size="lg">
+          {summary === 'Quality Score' && <p className="mb-4 text-sm">{uiText('Quality Score')}: <strong>{project.qualityScore}%</strong></p>}
+          <div className="space-y-2">
+            {(() => {
+              if (summary === 'Reports Pending') {
+                const reports = qualityReports.filter(r => r.status === 'PENDING');
+                return reports.length ? reports.map(r => <div key={r.id} className="rounded-lg border border-slate-200 p-3 text-sm">
+                  <div className="flex flex-wrap justify-between gap-2"><strong>{r.reportNo}</strong><StatusBadge status={r.status} /></div>
+                  <p className="mt-2">{uiText(r.reportType)} ? {uiText(formatDate(r.date))}</p>
+                  <p>{uiText(r.inspector)} ? {uiText(r.agency)}</p><p>{uiText(r.testType)}</p>
+                  {r.observations && <p className="mt-2">{uiText(r.observations)}</p>}
+                </div>) : <EmptyState title={uiText('No reports match these filters.')} />;
+              }
+              if (summary === 'Critical Failures' || summary === 'Reinspection Pending') {
+                const failures = qualityFailures.filter(f => summary === 'Critical Failures' ? f.severity === 'CRITICAL' : ['PENDING', 'SCHEDULED'].includes(f.reinspectionStatus));
+                return failures.length ? failures.map(f => <button type="button" key={f.id} onClick={() => { setSummary(null); setActiveFailureId(f.id); }} className="block w-full rounded-lg border border-slate-200 p-3 text-left hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500">
+                  <span className="flex flex-wrap justify-between gap-2"><span>{f.id} ? {uiText(f.location)}</span><SeverityBadge severity={f.severity} /></span>
+                  <span className="mt-2 flex flex-wrap justify-between gap-2 text-xs">{uiText(f.category.replace(/_/g, ' '))}<StatusBadge status={f.reinspectionStatus} /></span>
+                </button>) : <EmptyState title={uiText('No quality failures match these filters.')} />;
+              }
+              const results: Record<string, string> = { Passed: 'PASS', 'Conditional Pass': 'CONDITIONAL', Failed: 'FAIL' };
+              const matching = summary === 'Total Inspections' ? inspections : completed.filter(i => summary === 'Quality Score' || i.overallResult === results[summary ?? '']);
+              return matching.length ? matching.map(i => <button type="button" key={i.id} onClick={() => { setSummary(null); setDetailId(i.id); }} className="block w-full rounded-lg border border-slate-200 p-3 text-left hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500">
+                <span className="flex flex-wrap justify-between gap-2"><span>{uiText(i.category.replace(/_/g, ' '))}</span><StatusBadge status={i.status === 'COMPLETED' ? i.overallResult : i.status} /></span>
+                <span className="mt-2 block text-xs text-slate-600">{i.id} ? {uiText(formatDate(i.completedDate || i.scheduledDate))} ? {uiText(i.inspector)}{i.status === 'COMPLETED' ? ' ? ' + i.score + '%' : ''}</span>
+              </button>) : <EmptyState title={uiText('No inspections recorded.')} />;
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
       <InspectionDetails inspection={inspections.find(i => i.id === detailId)} onClose={() => setDetailId(null)} />
       <Dialog open={!!activeFailureId} onOpenChange={(v) => !v && setActiveFailureId(null)}>
         {activeFailure && (
