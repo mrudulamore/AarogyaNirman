@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { useSearchParams } from 'react-router-dom';
 import { CustomRoles } from './CustomRoles';
 import { AddUserButton, IdentityReview } from './UserEnrollment';
@@ -31,7 +32,8 @@ export function AccessManagement() {
   const [applicationsOnly, setApplicationsOnly] = useState(params.get('view') === 'identities');
   const [view, setView] = useState(params.get('view') === 'users' || params.get('view') === 'identities' ? 'users' : 'roles');
   const [selectedRole, setSelectedRole] = useState<Role>('IT_ADMIN');
-  const visibleRoles = [selectedRole];
+  const isNativeApp = Capacitor.isNativePlatform();
+  const visibleRoles = isNativeApp ? [selectedRole] : ALL_ROLES;
   const [search, setSearch] = useState('');
   const [moduleSearch, setModuleSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -67,18 +69,18 @@ export function AccessManagement() {
         <KpiCard icon={KeyRound} label={uiText("Superadmins")} value={superadminCount} />
       </div>
 
-      <nav className="mb-4 flex gap-2">{['roles', 'users'].map(tab => <button key={tab} type="button" className={view === tab ? 'min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white' : 'min-h-11 rounded-xl border border-blue-200 px-4 text-sm font-semibold text-blue-800'} onClick={() => setView(tab)}>{uiText(tab === 'roles' ? 'Module access' : 'User accounts')}</button>)}</nav>
-      {view === 'roles' && <Card className="mb-5">
+      {isNativeApp && <nav className="mb-4 flex gap-2">{['roles', 'users'].map(tab => <button key={tab} type="button" className={view === tab ? 'min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white' : 'min-h-11 rounded-xl border border-blue-200 px-4 text-sm font-semibold text-blue-800'} onClick={() => setView(tab)}>{uiText(tab === 'roles' ? 'Module access' : 'User accounts')}</button>)}</nav>}
+      {(!isNativeApp || view === 'roles') && <Card className="mb-5">
         <CardHeader className="flex-wrap gap-3">
           <CardTitle>{uiText("Role Access Matrix")}</CardTitle><Input aria-label={uiText("Search modules")} placeholder={uiText("Search modules")} value={moduleSearch} onChange={e => setModuleSearch(e.target.value)} className="max-w-xs"/>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="p-4"><label className="text-xs font-semibold">{uiText('Select role')}<select aria-label={uiText('Select role')} className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm" value={selectedRole} onChange={e => setSelectedRole(e.target.value as Role)}>{ALL_ROLES.map(role => <option key={role} value={role}>{uiText(ROLE_LABELS[role])}</option>)}</select></label></div>
+          {isNativeApp && <div className="p-4"><label className="text-xs font-semibold">{uiText('Select role')}<select aria-label={uiText('Select role')} className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm" value={selectedRole} onChange={e => setSelectedRole(e.target.value as Role)}>{ALL_ROLES.map(role => <option key={role} value={role}>{uiText(ROLE_LABELS[role])}</option>)}</select></label></div>}
           {/* Plain grid, not a <table> — position:sticky on a <td>/<th> inside a
               border-collapse table renders inconsistently (columns visually overlap).
               A div-grid keeps the Module column fixed while the role columns scroll. */}
           <div className="overflow-x-auto">
-            <div className="grid text-sm" style={{ gridTemplateColumns: 'minmax(140px, 1fr) minmax(120px, 1fr)' }}>
+            <div className="grid text-sm" style={{ gridTemplateColumns: isNativeApp ? 'minmax(140px, 1fr) minmax(120px, 1fr)' : `180px repeat(${visibleRoles.length}, 150px)` }}>
               <div className="sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.12)]">{uiText("Module")}</div>
               {visibleRoles.map((r) => (
                 <div key={r} className="break-words border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -109,8 +111,8 @@ export function AccessManagement() {
       </Card>
 
       }
-      {view === 'roles' && <CustomRoles />}
-      {view === 'users' && <>
+      {(!isNativeApp || view === 'roles') && <CustomRoles />}
+      {(!isNativeApp || view === 'users') && <>
       <Card>
         <CardHeader className="flex-wrap gap-2">
           <CardTitle>{uiText("User Role Assignments")}</CardTitle><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={applicationsOnly} onChange={e=>setApplicationsOnly(e.target.checked)}/>{uiText("Identity reviews")}</label><AddUserButton /><Input aria-label={uiText("Search people")} placeholder={uiText("Search people")} value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs"/>
